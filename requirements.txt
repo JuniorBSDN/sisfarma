@@ -1,5 +1,6 @@
-Flask==3.0.0
-pytz
-flask-cors
+fastapi
+uvicorn
+pydantic
 psycopg2-binary
+pytz
 fpdf==1.7.2
