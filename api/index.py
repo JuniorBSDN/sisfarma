@@ -201,6 +201,117 @@ class RegistrarUsuarioSchema(BaseModel):
     perfil: str
 
 
+# =====================================================================
+# 📊 ROTA DO DASHBOARD (INDICADORES EM TEMPO REAL)
+# =====================================================================
+@app.get("/api/dashboard/resumo", tags=["Dashboard"])
+def obter_resumo_dashboard():
+    db = conectar_bd()
+    cursor = db.cursor()
+    
+    # Total de Medicamentos Distintos
+    cursor.execute("SELECT COUNT(*) AS total FROM medicamentos")
+    meds = cursor.fetchone()["total"]
+    
+    # Total de Insumos Distintos
+    cursor.execute("SELECT COUNT(*) AS total FROM insumos")
+    insumos = cursor.fetchone()["total"]
+    
+    # Quantidade de itens com estoque zerado ou abaixo do mínimo
+    cursor.execute("SELECT COUNT(*) AS total FROM lotes_medicamentos WHERE quantidade <= 0")
+    Críticos_med = cursor.fetchone()["total"]
+    
+    # Total de alertas de vencimento (vencidos ou vencendo em 60 dias)
+    from datetime import date, timedelta
+    data_limite = date.today() + timedelta(days=60)
+    
+    cursor.execute("SELECT COUNT(*) AS total FROM lotes_medicamentos WHERE validade <= %s AND quantidade > 0", (data_limite,))
+    vencendo_med = cursor.fetchone()["total"]
+    
+    db.close()
+    
+    return {
+        "total_medicamentos": meds,
+        "total_insumos": insumos,
+        "estoque_critico": Críticos_med,
+        "alertas_vencimento": vencendo_med
+    }
+
+# =====================================================================
+# 📥 ROTAS DE MOVIMENTAÇÃO: ENTRADA DE LOTES
+# =====================================================================
+class EntradaLoteSchema(BaseModel):
+    item_id: int
+    tipo: str  # "MEDICAMENTO" ou "INSUMO"
+    numero_lote: str
+    quantidade: int
+    validade: str
+    fabricante: Optional[str] = "Não Informado"
+    preco_unitario: Optional[float] = 0.0
+
+@app.post("/api/movimentacao/entrada", tags=["Movimentação de Estoque"])
+def registrar_entrada_lote(lote: EntradaLoteSchema):
+    db = conectar_bd()
+    cursor = db.cursor()
+    try:
+        tabela = "lotes_medicamentos" if lote.tipo == "MEDICAMENTO" else "lotes_insumos"
+        coluna_id = "medicamento_id" if lote.tipo == "MEDICAMENTO" else "insumo_id"
+        
+        cursor.execute(f"""
+            INSERT INTO {tabela} ({coluna_id}, numero_lote, quantidade, validade, fabricante, preco_unitario)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (lote.item_id, lote.numero_lote, lote.quantidade, lote.validade, lote.fabricante, lote.preco_unitario))
+        
+        db.commit()
+        return {"status": "success", "message": "Lote inserido e estoque atualizado com sucesso!"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro ao inserir lote: {str(e)}")
+    finally:
+        db.close()
+
+# =====================================================================
+# 📤 ROTAS DE MOVIMENTAÇÃO: DISTRIBUIÇÃO (SAÍDA PARA SETORES)
+# =====================================================================
+class SaidaEstoqueSchema(BaseModel):
+    lote_id: int
+    tipo: str  # "MEDICAMENTO" ou "INSUMO"
+    quantidade_saida: int
+    destino_setor: str
+    operador: str
+
+@app.post("/api/movimentacao/saida", tags=["Movimentação de Estoque"])
+def registrar_saida_estoque(saida: SaidaEstoqueSchema):
+    db = conectar_bd()
+    cursor = db.cursor()
+    try:
+        tabela = "lotes_medicamentos" if saida.tipo == "MEDICAMENTO" else "lotes_insumos"
+        
+        # Verificar se há estoque disponível no lote
+        cursor.execute(f"SELECT quantidade, numero_lote FROM {tabela} WHERE id = %s", (saida.lote_id,))
+        lote_atual = cursor.fetchone()
+        
+        if not lote_atual or lote_atual["quantidade"] < saida.quantidade_saida:
+            raise HTTPException(status_code=400, detail="Quantidade insuficiente em estoque para este lote específico.")
+        
+        # Baixar estoque do lote
+        cursor.execute(f"UPDATE {tabela} SET quantidade = quantidade - %s WHERE id = %s", 
+                       (saida.quantidade_saida, saida.lote_id))
+        
+        # Registrar no histórico global de movimentações (Opcional, mas altamente recomendado para auditoria)
+        cursor.execute("""
+            INSERT INTO tecnovigilancia (lote_texto, tipo_ocorrencia, descricao, gravidade, conduta, data_registro, operador)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (lote_atual["numero_lote"], "DISTRIBUIÇÃO INTERNA", f"Saída de {saida.quantidade_saida} unidades para {saida.destino_setor}", "Informativo", "Estoque Baixado", datetime.now().date(), saida.operador))
+        
+        db.commit()
+        return {"status": "success", "message": "Distribuição realizada com sucesso e lote atualizado!"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db.close()
+
 # --- ROTAS PARA GERENCIAMENTO COMPLETO DE CLIENTES/UNIDADES ---
 
 @app.delete("/api/auth/usuarios/{usuario_id}", tags=["Autenticação"])
