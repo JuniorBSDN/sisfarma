@@ -403,19 +403,19 @@
      document.body.style.display = 'block';
 
      // ==========================================
-     // 🔒 1. LÓGICA DE LOGIN PRINCIPAL DOS HOSPITAIS (Ajustado)
+     // 🔒 1. LÓGICA DE LOGIN PRINCIPAL DOS HOSPITAIS (Corrigido para evitar conflito de variáveis)
      // ==========================================
      document.getElementById("form-login-sistema").addEventListener("submit", async (e) => {
          e.preventDefault();
 
-         const usuario = document.getElementById("login-usuario-unidade").value.trim();
-         const senha = document.getElementById("login-senha-unidade").value;
+         const usuarioDigitado = document.getElementById("login-usuario-unidade").value.trim();
+         const senhaDigitada = document.getElementById("login-senha-unidade").value;
 
          try {
              const res = await fetch(`${API_URL}/auth/login`, {
                  method: "POST",
                  headers: { "Content-Type": "application/json" },
-                 body: JSON.stringify({ usuario, senha })
+                 body: JSON.stringify({ usuario: usuarioDigitado, senha: senhaDigitada })
              });
 
              const dados = await res.json();
