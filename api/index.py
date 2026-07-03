@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional
 import psycopg2
-from psycopg2.extras import RealDictCursor  # Mantém o acesso às colunas por nome
+from psycopg2.extras import RealDictCursor
 
 app = FastAPI(
     title="YANA API - Central de Abastecimento Farmacêutico (PostgreSQL)",
@@ -21,13 +21,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ⚠️ Variável de ambiente configurada na Vercel ou localmente
+# ⚠️ Puxa a variável de ambiente do Neon
 DATABASE_URL = os.getenv("DATABASE_URL", "SUA_STRING_DE_CONEXAO_DO_NEON_AQUI")
 
 
 def conectar_bd():
     try:
-        # Abre a conexão segura com o Neon
         conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
         cursor = conn.cursor()
 
@@ -196,11 +195,12 @@ class TecnovigilanciaSchema(BaseModel):
 
 
 # =========================================================================
-# 🔐 ROTAS DO ADMIN.HTML (GERENCIAMENTO MASTER)
+# 🔐 ROTAS EXCLUSIVAS DO ADMIN.HTML (CORRIGIDAS)
 # =========================================================================
 
 @app.post("/api/auth/verificar-admin", tags=["Autenticação Master"])
 def verificar_senha_master_admin(dados: AdminAuthSchema):
+    # Senha exata esperada pelo prompt do admin.html
     SENHA_MASTER_ESPERADA = "admin123"
     if dados.senha == SENHA_MASTER_ESPERADA:
         return {"status": "sucesso", "mensagem": "Acesso Mestre Concedido."}
@@ -418,7 +418,7 @@ def processar_dispensacao(disp: DispensacaoSchema):
             INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
             VALUES (NULL, %s, 'SAÍDA INSUMO', %s, %s, %s, %s, %s, %s)
         """, (
-            disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num, disp.responsavel,
+            disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num, responsavel,
             datetime.now().strftime("%Y-%m-%d %H:%M")
         ))
     else:
