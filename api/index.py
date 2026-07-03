@@ -229,9 +229,9 @@ def atualizar_usuario_unidade(usuario_id: int, dados: AtualizarUsuarioSchema):
 
 @app.post("/api/auth/verificar-admin", tags=["Autenticação"])
 def verificar_senha_master_admin(dados: VerificarAdminSchema):
-    # 🔒 Mantendo o padrão exato de entrada e lendo do ambiente em minúsculas (Vercel)
-    senha_env = os.getenv("admin_password")
-    
+    # 🔒 Tenta ler em minúsculas (padrão atual) ou em maiúsculas (padrão comum de servidores)
+    senha_env = os.getenv("admin_password") or os.getenv("ADMIN_PASSWORD") or os.getenv("ADMIN_MASTER_PASSWORD")
+
     if senha_env:
         senha_master = senha_env.strip()
     else:
@@ -244,7 +244,6 @@ def verificar_senha_master_admin(dados: VerificarAdminSchema):
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Senha Master de Administrador incorreta."
     )
-
 
 @app.post("/api/auth/registrar", tags=["Autenticação"])
 def registrar_novo_usuario_unidade(dados: RegistrarUsuarioSchema):
