@@ -21,8 +21,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ⚠️ Puxa a variável de ambiente do Neon
-DATABASE_URL = os.getenv("DATABASE_URL", "SUA_STRING_DE_CONEXAO_DO_NEON_AQUI")
+# ⚠️ Puxa a string do banco de dados das variáveis de ambiente
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 
 def conectar_bd():
@@ -133,7 +133,7 @@ class LoginSchema(BaseModel):
     senha: str
 
 
-class AdminAuthSchema(BaseModel):
+class VerificarAdminSchema(BaseModel):
     senha: str
 
 
@@ -195,15 +195,23 @@ class TecnovigilanciaSchema(BaseModel):
 
 
 # =========================================================================
-# 🔐 ROTAS EXCLUSIVAS DO ADMIN.HTML (CORRIGIDAS)
+# 🔐 MECANISMO DE LOGIN DO ADMIN RECONSOLIDADO COM VARIÁVEL VERCEL
 # =========================================================================
 
 @app.post("/api/auth/verificar-admin", tags=["Autenticação Master"])
-def verificar_senha_master_admin(dados: AdminAuthSchema):
-    # Senha exata esperada pelo prompt do admin.html
-    SENHA_MASTER_ESPERADA = "admin123"
+def verificar_senha_master_admin(dados: VerificarAdminSchema):
+    # 🔒 Resgata de forma segura a senha configurada no painel da Vercel
+    SENHA_MASTER_ESPERADA = os.getenv("ADMIN_PASSWORD")
+    
+    if not SENHA_MASTER_ESPERADA:
+        raise HTTPException(
+            status_code=500, 
+            detail="Configuração de segurança ausente no servidor (ADMIN_PASSWORD não definida)."
+        )
+
     if dados.senha == SENHA_MASTER_ESPERADA:
         return {"status": "sucesso", "mensagem": "Acesso Mestre Concedido."}
+        
     raise HTTPException(status_code=401, detail="Senha Master do Administrador Inválida!")
 
 
@@ -418,7 +426,7 @@ def processar_dispensacao(disp: DispensacaoSchema):
             INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
             VALUES (NULL, %s, 'SAÍDA INSUMO', %s, %s, %s, %s, %s, %s)
         """, (
-            disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num, responsavel,
+            disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num, disp.responsavel,
             datetime.now().strftime("%Y-%m-%d %H:%M")
         ))
     else:
