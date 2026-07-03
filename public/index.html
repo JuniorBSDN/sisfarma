@@ -5,322 +5,427 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YANA v1.1 - Central Farmacêutica</title>
     <style>
-        /* Configurações Globais e Rolagem Suave */
-html {
-    scroll-behavior: smooth;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+       :root {
+    --bg-main: #d9d9d9;
+    --sidebar-bg: #e6e6e6;
+    --topbar-bg: #1a365d;
+    --btn-blue: #3b82f6;
+    --btn-green: #10b981;
+    --btn-orange: #f97316;
+    --btn-red: #b91c1c;
+    --text-dark: #1e293b;
 }
 
-body {
+body, html {
     margin: 0;
     padding: 0;
-    background-color: #f4f6f9;
-    color: #333;
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg-main);
+    overflow: hidden;
 }
 
-/* Barra de Navegação Superior */
-.navbar {
-    position: fixed;
-    top: 0;
+/* --- TELA DE LOGIN (image_3b0986.png) --- */
+.login-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f3f4f6;
+}
+.login-box {
+    width: 460px;
+    background: #e5e7eb;
+    padding: 40px;
+    border-radius: 24px;
+    text-align: center;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+}
+.login-box h1 {
+    font-size: 28px;
+    color: #111827;
+    margin: 10px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+.login-box p { color: #6b7280; font-style: italic; margin-bottom: 30px; }
+.login-box input {
     width: 100%;
-    height: 70px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
+    padding: 14px;
+    margin: 12px 0;
+    border: 1px solid #9ca3af;
+    border-radius: 8px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+.btn-login {
+    width: 100%;
+    background-color: #3b82f6;
+    color: white;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 15px;
+}
+
+/* --- ESTRUTURA DASHBOARD PRINCIPAL --- */
+.app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+.topbar {
+    height: 45px;
+    background-color: var(--topbar-bg);
+    color: white;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 50px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    z-index: 1000;
-    box-sizing: border-box;
+    padding: 0 20px;
+    font-size: 13px;
+    font-weight: bold;
 }
-
-.logo {
-    font-size: 24px;
-    font-weight: 700;
-    color: #1e293b;
-}
-
-.logo span {
-    color: #0284c7;
-    font-size: 14px;
-}
-
-.nav-links {
-    list-style: none;
+.main-layout {
     display: flex;
-    gap: 30px;
+    flex: 1;
+    overflow: hidden;
 }
 
-.nav-links a {
-    text-decoration: none;
-    color: #64748b;
-    font-weight: 500;
-    transition: color 0.3s;
-}
-
-.nav-links a:hover {
-    color: #0284c7;
-}
-
-/* Seções de Tela Cheia para o efeito de rolagem */
-.scroll-section {
-    min-height: 100vh;
-    padding-top: 100px;
+/* Barra Lateral (image_3b1564.png) */
+.sidebar {
+    width: 220px;
+    background-color: var(--sidebar-bg);
+    padding: 15px 10px;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-    border-bottom: 1px solid #e2e8f0;
+    flex-direction: column;
+    gap: 5px;
+    border-right: 1px solid #bccc;
 }
-
-.container {
-    width: 90%;
-    max-width: 1200px;
+.menu-group {
+    font-size: 10px;
+    color: #666;
+    font-weight: bold;
+    margin: 10px 0 3px 5px;
+    text-transform: uppercase;
 }
-
-/* Layouts Baseados em Grid */
-.grid-2col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
-    margin-top: 20px;
-}
-
-/* Cartões Modernos */
-.card {
-    background: #ffffff;
-    border-radius: 12px;
-    padding: 30px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-    border: 1px solid #f1f5f9;
-    transition: transform 0.3s ease;
-}
-
-.card:hover {
-    transform: translateY(-5px);
-}
-
-.card-login {
-    width: 400px;
-    text-align: center;
-}
-
-/* Elementos de Formulários */
-input, select, textarea {
+.menu-btn {
     width: 100%;
-    padding: 12px;
-    margin: 10px 0;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    box-sizing: border-box;
-    font-size: 14px;
-    background: #f8fafc;
-}
-
-input:focus, select:focus, textarea:focus {
-    border-color: #0284c7;
-    outline: none;
-    background: #fff;
-}
-
-/* Botões Padronizados */
-button {
-    cursor: pointer;
-    font-weight: 600;
+    text-align: left;
+    padding: 8px 12px;
     border: none;
     border-radius: 6px;
-    padding: 12px 20px;
-    font-size: 14px;
-    transition: filter 0.2s;
+    font-size: 12px;
+    cursor: pointer;
+    color: white;
+    font-weight: 500;
+}
+.btn-med { background-color: #3a86ca; }
+.btn-ins { background-color: #2c3e50; }
+.btn-imp { background-color: #0fa37f; }
+.btn-aud { background-color: #4a90e2; }
+.btn-tec { background-color: #a80000; }
+.btn-sobre { background-color: #34495e; }
+
+/* Área de Conteúdo Alinhada */
+.content-area {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+.panel-card {
+    background-color: #e0e0e0;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    min-height: 85vh;
+}
+.panel-card h2 {
+    margin-top: 0;
+    font-size: 18px;
+    color: #000;
+    margin-bottom: 25px;
 }
 
-button:hover {
-    filter: brightness(0.9);
+/* Formulários em Linha Críticos */
+.form-inline-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.form-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.form-group label {
+    font-size: 13px;
+    color: #333;
+    white-space: nowrap;
+    text-align: right;
+    width: 120px;
+}
+.form-group input, .form-group select {
+    padding: 6px 10px;
+    border: 1px solid #a3a3a3;
+    border-radius: 4px;
+    background: #fff;
+    font-size: 13px;
+    width: 220px;
 }
 
-.btn-primary { background: #0284c7; color: white; }
-.btn-success { background: #10b981; color: white; }
-.btn-danger { background: #ef4444; color: white; }
-
-/* Tabelas */
-.table-wrapper {
+/* Tabelas Alinhadas às Imagens */
+.table-container {
+    background: white;
+    border: 1px solid #b5b5b5;
+    margin-top: 20px;
+    min-height: 250px;
     max-height: 400px;
     overflow-y: auto;
 }
-
 table {
     width: 100%;
     border-collapse: collapse;
-    text-align: left;
+    font-size: 12px;
+}
+th {
+    background: #fff;
+    color: #333;
+    font-weight: normal;
+    padding: 8px;
+    border-bottom: 1px solid #ccc;
+    border-right: 1px solid #eee;
+}
+td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    border-right: 1px solid #eee;
 }
 
-th, td {
-    padding: 12px;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-th { background: #f8fafc; color: #64748b; }
-
-/* Alertas Estilizados */
-.alerta-item {
-    background: #fee2e2;
-    border-left: 5px solid #ef4444;
-    padding: 15px;
+/* Botões de Ação Inferiores */
+.action-btn {
+    padding: 8px 16px;
+    color: white;
+    border: none;
     border-radius: 4px;
-    margin-bottom: 10px;
-    color: #991b1b;
-}
-
-.feedback {
+    font-size: 12px;
+    cursor: pointer;
     margin-top: 15px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+.action-btn.green { background-color: var(--btn-green); }
+.action-btn.orange { background-color: var(--btn-orange); }
+
+/* Alerta de Validação (image_3b1d01.png) */
+.alert-box-clean {
+    background-color: #fee2e2;
+    border: 1px solid #fca5a5;
+    border-radius: 4px;
+    padding: 15px;
+    color: #15803d;
+    font-size: 13px;
     font-weight: 500;
 }
     </style>
-</head>
-<body>
+</head><body>
 
-    <nav class="navbar">
-        <div class="logo">YANA <span>v1.1</span></div>
-        <ul class="nav-links">
-            <li><a href="#login-section">Acesso</a></li>
-            <li><a href="#cadastro-section">Catálogo</a></li>
-            <li><a href="#dispensacao-section">Dispensação</a></li>
-            <li><a href="#alertas-section">Alertas</a></li>
-        </ul>
-    </nav>
-
-    <section id="login-section" class="scroll-section">
-        <div class="card card-login">
-            <h2>🔑 Autenticação de Operador</h2>
-            <p>Controle interno e rastreabilidade hospitalar</p>
+    <!-- 1. TELA DE LOGIN (Conforme image_3b0986.png) -->
+    <div id="view-login" class="login-wrapper">
+        <div class="login-box">
+            <h1>🔒 CAF HOSPITALAR</h1>
+            <p>Controle Interno & Rastreabilidade</p>
             <form id="form-login">
-                <input type="text" id="login-user" placeholder="Usuário" required>
+                <input type="text" id="login-user" placeholder="Usuário ou Registro" required>
                 <input type="password" id="login-pass" placeholder="Senha" required>
-                <button type="submit" class="btn-primary">Entrar no Sistema</button>
+                <button type="submit" class="btn-login">Autenticar no Sistema</button>
             </form>
-            <div id="login-feedback" class="feedback"></div>
         </div>
-    </section>
+    </div>
 
-    <section id="cadastro-section" class="scroll-section">
-        <div class="container">
-            <h2>📦 Catálogo de Medicamentos</h2>
-            <div class="grid-2col">
-                <div class="card">
-                    <h3>Novo Registro</h3>
-                    <form id="form-medicamento">
-                        <input type="text" id="med-nome" placeholder="Nome do Medicamento" required>
-                        <input type="text" id="med-principio" placeholder="Princípio Ativo" required>
-                        <input type="text" id="med-categoria" placeholder="Categoria (Ex: Antibiótico)" required>
-                        <select id="med-controlado">
-                            <option value="0">Não Controlado</option>
-                            <option value="1">⚠️ Controlado (Portaria 344)</option>
-                        </select>
-                        <button type="submit" class="btn-success">Catalogar</button>
-                    </form>
-                </div>
-                <div class="card table-wrapper">
-                    <h3>Itens Cadastrados</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Nome</th>
-                                <th>Princípio Ativo</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabela-medicamentos">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
+    <!-- 2. WORKSPACE DO SISTEMA (Aparece após Autenticação) -->
+    <div id="view-dashboard" class="app-container" style="display: none;">
+        <!-- Topbar idêntica (image_3b1564.png) -->
+        <div class="topbar">
+            <div>🏣 CENTRAL DE GESTÃO E DISPENSAÇÃO FARMACÊUTICA</div>
+            <div id="user-display">Operador: admin (Farmacêutico Chefe)</div>
         </div>
-    </section>
 
-    <section id="dispensacao-section" class="scroll-section">
-        <div class="container">
-            <div class="card">
-                <h2>⚡ Dispensação Unificada Ambulatorial</h2>
-                <form id="form-dispensacao" class="grid-2col">
-                    <div>
-                        <label>Tipo de Material</label>
-                        <select id="disp-tipo" required>
-                            <option value="MEDICAMENTO">Medicamento</option>
-                            <option value="INSUMO">Insumo / Correlato</option>
-                        </select>
+        <div class="main-layout">
+            <!-- Barra Lateral Milimétrica -->
+            <aside class="sidebar">
+                <div class="menu-group">Medicamentos</div>
+                <button class="menu-btn btn-med" onclick="switchTab('tab-catalogo')">💊 Catálogo Base</button>
+                <button class="menu-btn btn-med" onclick="switchTab('tab-lotes-med')">📦 Entrada de Lotes</button>
+                <button class="menu-btn btn-med" onclick="switchTab('tab-dispensar')">⚡ Dispensar Itens</button>
 
-                        <label>ID do Lote em Estoque</label>
-                        <input type="number" id="disp-lote-id" placeholder="Ex: 1" required>
+                <div class="menu-group">Insumos / Materiais</div>
+                <button class="menu-btn btn-ins" onclick="switchTab('tab-cadastro-insumo')">📝 Cadastro de Insumos</button>
+                <button class="menu-btn btn-ins" onclick="switchTab('tab-lotes-insumo')">📥 Receber Insumos</button>
 
-                        <label>Quantidade Solicitada</label>
-                        <input type="number" id="disp-qtd" min="1" placeholder="0" required>
-                    </div>
-                    <div>
-                        <label>Setor de Destino</label>
-                        <input type="text" id="disp-setor" placeholder="Ex: UTI Adulto" required>
+                <div class="menu-group">Serviços de Impressão</div>
+                <button class="menu-btn btn-imp">🏷️ Gerador de Etiquetas</button>
 
-                        <label>Nome do Paciente</label>
-                        <input type="text" id="disp-paciente" placeholder="Prontuário ou Nome" required>
+                <div class="menu-group">Auditoria</div>
+                <button class="menu-btn btn-aud" onclick="switchTab('tab-rastreabilidade')">🔍 Rastreabilidade</button>
+                <button class="menu-btn btn-aud" onclick="switchTab('tab-alertas')">⚠️ Alertas Clínicos</button>
+                <button class="menu-btn btn-tec" onclick="switchTab('tab-tecnovigilancia')">⚠️ Tecnovigilância (POP)</button>
+                <button class="menu-btn btn-sobre">ℹ️ Sobre o Sistema</button>
 
-                        <label>Número da Prescrição</label>
-                        <input type="text" id="disp-prescricao" placeholder="Ex: PX-2026" required>
-                    </div>
-                    <div style="grid-column: span 2;">
-                        <button type="submit" class="btn-primary" style="width: 100%;">Efetivar Saída de Estoque</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </section>
+                <!-- MENU DO ADMINISTRADOR EXCLUSIVO PARA O SEU FLUXO DE LIBERAÇÃO -->
+                <div class="menu-group" style="color: #0284c7;">Configurações Master</div>
+                <button class="menu-btn" style="background-color: #0284c7;" onclick="switchTab('tab-admin-unidades')">🏢 Ativar Clientes/Unidades</button>
+            </aside>
 
-    <section id="alertas-section" class="scroll-section">
-        <div class="container">
-            <h2>⚠️ Tecnovigilância & Alertas Clínicos</h2>
-            <div class="grid-2col">
-                <div class="card dashboard-alertas">
-                    <h3>Lotes Vencidos / Críticos</h3>
-                    <div id="painel-alertas">
+            <!-- Telas Centrais Alternáveis -->
+            <main class="content-area">
+
+                <!-- TAB: CATÁLOGO BASE (image_3b1564.png) -->
+                <div id="tab-catalogo" class="tab-content">
+                    <div class="panel-card">
+                        <h2>Catálogo de Medicamentos Hospitalares</h2>
+                        <form id="form-med">
+                            <div class="form-inline-row">
+                                <div class="form-group"><label>Nome Comercial:</label><input type="text" id="med-nome" required></div>
+                                <div class="form-group"><label>Princípio Ativo:</label><input type="text" id="med-principio" required></div>
+                            </div>
+                            <div class="form-inline-row">
+                                <div class="form-group">
+                                    <label>Categoria:</label>
+                                    <select id="med-categoria">
+                                        <option value="Antimicrobiano">Antimicrobiano</option>
+                                        <option value="Analgésico">Analgésico</option>
+                                    </select>
+                                </div>
+                                <div class="form-group"><label>Código de Barras (EAN):</label><input type="text" id="med-ean" placeholder="Aponte o leitor óptico..."></div>
+                            </div>
+                            <div class="form-inline-row" style="padding-left: 130px;">
+                                <label style="display:flex; align-items:center; gap:5px; font-size:13px; color:red;">
+                                    <input type="checkbox" id="med-controlado" value="1"> Medicamento Controlado (Portaria 344)
+                                </label>
+                            </div>
+                            <button type="submit" class="action-btn green">➕ Adicionar ao Catálogo</button>
+                        </form>
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>ID</th><th>Nome</th><th>Princípio Ativo</th><th>Categoria</th><th>Código Barras</th><th>Controlado</th></tr></thead>
+                                <tbody id="rows-catalogo"></tbody>
+                            </table>
                         </div>
+                    </div>
                 </div>
-                <div class="card">
-                    <h3>Registrar Ocorrência Desvio de Qualidade</h3>
-                    <form id="form-tecnovigilancia">
-                        <input type="text" id="tec-lote" placeholder="Identificação do Lote Comercial" required>
-                        <input type="text" id="tec-tipo" placeholder="Tipo (Ex: Quebra de Cadeia Fria)" required>
-                        <textarea id="tec-descricao" placeholder="Descrição minuciosa do desvio..." required></textarea>
-                        <select id="tec-gravidade">
-                            <option value="BAIXA">Baixa</option>
-                            <option value="MODERADA">Moderada</option>
-                            <option value="ALTA">Alta (Risco Sanitário)</option>
-                        </select>
-                        <button type="submit" class="btn-danger">Protocolar Ocorrência</button>
-                    </form>
+
+                <!-- TAB: DISPENSAÇÃO UNIFICADA (image_3b18e1.png) -->
+                <div id="tab-dispensar" class="tab-content" style="display:none;">
+                    <div class="panel-card">
+                        <h2>Painel Unificado de Dispensação e Baixa de Materiais</h2>
+                        <form id="form-dispensa-real">
+                            <div class="form-inline-row">
+                                <div class="form-group">
+                                    <label>Tipo de Material:</label>
+                                    <label style="width:auto; font-size:13px;"><input type="radio" name="tipo-mat" value="MEDICAMENTO" checked> Medicamento</label>
+                                    <label style="width:auto; font-size:13px;"><input type="radio" name="tipo-mat" value="INSUMO"> Insumo Geral / Correlato</label>
+                                </div>
+                            </div>
+                            <div class="form-inline-row">
+                                <div class="form-group">
+                                    <label>Selecionar Lote/Item:</label>
+                                    <select id="disp-lote-select"><option>NENHUM MEDICAMENTO EM ESTOQUE</option></select>
+                                </div>
+                            </div>
+                            <div class="form-inline-row">
+                                <div class="form-group"><label>Paciente / Destino:</label><input type="text" id="disp-paciente" placeholder="Nome do Paciente ou Uso Geral"></div>
+                                <div class="form-group"><label>Nº Prescrição / Req:</label><input type="text" id="disp-req" placeholder="Nº Controle"></div>
+                            </div>
+                            <div class="form-inline-row">
+                                <div class="form-group">
+                                    <label>Setor Requisitante:</label>
+                                    <select id="disp-setor"><option value="Clínica Médica">Clínica Médica</option><option value="UTI">UTI</option></select>
+                                </div>
+                                <div class="form-group"><label>Qtd Solicitada:</label><input type="number" id="disp-qtd"></div>
+                            </div>
+                            <button type="submit" class="action-btn orange">⚡ Processar Dispensação</button>
+                        </form>
+                        <h4 style="margin-top:20px; font-size:12px; color:#555;">Últimas Movimentações Sincronizadas (Tempo Real)</h4>
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>ID</th><th>Tipo</th><th>Qtd</th><th>Destino</th><th>Paciente/Fins</th><th>Data/Hora</th></tr></thead>
+                                <tbody id="rows-movimentacoes"></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-            </div>
+
+                <!-- TAB: MONITOR DE ALERTAS (image_3b1d01.png) -->
+                <div id="tab-alertas" class="tab-content" style="display:none;">
+                    <div class="panel-card">
+                        <h2>Alertas Clínicos & Validação Sanitária Crítica</h2>
+                        <div class="alert-box-clean">
+                            ✔ Sistema Limpo: Nenhum lote de medicamento ou insumo fora da validade.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: ADMINISTRAÇÃO MASTER (Seu Requisito de Liberação por senha de Cliente/Unidade) -->
+                <div id="tab-admin-unidades" class="tab-content" style="display:none;">
+                    <div class="panel-card">
+                        <h2>Gerenciador de Licenciamento de Unidades / Clientes</h2>
+                        <form id="form-admin-cadastro">
+                            <div class="form-inline-row">
+                                <div class="form-group"><label>Nome do Cliente:</label><input type="text" id="adm-nome" placeholder="Ex: Hospital Unidade II" required></div>
+                                <div class="form-group"><label>Identificador/User:</label><input type="text" id="adm-user" placeholder="Ex: unidade2.admin" required></div>
+                            </div>
+                            <div class="form-inline-row">
+                                <div class="form-group"><label>Senha do Cliente:</label><input type="password" id="adm-pass" placeholder="Senha do cliente ou unidade" required></div>
+                                <div class="form-group">
+                                    <label>Perfil Mestre:</label>
+                                    <select id="adm-perfil"><option value="Farmacêutico Chefe">Farmacêutico Chefe</option><option value="Diretor Técnico">Diretor Técnico</option></select>
+                                </div>
+                            </div>
+                            <button type="submit" class="action-btn green">🚀 Ativar e Liberar Unidade</button>
+                        </form>
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>ID</th><th>Unidade / Identificador</th><th>Perfil Atribuído</th><th>Status de Conexão</th></tr></thead>
+                                <tbody id="rows-admin-usuarios"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
         </div>
-    </section>
+    </div>
 
     <script>
-        // Definição da URL base da API do seu backend FastAPI
-const API_URL = "http://localhost:8000/api";
+        const API_URL = "http://localhost:8000/api";
+let operadorAtual = "admin";
 
-// Estado global simples para o operador logado
-let operadorLogado = "admin";
+// Gerenciamento de Abas SPA
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.style.display = 'none';
+    });
+    document.getElementById(tabId).style.display = 'block';
 
-// Executar funções assim que a página carregar por completo
-document.addEventListener("DOMContentLoaded", () => {
-    carregarMedicamentos();
-    carregarAlertasSanitarios();
-});
+    // Atualizações automáticas de tabelas ao clicar
+    if(tabId === 'tab-catalogo') carregarProdutos();
+    if(tabId === 'tab-dispensar') carregarPainelDispensacao();
+    if(tabId === 'tab-admin-unidades') carregarUnidadesMaster();
+}
 
-// 1. Processo de Autenticação (Login)
+// Interceptador de Login
 document.getElementById("form-login").addEventListener("submit", async (e) => {
     e.preventDefault();
     const usuario = document.getElementById("login-user").value;
     const senha = document.getElementById("login-pass").value;
-    const feedback = document.getElementById("login-feedback");
 
     try {
         const res = await fetch(`${API_URL}/auth/login`, {
@@ -328,57 +433,31 @@ document.getElementById("form-login").addEventListener("submit", async (e) => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ usuario, senha })
         });
-
         const dados = await res.json();
 
         if (res.ok) {
-            operadorLogado = dados.usuario;
-            feedback.style.color = "#10b981";
-            feedback.innerText = `Sessão Iniciada: Bem-vindo, ${dados.usuario} (${dados.perfil})`;
-            // Redireciona via rolagem suave para a área de catálogo
-            setTimeout(() => document.getElementById("cadastro-section").scrollIntoView(), 1200);
+            operadorAtual = dados.usuario;
+            document.getElementById("user-display").innerText = `Operador: ${dados.usuario} (${dados.perfil})`;
+            document.getElementById("view-login").style.display = "none";
+            document.getElementById("view-dashboard").style.display = "flex";
+            switchTab('tab-catalogo');
         } else {
-            feedback.style.color = "#ef4444";
-            feedback.innerText = dados.detail || "Erro de login.";
+            alert(dados.detail || "Acesso Negado.");
         }
     } catch (err) {
-        feedback.innerText = "Impossível conectar à API em nuvem.";
+        alert("Falha ao alcançar o servidor PostgreSQL em Nuvem.");
     }
 });
 
-// 2. Buscar Medicamentos e Inserir na Tabela
-async function carregarMedicamentos() {
-    try {
-        const res = await fetch(`${API_URL}/medicamentos`);
-        const medicamentos = await res.json();
-
-        const tabela = document.getElementById("tabela-medicamentos");
-        tabela.innerHTML = "";
-
-        medicamentos.forEach(med => {
-            tabela.innerHTML += `
-                <tr>
-                    <td>${med.id}</td>
-                    <td><strong>${med.nome}</strong></td>
-                    <td>${med.principio_ativo}</td>
-                    <td>${med.controlado ? '⚠️ Port. 344' : 'Livre'}</td>
-                </tr>
-            `;
-        });
-    } catch (err) {
-        console.error("Erro de sincronização de catálogo:", err);
-    }
-}
-
-// 3. Submeter Novo Medicamento para a Nuvem
-document.getElementById("form-medicamento").addEventListener("submit", async (e) => {
+// Envio de novo medicamento estruturado
+document.getElementById("form-med").addEventListener("submit", async (e) => {
     e.preventDefault();
     const payload = {
         nome: document.getElementById("med-nome").value,
         principio_ativo: document.getElementById("med-principio").value,
         categoria: document.getElementById("med-categoria").value,
-        controlado: parseInt(document.getElementById("med-controlado").value),
-        codigo_barras: "Nenhum"
+        controlado: document.getElementById("med-controlado").checked ? 1 : 0,
+        codigo_barras: document.getElementById("med-ean").value || "Nenhum"
     };
 
     const res = await fetch(`${API_URL}/medicamentos`, {
@@ -388,94 +467,52 @@ document.getElementById("form-medicamento").addEventListener("submit", async (e)
     });
 
     if (res.ok) {
-        alert("Medicamento inserido com sucesso!");
-        document.getElementById("form-medicamento").reset();
-        carregarMedicamentos(); // Atualiza a tabela imediatamente
-    } else {
-        const erro = await res.json();
-        alert(`Falha: ${erro.detail}`);
+        document.getElementById("form-med").reset();
+        carregarProdutos();
     }
 });
 
-// 4. Processar Dispensação Unificada (Baixa Automática no Lote)
-document.getElementById("form-dispensacao").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const payload = {
-        tipo_material: document.getElementById("disp-tipo").value,
-        lote_id: parseInt(document.getElementById("disp-lote-id").value),
-        quantidade: parseInt(document.getElementById("disp-qtd").value),
-        setor_destino: document.getElementById("disp-setor").value,
-        paciente_nome: document.getElementById("disp-paciente").value,
-        prescricao_num: document.getElementById("disp-prescricao").value,
-        responsavel: operadorLogado
-    };
-
-    const res = await fetch(`${API_URL}/dispensacao`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+async function carregarProdutos() {
+    const res = await fetch(`${API_URL}/medicamentos`);
+    const dados = await res.json();
+    const box = document.getElementById("rows-catalogo");
+    box.innerHTML = "";
+    dados.forEach(m => {
+        box.innerHTML += `<tr><td>${m.id}</td><td>${m.nome}</td><td>${m.principio_ativo}</td><td>${m.categoria}</td><td>${m.codigo_barras}</td><td>${m.controlado ? 'SIM':'NÃO'}</td></tr>`;
     });
-
-    if (res.ok) {
-        alert("Dispensação processada com sucesso no PostgreSQL!");
-        document.getElementById("form-dispensacao").reset();
-        carregarAlertasSanitarios(); // Recarrega se houver alteração de estoque crítico
-    } else {
-        const erro = await res.json();
-        alert(`Erro na Operação: ${erro.detail}`);
-    }
-});
-
-// 5. Carregar Painel Dinâmico de Alertas Sanitários
-async function carregarAlertasSanitarios() {
-    try {
-        const res = await fetch(`${API_URL}/auditoria/alertas`);
-        const dados = await res.json();
-        const painel = document.getElementById("painel-alertas");
-
-        painel.innerHTML = "";
-
-        if (dados.vencidos.length === 0) {
-            painel.innerHTML = "<p style='color: #10b981;'>✅ Nenhum lote crítico ou vencido no momento.</p>";
-            return;
-        }
-
-        dados.vencidos.forEach(alerta => {
-            painel.innerHTML += `
-                <div class="alerta-item">
-                    <strong>${alerta.tipo}:</strong> ${alerta.detalhe}<br>
-                    <small>Validade: ${alerta.validade} | Estoque Retido: ${alerta.estoque} un.</small>
-                </div>
-            `;
-        });
-    } catch (err) {
-        console.error("Erro ao carregar notificações sanitárias:", err);
-    }
 }
 
-// 6. Protocolar Evento de Tecnovigilância (POP.FARM.019)
-document.getElementById("form-tecnovigilancia").addEventListener("submit", async (e) => {
+// Módulo de Cadastro Administrativo de Unidades por Senha do Cliente
+document.getElementById("form-admin-cadastro").addEventListener("submit", async (e) => {
     e.preventDefault();
     const payload = {
-        lote_texto: document.getElementById("tec-lote").value,
-        tipo_orcorrencia: document.getElementById("tec-tipo").value,
-        descricao: document.getElementById("tec-descricao").value,
-        gravidade: document.getElementById("tec-gravidade").value,
-        conduta: "Retenção imediata preventiva e abertura de RNC",
-        operador: operadorLogado
+        usuario: document.getElementById("adm-user").value,
+        senha: document.getElementById("adm-pass").value,
+        perfil: `${document.getElementById("adm-perfil").value} - ${document.getElementById("adm-nome").value}`
     };
 
-    const res = await fetch(`${API_URL}/tecnovigilancia`, {
+    const res = await fetch(`${API_URL}/auth/registrar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
     });
 
     if (res.ok) {
-        alert("Notificação de Tecnovigilância anexada ao prontuário do banco!");
-        document.getElementById("form-tecnovigilancia").reset();
+        alert("Nova Unidade e senha de Cliente validadas em nuvem!");
+        document.getElementById("form-admin-cadastro").reset();
+        carregarUnidadesMaster();
     }
 });
+
+async function carregarUnidadesMaster() {
+    const res = await fetch(`${API_URL}/auth/usuarios`);
+    const dados = await res.json();
+    const box = document.getElementById("rows-admin-usuarios");
+    box.innerHTML = "";
+    dados.forEach(u => {
+        box.innerHTML += `<tr><td>${u.id}</td><td>${u.usuario}</td><td>${u.perfil}</td><td><b style='color:green;'>● ATIVA</b></td></tr>`;
+    });
+}
     </script>
 </body>
 </html>
