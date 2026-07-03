@@ -196,24 +196,25 @@ class TecnovigilanciaSchema(BaseModel):
 
 
 # =========================================================================
-# 🔐 ROTAS DO ADMIN.HTML (GERENCIAMENTO MASTER)
+# 🔐 ROTAS DO ADMIN.HTML (GERENCIAMENTO MASTER) - PADRÃO EXATO CORRIGIDO
 # =========================================================================
 
 @app.post("/api/auth/verificar-admin", tags=["Autenticação Master"])
 def verificar_senha_master_admin(dados: AdminAuthSchema):
-    # 🔒 Resgata a senha configurada nas variáveis de ambiente da Vercel
-    SENHA_MASTER_ESPERADA = os.getenv("ADMIN_PASSWORD")
+    # 🔒 Resgata a variável exatamente como está gravada na Vercel: admin_password
+    SENHA_MASTER_ESPERADA = os.getenv("admin_password")
     
     if not SENHA_MASTER_ESPERADA:
         raise HTTPException(
             status_code=500, 
-            detail="Configuração de segurança ausente no servidor (ADMIN_PASSWORD não definida)."
+            detail="A variável admin_password não foi encontrada no servidor."
         )
 
-    if dados.senha == SENHA_MASTER_ESPERADA:
+    # Limpa espaços invisíveis e faz a comparação direta no padrão do admin.html
+    if dados.senha.strip() == SENHA_MASTER_ESPERADA.strip():
         return {"status": "sucesso", "mensagem": "Acesso Mestre Concedido."}
+        
     raise HTTPException(status_code=401, detail="Senha Master do Administrador Inválida!")
-
 
 @app.post("/api/auth/registrar", tags=["Autenticação"])
 def registrar_novo_usuario_unidade(dados: RegistrarUsuarioSchema):
