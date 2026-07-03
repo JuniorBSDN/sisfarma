@@ -396,57 +396,201 @@
     </div>
 
     <script>
-        // Lógica de Autenticação baseada no localStorage (Gerados no admin.html)
-        document.getElementById('form-login-sistema').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const userInput = document.getElementById('login-usuario-unidade').value.trim();
-            const passInput = document.getElementById('login-senha-unidade').value;
+     const API_URL = "/api";
+     let operadorLogado = "";
 
-            // 1. Conta padrão Admin (Fallback fixo caso não mude)
-            if (userInput === 'admin' && passInput === 'admin') {
-                logarSucesso('admin', 'Farmacêutico Chefe');
-                return;
-            }
+     // Garante que o corpo do sistema carrega visível para a tela de login aparecer
+     document.body.style.display = 'block';
 
-            // 2. Procura nas credenciais do localStorage cadastradas pelo admin.html
-            // Mapeia chaves comuns que você possa ter usado (como 'usuarios', 'clientes' ou 'unidades')
-            const dbUsuarios = JSON.parse(localStorage.getItem('usuarios')) || 
-                               JSON.parse(localStorage.getItem('clientes')) || 
-                               JSON.parse(localStorage.getItem('unidades')) || [];
+     // ==========================================
+     // 🔒 1. LÓGICA DE LOGIN PRINCIPAL DOS HOSPITAIS (Ajustado)
+     // ==========================================
+     document.getElementById("form-login-sistema").addEventListener("submit", async (e) => {
+         e.preventDefault();
 
-            const usuarioEncontrado = dbUsuarios.find(u => (u.user === userInput || u.usuario === userInput || u.identificador === userInput));
+         const usuario = document.getElementById("login-usuario-unidade").value.trim();
+         const senha = document.getElementById("login-senha-unidade").value;
 
-            if (usuarioEncontrado && (usuarioEncontrado.pass === passInput || usuarioEncontrado.senha === passInput)) {
-                const perfil = usuarioEncontrado.perfil || 'Operador Master';
-                const nome = usuarioEncontrado.nome || usuarioEncontrado.user;
-                logarSucesso(nome, perfil);
-            } else {
-                alert('❌ Credenciais Inválidas ou Unidade não ativada master!');
-            }
-        });
+         try {
+             const res = await fetch(`${API_URL}/auth/login`, {
+                 method: "POST",
+                 headers: { "Content-Type": "application/json" },
+                 body: JSON.stringify({ usuario, senha })
+             });
 
-        function logarSucesso(usuario, perfil) {
-            // Atualiza os dados no Topbar do workspace
-            document.getElementById('user-display').innerText = `Operador: ${usuario} (${perfil})`;
-            
-            // Alterna as Views principais
-            document.getElementById('view-login').style.display = 'none';
-            document.getElementById('view-dashboard').style.display = 'flex';
-        }
+             const dados = await res.json();
 
-        // Lógica de troca de Abas (Navegação Sidebar)
-        function switchTab(tabId) {
-            // Oculta todas as abas centrais
-            const tabs = document.querySelectorAll('.tab-content');
-            tabs.forEach(tab => tab.style.display = 'none');
-            
-            // Mostra a aba selecionada se ela existir
-            const activeTab = document.getElementById(tabId);
-            if (activeTab) {
-                activeTab.style.display = 'block';
-            }
-        }
-    </script>
+             if (res.ok) {
+                 operadorLogado = dados.usuario;
+
+                 // Atualiza a Topbar com os dados reais vindos do banco PostgreSQL
+                 document.getElementById("user-display").innerText = `Operador: ${dados.usuario} (${dados.perfil})`;
+
+                 // Transiciona da tela de login para o Workspace do Sistema
+                 document.getElementById("view-login").style.display = "none";
+                 document.getElementById("view-dashboard").style.display = "flex";
+
+                 // Inicializa abrindo a aba do Catálogo de Medicamentos
+                 switchTab('tab-catalogo');
+             } else {
+                 // Exibe exatamente a mensagem customizada que você configurou na API ou o fallback
+                 alert(dados.detail || "❌ Credenciais Inválidas ou Unidade não ativada master!");
+             }
+         } catch (err) {
+             alert("Erro ao conectar ao servidor PostgreSQL em nuvem.");
+         }
+     });
+
+     // ==========================================
+     // 🔄 2. GERENCIADOR DE NAVEGAÇÃO ENTRE ABAS
+     // ==========================================
+     function switchTab(tabId) {
+         document.querySelectorAll('.tab-content').forEach(tab => {
+             tab.style.display = 'none';
+         });
+         document.getElementById(tabId).style.display = 'block';
+
+         // Se o usuário clicar na aba de monitoramento/ativação, puxa a lista atualizada
+         if (tabId === 'tab-admin-unidades') {
+             carregarUnidadesMaster();
+         }
+     }
+
+     // ==========================================
+     // 🏢 3. FORMULÁRIO: CADASTRO OU ALTERAÇÃO DE UNIDADES
+     // ==========================================
+     document.getElementById("form-admin-cadastro").addEventListener("submit", async (e) => {
+         e.preventDefault();
+
+         // Verifica se há um ID guardado no atributo customizado para saber se é Edição
+         const idExistente = document.getElementById("form-admin-cadastro").dataset.id;
+
+         const nome = document.getElementById("adm-nome").value;
+         const user = document.getElementById("adm-user").value;
+         const pass = document.getElementById("adm-pass").value;
+         const perfil = document.getElementById("adm-perfil").value;
+
+         const payload = {
+             usuario: user,
+             senha: pass,
+             perfil: `${perfil} - ${nome}`
+         };
+
+         try {
+             let url = `${API_URL}/auth/registrar`;
+             let metodo = "POST";
+
+             if (idExistente) {
+                 url = `${API_URL}/auth/usuarios/${idExistente}`;
+                 metodo = "PUT";
+             }
+
+             const res = await fetch(url, {
+                 method: metodo,
+                 headers: { "Content-Type": "application/json" },
+                 body: JSON.stringify(payload)
+             });
+
+             if (res.ok) {
+                 alert(idExistente ? "Dados da unidade updated!" : "Nova Unidade integrada ao PostgreSQL!");
+                 resetarFormularioInterno();
+                 carregarUnidadesMaster();
+             } else {
+                 const erro = await res.json();
+                 alert(`Falha: ${erro.detail || 'Erro na operação'}`);
+             }
+         } catch (err) {
+             alert("Erro de comunicação com o servidor.");
+         }
+     });
+
+     // ==========================================
+     // 📥 4. LISTAGEM COM BOTÕES DE AÇÃO (EDITAR / EXCLUIR)
+     // ==========================================
+     async function carregarUnidadesMaster() {
+         try {
+             const res = await fetch(`${API_URL}/auth/usuarios`);
+             if (!res.ok) return;
+
+             const dados = await res.json();
+             const box = document.getElementById("rows-admin-usuarios");
+             box.innerHTML = "";
+
+             dados.forEach(u => {
+                 const perfilEscapado = u.perfil.replace(/'/g, "\\'");
+                 const usuarioEscapado = u.usuario.replace(/'/g, "\\'");
+                 const senhaEscapada = (u.senha || '').replace(/'/g, "\\'");
+
+                 box.innerHTML += `
+                     <tr>
+                         <td>${u.id}</td>
+                         <td><strong>${u.usuario}</strong></td>
+                         <td>${u.perfil}</td>
+                         <td><span style="color: #10b981; font-weight: bold;">🟢 Ativo</span></td>
+                         <td>
+                             <button class="btn-action" style="background-color: #f97316; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 11px; margin-right: 5px;" onclick="prepararEdicaoInterna(${u.id}, '${usuarioEscapado}', '${senhaEscapada}', '${perfilEscapado}')">✏️ Editar</button>
+                             <button class="btn-action" style="background-color: #b91c1c; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 11px;" onclick="excluirUnidadeInterna(${u.id})">🗑️ Deletar</button>
+                         </td>
+                     </tr>
+                 `;
+             });
+         } catch (err) {
+             console.error("Erro ao sincronizar listagem:", err);
+         }
+     }
+
+     // ==========================================
+     // ✏️ 5. PREPARAR INTERFACE INTERNA PARA EDIÇÃO
+     // ==========================================
+     function prepararEdicaoInterna(id, usuario, senha, perfilCompleto) {
+         document.getElementById("form-admin-cadastro").dataset.id = id;
+
+         document.getElementById("adm-user").value = usuario;
+         document.getElementById("adm-pass").value = senha;
+
+         let perfilParte = "FARMACÊUTICO";
+         let nomeParte = perfilCompleto;
+
+         if (perfilCompleto.includes(" - ")) {
+             const partes = perfilCompleto.split(" - ");
+             perfilParte = partes[0];
+             nomeParte = partes.slice(1).join(" - ");
+         }
+
+         document.getElementById("adm-perfil").value = perfilParte;
+         document.getElementById("adm-nome").value = nomeParte;
+
+         document.querySelector("#form-admin-cadastro button[type='submit']").innerText = "💾 Salvar Alterações";
+     }
+
+     // ==========================================
+     // 🗑️ 6. EXCLUIR REGISTRO DA UNIDADE
+     // ==========================================
+     async function excluirUnidadeInterna(id) {
+         if (!confirm("⚠️ Deseja revogar e excluir permanentemente este acesso do banco de dados Neon?")) return;
+
+         try {
+             const res = await fetch(`${API_URL}/auth/usuarios/${id}`, {
+                 method: "DELETE"
+             });
+
+             if (res.ok) {
+                 alert("Acesso excluído com sucesso!");
+                 carregarUnidadesMaster();
+             } else {
+                 alert("Erro ao tentar excluir a unidade.");
+             }
+         } catch (err) {
+             alert("Erro de rede ao conectar à API.");
+         }
+     }
+
+     // 🔄 RESETAR FORMULÁRIO INTERNO
+     function resetarFormularioInterno() {
+         document.getElementById("form-admin-cadastro").reset();
+         delete document.getElementById("form-admin-cadastro").dataset.id;
+         document.querySelector("#form-admin-cadastro button[type='submit']").innerText = "Validar Nova Unidade";
+     }
+</script>
 </body>
 </html>
