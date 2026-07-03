@@ -1,4 +1,3 @@
-# Adicione este schema de validação logo abaixo dos seus outros Schemas no app.py
 import os
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,18 +21,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ⚠️ COLE AQUI A SUA STRING DE CONEXÃO DO NEON
-# Exemplo: "postgresql://usuario:senha@ep-xyz-123.us-east-1.aws.neon.tech/neondb?sslmode=require"
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 
+# 🛠️ CORRIGIDO: Removida a duplicidade. Esta função agora gerencia a conexão E garante a estrutura do banco.
 def conectar_bd():
     try:
-        # Abre a conexão segura com o Neon usando a sua string
+        # Abre a conexão segura com o Neon (sslmode=require é implícito ou adicionado na string)
         conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
-
-        # 🛠️ CRIAÇÃO AUTOMÁTICA DA TABELA PARA O ADMIN.HTML
         cursor = conn.cursor()
+
+        # 1. TABELA DE USUÁRIOS
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS usuarios (
                 id SERIAL PRIMARY KEY,
@@ -42,22 +40,90 @@ def conectar_bd():
                 perfil VARCHAR(150) NOT NULL
             );
         """)
-        conn.commit()  # Salva a estrutura no banco de dados
+
+        # 2. TABELA DE MEDICAMENTOS
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS medicamentos (
+                id SERIAL PRIMARY KEY,
+                nome VARCHAR(255) NOT NULL,
+                principio_ativo VARCHAR(255) NOT NULL,
+                categoria VARCHAR(150) NOT NULL,
+                controlado INT NOT NULL,
+                codigo_barras VARCHAR(150) UNIQUE
+            );
+        """)
+
+        # 3. TABELA DE LOTES DE MEDICAMENTOS
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS lotes (
+                id SERIAL PRIMARY KEY,
+                medicamento_id INT REFERENCES medicamentos(id) ON DELETE CASCADE,
+                numero_lote VARCHAR(150) NOT NULL,
+                fabricante VARCHAR(255) NOT NULL,
+                data_fabricacao DATE NOT NULL,
+                validade DATE NOT NULL,
+                quantidade INT NOT NULL
+            );
+        """)
+
+        # 4. TABELA DE INSUMOS
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS insumos (
+                id SERIAL PRIMARY KEY,
+                nome VARCHAR(255) NOT NULL,
+                especificacao TEXT,
+                unidade_medida VARCHAR(50) NOT NULL,
+                grupo VARCHAR(150) NOT NULL
+            );
+        """)
+
+        # 5. TABELA DE LOTES DE INSUMOS
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS lotes_insumos (
+                id SERIAL PRIMARY KEY,
+                insumo_id INT REFERENCES insumos(id) ON DELETE CASCADE,
+                numero_lote VARCHAR(150) NOT NULL,
+                fabricante VARCHAR(255) NOT NULL,
+                validade DATE NOT NULL,
+                quantidade INT NOT NULL
+            );
+        """)
+
+        # 6. TABELA DE MOVIMENTAÇÕES / AUDITORIA
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS movimentacoes (
+                id SERIAL PRIMARY KEY,
+                lote_id INT,
+                insumo_lote_id INT,
+                tipo VARCHAR(100) NOT NULL,
+                quantidade INT NOT NULL,
+                setor_destino VARCHAR(150),
+                paciente_nome VARCHAR(255),
+                prescricao_num VARCHAR(150),
+                responsavel VARCHAR(255),
+                data_movimentacao VARCHAR(50) NOT NULL
+            );
+        """)
+
+        # 7. TABELA DE TECNOVIGILÂNCIA
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS tecnovigilancia (
+                id SERIAL PRIMARY KEY,
+                lote_texto VARCHAR(255) NOT NULL,
+                tipo_ocorrencia VARCHAR(150) NOT NULL,
+                descricao TEXT NOT NULL,
+                gravidade VARCHAR(100) NOT NULL,
+                conduta TEXT NOT NULL,
+                data_registro VARCHAR(50) NOT NULL,
+                operador VARCHAR(255) NOT NULL
+            );
+        """)
+
+        conn.commit()  # Salva todas as estruturas de tabelas no banco de dados
         cursor.close()
-
         return conn
     except Exception as e:
-        print(f"❌ ERRO CRÍTICO DE CONEXÃO COM O POSTGRESQL: {str(e)}")
-        raise e
-
-                
-def conectar_bd():
-    try:
-        # sslmode=require é obrigatório para conexões seguras com o Neon
-        conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
-        return conn
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao conectar ao PostgreSQL na nuvem: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao conectar ou estruturar o PostgreSQL na nuvem: {str(e)}")
 
 
 # =========================================================================
@@ -118,25 +184,9 @@ class TecnovigilanciaSchema(BaseModel):
     conduta: str
     operador: str
 
-# Adicione este schema de validação logo abaixo dos seus outros Schemas no app.py
 
 class VerificarAdminSchema(BaseModel):
     senha: str
-
-
-# --- NOVAS ROTAS PARA GERENCIAMENTO COMPLETO DE CLIENTES/UNIDADES ---
-
-@app.delete("/api/auth/usuarios/{usuario_id}", tags=["Autenticação"])
-def deletar_usuario_unidade(usuario_id: int):
-    db = conectar_bd()
-    cursor = db.cursor()
-
-    # Executa a exclusão pelo ID único
-    cursor.execute("DELETE FROM usuarios WHERE id = %s", (usuario_id,))
-    db.commit()
-    db.close()
-
-    return {"status": "sucesso", "mensagem": "Unidade/Acesso revogado com sucesso."}
 
 
 class AtualizarUsuarioSchema(BaseModel):
@@ -145,30 +195,49 @@ class AtualizarUsuarioSchema(BaseModel):
     perfil: str
 
 
+class RegistrarUsuarioSchema(BaseModel):
+    usuario: str
+    senha: str
+    perfil: str
+
+
+# --- ROTAS PARA GERENCIAMENTO COMPLETO DE CLIENTES/UNIDADES ---
+
+@app.delete("/api/auth/usuarios/{usuario_id}", tags=["Autenticação"])
+def deletar_usuario_unidade(usuario_id: int):
+    db = conectar_bd()
+    cursor = db.cursor()
+    cursor.execute("DELETE FROM usuarios WHERE id = %s", (usuario_id,))
+    db.commit()
+    db.close()
+    return {"status": "sucesso", "mensagem": "Unidade/Acesso revogado com sucesso."}
+
+
 @app.put("/api/auth/usuarios/{usuario_id}", tags=["Autenticação"])
 def atualizar_usuario_unidade(usuario_id: int, dados: AtualizarUsuarioSchema):
     db = conectar_bd()
     cursor = db.cursor()
-
-    # Atualiza os dados da unidade cadastrada
     cursor.execute("""
         UPDATE usuarios 
         SET usuario = %s, senha = %s, perfil = %s 
         WHERE id = %s
     """, (dados.usuario, dados.senha, dados.perfil, usuario_id))
-
     db.commit()
     db.close()
-
     return {"status": "sucesso", "mensagem": "Dados da unidade atualizados."}
+
 
 @app.post("/api/auth/verificar-admin", tags=["Autenticação"])
 def verificar_senha_master_admin(dados: VerificarAdminSchema):
-    # Procura a variável configurada no painel da Vercel
-    # Se não configurada, assume um fallback seguro ou impede o acesso
-    senha_master = os.getenv("ADMIN_MASTER_PASSWORD", "Mudar@123_Seguro")
+    # 🔒 Mantendo o padrão exato de entrada e lendo do ambiente em minúsculas (Vercel)
+    senha_env = os.getenv("admin_password")
+    
+    if senha_env:
+        senha_master = senha_env.strip()
+    else:
+        senha_master = "Mudar@123_Seguro"
 
-    if dados.senha == senha_master:
+    if dados.senha.strip() == senha_master:
         return {"status": "sucesso", "autorizado": True}
 
     raise HTTPException(
@@ -176,12 +245,7 @@ def verificar_senha_master_admin(dados: VerificarAdminSchema):
         detail="Senha Master de Administrador incorreta."
     )
 
-class RegistrarUsuarioSchema(BaseModel):
-    usuario: str
-    senha: str
-    perfil: str
 
-# ROTA 1: Para o admin.html registrar novos clientes/unidades no PostgreSQL
 @app.post("/api/auth/registrar", tags=["Autenticação"])
 def registrar_novo_usuario_unidade(dados: RegistrarUsuarioSchema):
     db = conectar_bd()
@@ -198,7 +262,7 @@ def registrar_novo_usuario_unidade(dados: RegistrarUsuarioSchema):
     db.close()
     return {"status": "sucesso", "mensagem": "Unidade e credenciais ativadas na nuvem."}
 
-# ROTA 2: Para o admin.html listar os acessos já existentes na tabela
+
 @app.get("/api/auth/usuarios", tags=["Autenticação"])
 def listar_usuarios_unidades():
     db = conectar_bd()
@@ -210,7 +274,7 @@ def listar_usuarios_unidades():
 
 
 # =========================================================================
-# ENDPOINTS (SINTAXE DO POSTGRESQL COM %s)
+# ENDPOINTS OPERACIONAIS
 # =========================================================================
 
 @app.post("/api/auth/login", tags=["Autenticação"])
@@ -345,8 +409,9 @@ def processar_dispensacao(disp: DispensacaoSchema):
             INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
             VALUES (%s, NULL, 'SAÍDA MEDICAMENTO', %s, %s, %s, %s, %s, %s)
         """, (
-        disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num, disp.responsavel,
-        datetime.now().strftime("%Y-%m-%d %H:%M")))
+            disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num, disp.responsavel,
+            datetime.now().strftime("%Y-%m-%d %H:%M")
+        ))
 
     elif disp.tipo_material == "INSUMO":
         cursor.execute("SELECT quantidade FROM lotes_insumos WHERE id = %s", (disp.lote_id,))
@@ -361,8 +426,9 @@ def processar_dispensacao(disp: DispensacaoSchema):
             INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
             VALUES (NULL, %s, 'SAÍDA INSUMO', %s, %s, %s, %s, %s, %s)
         """, (
-        disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num, disp.responsavel,
-        datetime.now().strftime("%Y-%m-%d %H:%M")))
+            disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num, disp.responsavel,
+            datetime.now().strftime("%Y-%m-%d %H:%M")
+        ))
     else:
         db.close()
         raise HTTPException(status_code=400, detail="Tipo de material desconhecido.")
@@ -385,7 +451,7 @@ def relatorio_rastreabilidade():
 
 @app.get("/api/auditoria/alertas", tags=["Auditoria & Compliance"])
 def verificar_alertas_sanitarios():
-    data_atual = datetime.now().date()  # PostgreSQL trata objetos Date nativos perfeitamente
+    data_atual = datetime.now().date()
     db = conectar_bd()
     cursor = db.cursor()
 
@@ -411,7 +477,6 @@ def verificar_alertas_sanitarios():
     return {"vencidos": alertas, "total_criticos": len(alertas)}
 
 
-
 @app.post("/api/tecnovigilancia", tags=["Tecnovigilância (POP.FARM.019)"])
 def registrar_ocorrencia(event: TecnovigilanciaSchema):
     db = conectar_bd()
@@ -421,7 +486,7 @@ def registrar_ocorrencia(event: TecnovigilanciaSchema):
         VALUES (%s, %s, %s, %s, %s, %s, %s)
     """, (
         event.lote_texto,
-        event.tipo_ocorrencia,  # 💻 CORRIGIDO: Removido o 'r' incorreto (era tipo_orcorrencia)
+        event.tipo_ocorrencia,
         event.descricao,
         event.gravidade,
         event.conduta,
@@ -432,7 +497,7 @@ def registrar_ocorrencia(event: TecnovigilanciaSchema):
     db.close()
     return {"status": "sucesso", "mensagem": "Ocorrência sanitária protocolada."}
 
+
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run(app, host="0.0.0.0", port=8000)
