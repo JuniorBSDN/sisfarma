@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YANA v1.1 - Painel de Controle Master</title>
+    <style>
+                /* Configurações Globais e Rolagem Suave */
+html {
+    scroll-behavior: smooth;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #f4f6f9;
+    color: #333;
+}
+
+/* Barra de Navegação Superior */
+.navbar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: 70px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 50px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    z-index: 1000;
+    box-sizing: border-box;
+}
+
+.logo {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.logo span {
+    color: #0284c7;
+    font-size: 14px;
+}
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    gap: 30px;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: #64748b;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+.nav-links a:hover {
+    color: #0284c7;
+}
+
+/* Seções de Tela Cheia para o efeito de rolagem */
+.scroll-section {
+    min-height: 100vh;
+    padding-top: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
+}
+
+/* Layouts Baseados em Grid */
+.grid-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin-top: 20px;
+}
+
+/* Cartões Modernos */
+.card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    border: 1px solid #f1f5f9;
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card-login {
+    width: 400px;
+    text-align: center;
+}
+
+/* Elementos de Formulários */
+input, select, textarea {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 14px;
+    background: #f8fafc;
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: #0284c7;
+    outline: none;
+    background: #fff;
+}
+
+/* Botões Padronizados */
+button {
+    cursor: pointer;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    padding: 12px 20px;
+    font-size: 14px;
+    transition: filter 0.2s;
+}
+
+button:hover {
+    filter: brightness(0.9);
+}
+
+.btn-primary { background: #0284c7; color: white; }
+.btn-success { background: #10b981; color: white; }
+.btn-danger { background: #ef4444; color: white; }
+
+/* Tabelas */
+.table-wrapper {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+th, td {
+    padding: 12px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+th { background: #f8fafc; color: #64748b; }
+
+/* Alertas Estilizados */
+.alerta-item {
+    background: #fee2e2;
+    border-left: 5px solid #ef4444;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    color: #991b1b;
+}
+
+.feedback {
+    margin-top: 15px;
+    font-weight: 500;
+}
+    </style>
+</head>
+<body>
+
+    <!-- Navbar Administrativa -->
+    <nav class="navbar" style="background: rgba(15, 23, 42, 0.95); border-bottom: 2px solid #0284c7;">
+        <div class="logo" style="color: #fff;">YANA <span style="color: #38bdf8;">ADMIN Master</span></div>
+        <ul class="nav-links">
+            <li><a href="#unidades-section" style="color: #cbd5e1;">Cadastrar Unidade</a></li>
+            <li><a href="#gerenciamento-section" style="color: #cbd5e1;">Acessos Liberados</a></li>
+            <li><a href="index.html" style="color: #38bdf8; font-weight: bold;">Voltar ao Sistema ↩</a></li>
+        </ul>
+    </nav>
+
+    <!-- Seção 1: Cadastro de Unidades Hospitalares e Ativação -->
+    <section id="unidades-section" class="scroll-section" style="background: #0f172a; color: #fff;">
+        <div class="container">
+            <h2 style="color: #38bdf8; text-align: center;">🏢 Ativação e Licenciamento de Unidades</h2>
+            <p style="text-align: center; color: #94a3b8; margin-bottom: 40px;">Registre o cliente hospitalar e defina a senha mestre de liberação do ecossistema.</p>
+
+            <div class="card" style="max-width: 600px; margin: 0 auto; background: #1e293b; border-color: #334155;">
+                <h3 style="color: #f8fafc; margin-top: 0;">Nova Unidade / Cliente</h3>
+                <form id="form-cadastro-unidade">
+                    <label style="color: #94a3b8;">Razão Social / Identificação da Unidade</label>
+                    <input type="text" id="adm-unidade-nome" placeholder="Ex: Hospital Regional de Alta Complexidade" style="background: #0f172a; color: #fff; border-color: #475569;" required>
+
+                    <label style="color: #94a3b8;">CNPJ ou Identificador Interno</label>
+                    <input type="text" id="adm-unidade-cnpj" placeholder="00.000.000/0001-00" style="background: #0f172a; color: #fff; border-color: #475569;" required>
+
+                    <div class="grid-2col" style="margin-top: 0; gap: 15px;">
+                        <div>
+                            <label style="color: #94a3b8;">Usuário Admin da Unidade</label>
+                            <input type="text" id="adm-unidade-user" placeholder="Ex: admin.hospital" style="background: #0f172a; color: #fff; border-color: #475569;" required>
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8;">Senha de Acesso / Cliente</label>
+                            <input type="password" id="adm-unidade-pass" placeholder="Defina a senha do cliente" style="background: #0f172a; color: #fff; border-color: #475569;" required>
+                        </div>
+                    </div>
+
+                    <label style="color: #94a3b8;">Perfil de Responsabilidade do Usuário</label>
+                    <select id="adm-unidade-perfil" style="background: #0f172a; color: #fff; border-color: #475569;">
+                        <option value="Farmacêutico Chefe">Farmacêutico Chefe</option>
+                        <option value="Administrador Hospitalar">Administrador Hospitalar</option>
+                        <option value="Diretor Clínico">Diretor Clínico</option>
+                    </select>
+
+                    <button type="submit" class="btn-primary" style="width: 100%; background: #0284c7; margin-top: 15px;">
+                        🚀 Liberar Acesso e Ativar Unidade
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Seção 2: Monitoramento de Unidades e Acessos Ativos -->
+    <section id="gerenciamento-section" class="scroll-section">
+        <div class="container">
+            <h2>🖥️ Gerenciamento de Clientes e Credenciais Ativas</h2>
+            <p style="color: #64748b;">Abaixo estão listadas as unidades cadastradas no seu PostgreSQL que possuem liberação de login ativa no sistema.</p>
+
+            <div class="card table-wrapper" style="margin-top: 30px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Usuário Cadastrado</th>
+                            <th>Perfil / Cargo</th>
+                            <th>Status de Ativação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-usuarios-unidades">
+                        <!-- Alimentado dinamicamente via API -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Endpoint da API do seu backend FastAPI
+const API_URL = "http://localhost:8000/api";
+
+document.addEventListener("DOMContentLoaded", () => {
+    carregarUnidadesCadastradas();
+});
+
+// 🚀 Enviar Nova Unidade/Cliente para o Banco de Dados
+document.getElementById("form-cadastro-unidade").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    // Captura dos dados inseridos
+    const usuario = document.getElementById("adm-unidade-user").value;
+    const senha = document.getElementById("adm-unidade-pass").value;
+    const perfil = document.getElementById("adm-unidade-perfil").value;
+    const nomeUnidade = document.getElementById("adm-unidade-nome").value;
+
+    // Ajustado para bater exatamente com o Schema esperado pela nossa API de Login/Registro
+    const payload = {
+        usuario: usuario,
+        senha: senha,
+        perfil: `${perfil} - ${nomeUnidade}` // Associa o cargo à unidade específica
+    };
+
+    try {
+        // Aproveitamos a rota de criação de usuários do seu ecossistema
+        // Nota: Garanta que seu app.py tenha um endpoint POST em '/api/auth/registrar'
+        // ou adapte para a rota correspondente de inserção na tabela 'usuarios'.
+        const res = await fetch(`${API_URL}/auth/registrar`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            alert(`Sucesso! Acesso liberado para a unidade: ${nomeUnidade}`);
+            document.getElementById("form-cadastro-unidade").reset();
+            carregarUnidadesCadastradas(); // Recarrega a tabela de monitoramento inferior
+
+            // Efeito visual de rolagem suave para ver o item adicionado na tabela
+            document.getElementById("gerenciamento-section").scrollIntoView();
+        } else {
+            const erro = await res.json();
+            alert(`Falha ao liberar acesso: ${erro.detail || 'Usuário já existente'}`);
+        }
+    } catch (err) {
+        alert("Erro de comunicação com o servidor em nuvem PostgreSQL.");
+    }
+});
+
+// 📊 Buscar usuários/unidades cadastrados para exibir na tabela de monitoramento
+async function carregarUnidadesCadastradas() {
+    try {
+        // Rota para listar usuários do sistema
+        const res = await fetch(`${API_URL}/auth/usuarios`);
+        if (!res.ok) return;
+
+        const usuarios = await res.json();
+        const tabela = document.getElementById("tabela-usuarios-unidades");
+        tabela.innerHTML = "";
+
+        usuarios.forEach(user => {
+            tabela.innerHTML += `
+                <tr>
+                    <td>${user.id}</td>
+                    <td><strong>${user.usuario}</strong></td>
+                    <td>${user.perfil}</td>
+                    <td><span style="color: #10b981; font-weight: bold;">🟢 Ativo / Liberado</span></td>
+                </tr>
+            `;
+        });
+    } catch (err) {
+        console.error("Erro ao sincronizar lista de credenciais:", err);
+    }
+}
+    </script>
+</body>
+</html>
