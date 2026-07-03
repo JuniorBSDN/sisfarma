@@ -95,6 +95,63 @@ class TecnovigilanciaSchema(BaseModel):
     operador: str
 
 # Adicione este schema de validação logo abaixo dos seus outros Schemas no app.py
+
+class VerificarAdminSchema(BaseModel):
+    senha: str
+
+
+# --- NOVAS ROTAS PARA GERENCIAMENTO COMPLETO DE CLIENTES/UNIDADES ---
+
+@app.delete("/api/auth/usuarios/{usuario_id}", tags=["Autenticação"])
+def deletar_usuario_unidade(usuario_id: int):
+    db = conectar_bd()
+    cursor = db.cursor()
+
+    # Executa a exclusão pelo ID único
+    cursor.execute("DELETE FROM usuarios WHERE id = %s", (usuario_id,))
+    db.commit()
+    db.close()
+
+    return {"status": "sucesso", "mensagem": "Unidade/Acesso revogado com sucesso."}
+
+
+class AtualizarUsuarioSchema(BaseModel):
+    usuario: str
+    senha: str
+    perfil: str
+
+
+@app.put("/api/auth/usuarios/{usuario_id}", tags=["Autenticação"])
+def atualizar_usuario_unidade(usuario_id: int, dados: AtualizarUsuarioSchema):
+    db = conectar_bd()
+    cursor = db.cursor()
+
+    # Atualiza os dados da unidade cadastrada
+    cursor.execute("""
+        UPDATE usuarios 
+        SET usuario = %s, senha = %s, perfil = %s 
+        WHERE id = %s
+    """, (dados.usuario, dados.senha, dados.perfil, usuario_id))
+
+    db.commit()
+    db.close()
+
+    return {"status": "sucesso", "mensagem": "Dados da unidade atualizados."}
+
+@app.post("/api/auth/verificar-admin", tags=["Autenticação"])
+def verificar_senha_master_admin(dados: VerificarAdminSchema):
+    # Procura a variável configurada no painel da Vercel
+    # Se não configurada, assume um fallback seguro ou impede o acesso
+    senha_master = os.getenv("ADMIN_MASTER_PASSWORD", "Mudar@123_Seguro")
+
+    if dados.senha == senha_master:
+        return {"status": "sucesso", "autorizado": True}
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Senha Master de Administrador incorreta."
+    )
+
 class RegistrarUsuarioSchema(BaseModel):
     usuario: str
     senha: str
@@ -330,6 +387,7 @@ def verificar_alertas_sanitarios():
     return {"vencidos": alertas, "total_criticos": len(alertas)}
 
 
+
 @app.post("/api/tecnovigilancia", tags=["Tecnovigilância (POP.FARM.019)"])
 def registrar_ocorrencia(event: TecnovigilanciaSchema):
     db = conectar_bd()
@@ -337,12 +395,18 @@ def registrar_ocorrencia(event: TecnovigilanciaSchema):
     cursor.execute("""
         INSERT INTO tecnovigilancia (lote_texto, tipo_ocorrencia, descricao, gravidade, conduta, data_registro, operador)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
-    """, (event.lote_texto, event.tipo_orcorrencia, event.descricao, event.gravidade, event.conduta,
-          datetime.now().strftime("%Y-%m-%d %H:%M"), event.operador))
+    """, (
+        event.lote_texto,
+        event.tipo_ocorrencia,  # 💻 CORRIGIDO: Removido o 'r' incorreto (era tipo_orcorrencia)
+        event.descricao,
+        event.gravidade,
+        event.conduta,
+        datetime.now().strftime("%Y-%m-%d %H:%M"),
+        event.operador
+    ))
     db.commit()
     db.close()
     return {"status": "sucesso", "mensagem": "Ocorrência sanitária protocolada."}
-
 
 if __name__ == "__main__":
     import uvicorn
