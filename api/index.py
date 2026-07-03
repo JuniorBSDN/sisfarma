@@ -1,4 +1,3 @@
-# Adicione este schema de validação logo abaixo dos seus outros Schemas no app.py
 import os
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,17 +21,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ⚠️ COLE AQUI A SUA STRING DE CONEXÃO DO NEON
-# Exemplo: "postgresql://usuario:senha@ep-xyz-123.us-east-1.aws.neon.tech/neondb?sslmode=require"
+# ⚠️ Variável de ambiente configurada na Vercel ou localmente
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 
 def conectar_bd():
     try:
-        # Abre a conexão segura com o Neon usando a sua string
+        # Abre a conexão segura com o Neon
         conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
 
-        # 🛠️ CRIAÇÃO AUTOMÁTICA DA TABELA PARA O ADMIN.HTML
+        # 🛠️ CRIAÇÃO AUTOMÁTICA BLINDADA (SÓ CRIA SE NÃO EXISTIR)
         cursor = conn.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS usuarios (
@@ -42,19 +40,9 @@ def conectar_bd():
                 perfil VARCHAR(150) NOT NULL
             );
         """)
-        conn.commit()  # Salva a estrutura no banco de dados
-        cursor.close()
+        conn.commit()  # Salva a estrutura com segurança
+        cursor.close()  # Fecha o cursor imediatamente
 
-        return conn
-    except Exception as e:
-        print(f"❌ ERRO CRÍTICO DE CONEXÃO COM O POSTGRESQL: {str(e)}")
-        raise e
-
-                
-def conectar_bd():
-    try:
-        # sslmode=require é obrigatório para conexões seguras com o Neon
-        conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
         return conn
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao conectar ao PostgreSQL na nuvem: {str(e)}")
@@ -66,6 +54,12 @@ def conectar_bd():
 class LoginSchema(BaseModel):
     usuario: str
     senha: str
+
+
+class RegistrarUsuarioSchema(BaseModel):  # Schema usado para Criar/Atualizar usuários
+    usuario: str
+    senha: str
+    perfil: str
 
 
 class MedicamentoSchema(BaseModel):
@@ -118,72 +112,25 @@ class TecnovigilanciaSchema(BaseModel):
     conduta: str
     operador: str
 
-# Adicione este schema de validação logo abaixo dos seus outros Schemas no app.py
 
-class VerificarAdminSchema(BaseModel):
+class AdminAuthSchema(BaseModel):
     senha: str
 
 
-# --- NOVAS ROTAS PARA GERENCIAMENTO COMPLETO DE CLIENTES/UNIDADES ---
+# =========================================================================
+# 🔐 ROTAS EXCLUSIVAS DO ADMIN.HTML
+# =========================================================================
 
-@app.delete("/api/auth/usuarios/{usuario_id}", tags=["Autenticação"])
-def deletar_usuario_unidade(usuario_id: int):
-    db = conectar_bd()
-    cursor = db.cursor()
-
-    # Executa a exclusão pelo ID único
-    cursor.execute("DELETE FROM usuarios WHERE id = %s", (usuario_id,))
-    db.commit()
-    db.close()
-
-    return {"status": "sucesso", "mensagem": "Unidade/Acesso revogado com sucesso."}
+@app.post("/api/auth/verificar-admin", tags=["Autenticação Master"])
+def verificar_senha_master_admin(dados: AdminAuthSchema):
+    SENHA_MASTER_ESPERADA = "admin123"
+    if dados.senha == SENHA_MASTER_ESPERADA:
+        return {"status": "sucesso", "mensagem": "Acesso Mestre Concedido."}
+    raise HTTPException(status_code=401, detail="Senha Master do Administrador Inválida!")
 
 
-class AtualizarUsuarioSchema(BaseModel):
-    usuario: str
-    senha: str
-    perfil: str
-
-
-@app.put("/api/auth/usuarios/{usuario_id}", tags=["Autenticação"])
-def atualizar_usuario_unidade(usuario_id: int, dados: AtualizarUsuarioSchema):
-    db = conectar_bd()
-    cursor = db.cursor()
-
-    # Atualiza os dados da unidade cadastrada
-    cursor.execute("""
-        UPDATE usuarios 
-        SET usuario = %s, senha = %s, perfil = %s 
-        WHERE id = %s
-    """, (dados.usuario, dados.senha, dados.perfil, usuario_id))
-
-    db.commit()
-    db.close()
-
-    return {"status": "sucesso", "mensagem": "Dados da unidade atualizados."}
-
-@app.post("/api/auth/verificar-admin", tags=["Autenticação"])
-def verificar_senha_master_admin(dados: VerificarAdminSchema):
-    # Procura a variável configurada no painel da Vercel
-    # Se não configurada, assume um fallback seguro ou impede o acesso
-    senha_master = os.getenv("ADMIN_MASTER_PASSWORD", "Mudar@123_Seguro")
-
-    if dados.senha == senha_master:
-        return {"status": "sucesso", "autorizado": True}
-
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Senha Master de Administrador incorreta."
-    )
-
-class RegistrarUsuarioSchema(BaseModel):
-    usuario: str
-    senha: str
-    perfil: str
-
-# ROTA 1: Para o admin.html registrar novos clientes/unidades no PostgreSQL
-@app.post("/api/auth/registrar", tags=["Autenticação"])
-def registrar_novo_usuario_unidade(dados: RegistrarUsuarioSchema):
+@app.post("/api/auth/registrar", tags=["Gerenciamento de Unidades"])
+def registrar_nova_unidade(dados: RegistrarUsuarioSchema):
     db = conectar_bd()
     cursor = db.cursor()
     try:
@@ -192,14 +139,46 @@ def registrar_novo_usuario_unidade(dados: RegistrarUsuarioSchema):
             (dados.usuario, dados.senha, dados.perfil)
         )
         db.commit()
+        db.close()
+        return {"status": "sucesso", "mensagem": "Unidade cadastrada e ativada na nuvem."}
     except psycopg2.errors.UniqueViolation:
         db.close()
-        raise HTTPException(status_code=400, detail="Este nome de usuário já está associado a uma unidade ativa.")
-    db.close()
-    return {"status": "sucesso", "mensagem": "Unidade e credenciais ativadas na nuvem."}
+        raise HTTPException(status_code=400, detail="Este usuário/unidade já está cadastrado.")
+    except Exception as e:
+        db.close()
+        raise HTTPException(status_code=500, detail=str(e))
 
-# ROTA 2: Para o admin.html listar os acessos já existentes na tabela
-@app.get("/api/auth/usuarios", tags=["Autenticação"])
+
+@app.put("/api/auth/usuarios/{usuario_id}", tags=["Gerenciamento de Unidades"])
+def atualizar_usuario_unidade(usuario_id: int, dados: RegistrarUsuarioSchema):
+    try:
+        db = conectar_bd()
+        cursor = db.cursor()
+        cursor.execute(
+            "UPDATE usuarios SET usuario = %s, senha = %s, perfil = %s WHERE id = %s",
+            (dados.usuario, dados.senha, dados.perfil, usuario_id)
+        )
+        db.commit()
+        db.close()
+        return {"status": "sucesso", "mensagem": "Dados atualizados com sucesso."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/auth/usuarios/{usuario_id}", tags=["Gerenciamento de Unidades"])
+def deletar_usuario_unidade(usuario_id: int):
+    try:
+        db = conectar_bd()
+        cursor = db.cursor()
+        cursor.execute("DELETE FROM usuarios WHERE id = %s", (usuario_id,))
+        db.commit()
+        db.close()
+        return {"status": "sucesso", "mensagem": "Unidade removida com sucesso."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/auth/usuarios", tags=["Gerenciamento de Unidades"])
 def listar_usuarios_unidades():
     db = conectar_bd()
     cursor = db.cursor()
@@ -210,7 +189,7 @@ def listar_usuarios_unidades():
 
 
 # =========================================================================
-# ENDPOINTS (SINTAXE DO POSTGRESQL COM %s)
+# ENDPOINTS OPERACIONAIS DO SISTEMA
 # =========================================================================
 
 @app.post("/api/auth/login", tags=["Autenticação"])
@@ -345,8 +324,9 @@ def processar_dispensacao(disp: DispensacaoSchema):
             INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
             VALUES (%s, NULL, 'SAÍDA MEDICAMENTO', %s, %s, %s, %s, %s, %s)
         """, (
-        disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num, disp.responsavel,
-        datetime.now().strftime("%Y-%m-%d %H:%M")))
+            disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num, disp.responsavel,
+            datetime.now().strftime("%Y-%m-%d %H:%M")
+        ))
 
     elif disp.tipo_material == "INSUMO":
         cursor.execute("SELECT quantidade FROM lotes_insumos WHERE id = %s", (disp.lote_id,))
@@ -361,8 +341,9 @@ def processar_dispensacao(disp: DispensacaoSchema):
             INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
             VALUES (NULL, %s, 'SAÍDA INSUMO', %s, %s, %s, %s, %s, %s)
         """, (
-        disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num, disp.responsavel,
-        datetime.now().strftime("%Y-%m-%d %H:%M")))
+            disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num, disp.responsavel,
+            datetime.now().strftime("%Y-%m-%d %H:%M")
+        ))
     else:
         db.close()
         raise HTTPException(status_code=400, detail="Tipo de material desconhecido.")
@@ -385,7 +366,7 @@ def relatorio_rastreabilidade():
 
 @app.get("/api/auditoria/alertas", tags=["Auditoria & Compliance"])
 def verificar_alertas_sanitarios():
-    data_atual = datetime.now().date()  # PostgreSQL trata objetos Date nativos perfeitamente
+    data_atual = datetime.now().date()
     db = conectar_bd()
     cursor = db.cursor()
 
@@ -411,7 +392,6 @@ def verificar_alertas_sanitarios():
     return {"vencidos": alertas, "total_criticos": len(alertas)}
 
 
-
 @app.post("/api/tecnovigilancia", tags=["Tecnovigilância (POP.FARM.019)"])
 def registrar_ocorrencia(event: TecnovigilanciaSchema):
     db = conectar_bd()
@@ -421,7 +401,7 @@ def registrar_ocorrencia(event: TecnovigilanciaSchema):
         VALUES (%s, %s, %s, %s, %s, %s, %s)
     """, (
         event.lote_texto,
-        event.tipo_ocorrencia,  # 💻 CORRIGIDO: Removido o 'r' incorreto (era tipo_orcorrencia)
+        event.tipo_ocorrencia,
         event.descricao,
         event.gravidade,
         event.conduta,
@@ -432,7 +412,7 @@ def registrar_ocorrencia(event: TecnovigilanciaSchema):
     db.close()
     return {"status": "sucesso", "mensagem": "Ocorrência sanitária protocolada."}
 
+
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run(app, host="0.0.0.0", port=8000)
