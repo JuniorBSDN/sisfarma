@@ -24,9 +24,33 @@ app.add_middleware(
 
 # ⚠️ COLE AQUI A SUA STRING DE CONEXÃO DO NEON
 # Exemplo: "postgresql://usuario:senha@ep-xyz-123.us-east-1.aws.neon.tech/neondb?sslmode=require"
-DATABASE_URL = os.getenv("DATABASE_URL", "SUA_STRING_DE_CONEXAO_DO_NEON_AQUI")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 
+def conectar_bd():
+    try:
+        # Abre a conexão segura com o Neon usando a sua string
+        conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+
+        # 🛠️ CRIAÇÃO AUTOMÁTICA DA TABELA PARA O ADMIN.HTML
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id SERIAL PRIMARY KEY,
+                usuario VARCHAR(150) UNIQUE NOT NULL,
+                senha VARCHAR(255) NOT NULL,
+                perfil VARCHAR(150) NOT NULL
+            );
+        """)
+        conn.commit()  # Salva a estrutura no banco de dados
+        cursor.close()
+
+        return conn
+    except Exception as e:
+        print(f"❌ ERRO CRÍTICO DE CONEXÃO COM O POSTGRESQL: {str(e)}")
+        raise e
+
+                
 def conectar_bd():
     try:
         # sslmode=require é obrigatório para conexões seguras com o Neon
