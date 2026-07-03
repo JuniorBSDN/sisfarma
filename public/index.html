@@ -404,115 +404,612 @@ td {
         </div>
     </div>
 
-    <script>
-        const API_URL = "http://localhost:8000/api";
-let operadorAtual = "admin";
-
-// Gerenciamento de Abas SPA
-function switchTab(tabId) {
-    document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.style.display = 'none';
-    });
-    document.getElementById(tabId).style.display = 'block';
-
-    // Atualizações automáticas de tabelas ao clicar
-    if(tabId === 'tab-catalogo') carregarProdutos();
-    if(tabId === 'tab-dispensar') carregarPainelDispensacao();
-    if(tabId === 'tab-admin-unidades') carregarUnidadesMaster();
+   <!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YANA v1.1 - Central Farmacêutica</title>
+    <style>
+       :root {
+    --bg-main: #d9d9d9;
+    --sidebar-bg: #e6e6e6;
+    --topbar-bg: #1a365d;
+    --btn-blue: #3b82f6;
+    --btn-green: #10b981;
+    --btn-orange: #f97316;
+    --btn-red: #b91c1c;
+    --text-dark: #1e293b;
 }
 
-// Interceptador de Login
-document.getElementById("form-login").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const usuario = document.getElementById("login-user").value;
-    const senha = document.getElementById("login-pass").value;
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg-main);
+    overflow: hidden;
+}
 
-    try {
-        const res = await fetch(`${API_URL}/auth/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ usuario, senha })
+/* --- TELA DE LOGIN (image_3b0986.png) --- */
+.login-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f3f4f6;
+}
+.login-box {
+    width: 460px;
+    background: #e5e7eb;
+    padding: 40px;
+    border-radius: 24px;
+    text-align: center;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+}
+.login-box h1 {
+    font-size: 28px;
+    color: #111827;
+    margin: 10px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+.login-box p { color: #6b7280; font-style: italic; margin-bottom: 30px; }
+.login-box input {
+    width: 100%;
+    padding: 14px;
+    margin: 12px 0;
+    border: 1px solid #9ca3af;
+    border-radius: 8px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+.btn-login {
+    width: 100%;
+    background-color: #3b82f6;
+    color: white;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 15px;
+}
+
+/* --- ESTRUTURA DASHBOARD PRINCIPAL --- */
+.app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+.topbar {
+    height: 45px;
+    background-color: var(--topbar-bg);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    font-size: 13px;
+    font-weight: bold;
+}
+.main-layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Barra Lateral (image_3b1564.png) */
+.sidebar {
+    width: 220px;
+    background-color: var(--sidebar-bg);
+    padding: 15px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    border-right: 1px solid #bccc;
+}
+.menu-group {
+    font-size: 10px;
+    color: #666;
+    font-weight: bold;
+    margin: 10px 0 3px 5px;
+    text-transform: uppercase;
+}
+.menu-btn {
+    width: 100%;
+    text-align: left;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    color: white;
+    font-weight: 500;
+}
+.btn-med { background-color: #3a86ca; }
+.btn-ins { background-color: #2c3e50; }
+.btn-imp { background-color: #0fa37f; }
+.btn-aud { background-color: #4a90e2; }
+.btn-tec { background-color: #a80000; }
+.btn-sobre { background-color: #34495e; }
+
+/* Área de Conteúdo Alinhada */
+.content-area {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+.panel-card {
+    background-color: #e0e0e0;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    min-height: 85vh;
+}
+.panel-card h2 {
+    margin-top: 0;
+    font-size: 18px;
+    color: #000;
+    margin-bottom: 25px;
+}
+
+/* Formulários em Linha Críticos */
+.form-inline-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.form-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.form-group label {
+    font-size: 13px;
+    color: #333;
+    white-space: nowrap;
+    text-align: right;
+    width: 120px;
+}
+.form-group input, .form-group select {
+    padding: 6px 10px;
+    border: 1px solid #a3a3a3;
+    border-radius: 4px;
+    background: #fff;
+    font-size: 13px;
+    width: 220px;
+}
+
+/* Tabelas Alinhadas às Imagens */
+.table-container {
+    background: white;
+    border: 1px solid #b5b5b5;
+    margin-top: 20px;
+    min-height: 250px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+th {
+    background: #fff;
+    color: #333;
+    font-weight: normal;
+    padding: 8px;
+    border-bottom: 1px solid #ccc;
+    border-right: 1px solid #eee;
+}
+td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    border-right: 1px solid #eee;
+}
+
+/* Botões de Ação Inferiores */
+.action-btn {
+    padding: 8px 16px;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-top: 15px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+.action-btn.green { background-color: var(--btn-green); }
+.action-btn.orange { background-color: var(--btn-orange); }
+
+/* Alerta de Validação (image_3b1d01.png) */
+.alert-box-clean {
+    background-color: #fee2e2;
+    border: 1px solid #fca5a5;
+    border-radius: 4px;
+    padding: 15px;
+    color: #15803d;
+    font-size: 13px;
+    font-weight: 500;
+}
+    </style>
+</head><body>
+
+    <!-- 1. TELA DE LOGIN (Conforme image_3b0986.png) -->
+    <div id="view-login" class="login-wrapper">
+    <div class="login-box">
+        <h1>🔒 CAF HOSPITALAR</h1>
+        <p>Controle Interno & Rastreabilidade</p>
+
+        <form id="form-login-sistema">
+            <input type="text" id="login-usuario-unidade" placeholder="Usuário ou Registro" required>
+            <input type="password" id="login-senha-unidade" placeholder="Senha" required>
+            <button type="submit" class="btn-login">Autenticar no Sistema</button>
+        </form>
+    </div>
+</div>
+
+    <!-- 2. WORKSPACE DO SISTEMA (Aparece após Autenticação) -->
+    <div id="view-dashboard" class="app-container" style="display: none;">
+        <!-- Topbar idêntica (image_3b1564.png) -->
+        <div class="topbar">
+            <div>🏣 CENTRAL DE GESTÃO E DISPENSAÇÃO FARMACÊUTICA</div>
+            <div id="user-display">Operador: admin (Farmacêutico Chefe)</div>
+        </div>
+
+        <div class="main-layout">
+            <!-- Barra Lateral Milimétrica -->
+            <aside class="sidebar">
+                <div class="menu-group">Medicamentos</div>
+                <button class="menu-btn btn-med" onclick="switchTab('tab-catalogo')">💊 Catálogo Base</button>
+                <button class="menu-btn btn-med" onclick="switchTab('tab-lotes-med')">📦 Entrada de Lotes</button>
+                <button class="menu-btn btn-med" onclick="switchTab('tab-dispensar')">⚡ Dispensar Itens</button>
+
+                <div class="menu-group">Insumos / Materiais</div>
+                <button class="menu-btn btn-ins" onclick="switchTab('tab-cadastro-insumo')">📝 Cadastro de Insumos</button>
+                <button class="menu-btn btn-ins" onclick="switchTab('tab-lotes-insumo')">📥 Receber Insumos</button>
+
+                <div class="menu-group">Serviços de Impressão</div>
+                <button class="menu-btn btn-imp">🏷️ Gerador de Etiquetas</button>
+
+                <div class="menu-group">Auditoria</div>
+                <button class="menu-btn btn-aud" onclick="switchTab('tab-rastreabilidade')">🔍 Rastreabilidade</button>
+                <button class="menu-btn btn-aud" onclick="switchTab('tab-alertas')">⚠️ Alertas Clínicos</button>
+                <button class="menu-btn btn-tec" onclick="switchTab('tab-tecnovigilancia')">⚠️ Tecnovigilância (POP)</button>
+                <button class="menu-btn btn-sobre">ℹ️ Sobre o Sistema</button>
+
+                <!-- MENU DO ADMINISTRADOR EXCLUSIVO PARA O SEU FLUXO DE LIBERAÇÃO -->
+                <div class="menu-group" style="color: #0284c7;">Configurações Master</div>
+                <button class="menu-btn" style="background-color: #0284c7;" onclick="switchTab('tab-admin-unidades')">🏢 Ativar Clientes/Unidades</button>
+            </aside>
+
+            <!-- Telas Centrais Alternáveis -->
+            <main class="content-area">
+
+                <!-- TAB: CATÁLOGO BASE (image_3b1564.png) -->
+                <div id="tab-catalogo" class="tab-content">
+                    <div class="panel-card">
+                        <h2>Catálogo de Medicamentos Hospitalares</h2>
+                        <form id="form-med">
+                            <div class="form-inline-row">
+                                <div class="form-group"><label>Nome Comercial:</label><input type="text" id="med-nome" required></div>
+                                <div class="form-group"><label>Princípio Ativo:</label><input type="text" id="med-principio" required></div>
+                            </div>
+                            <div class="form-inline-row">
+                                <div class="form-group">
+                                    <label>Categoria:</label>
+                                    <select id="med-categoria">
+                                        <option value="Antimicrobiano">Antimicrobiano</option>
+                                        <option value="Analgésico">Analgésico</option>
+                                    </select>
+                                </div>
+                                <div class="form-group"><label>Código de Barras (EAN):</label><input type="text" id="med-ean" placeholder="Aponte o leitor óptico..."></div>
+                            </div>
+                            <div class="form-inline-row" style="padding-left: 130px;">
+                                <label style="display:flex; align-items:center; gap:5px; font-size:13px; color:red;">
+                                    <input type="checkbox" id="med-controlado" value="1"> Medicamento Controlado (Portaria 344)
+                                </label>
+                            </div>
+                            <button type="submit" class="action-btn green">➕ Adicionar ao Catálogo</button>
+                        </form>
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>ID</th><th>Nome</th><th>Princípio Ativo</th><th>Categoria</th><th>Código Barras</th><th>Controlado</th></tr></thead>
+                                <tbody id="rows-catalogo"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: DISPENSAÇÃO UNIFICADA (image_3b18e1.png) -->
+                <div id="tab-dispensar" class="tab-content" style="display:none;">
+                    <div class="panel-card">
+                        <h2>Painel Unificado de Dispensação e Baixa de Materiais</h2>
+                        <form id="form-dispensa-real">
+                            <div class="form-inline-row">
+                                <div class="form-group">
+                                    <label>Tipo de Material:</label>
+                                    <label style="width:auto; font-size:13px;"><input type="radio" name="tipo-mat" value="MEDICAMENTO" checked> Medicamento</label>
+                                    <label style="width:auto; font-size:13px;"><input type="radio" name="tipo-mat" value="INSUMO"> Insumo Geral / Correlato</label>
+                                </div>
+                            </div>
+                            <div class="form-inline-row">
+                                <div class="form-group">
+                                    <label>Selecionar Lote/Item:</label>
+                                    <select id="disp-lote-select"><option>NENHUM MEDICAMENTO EM ESTOQUE</option></select>
+                                </div>
+                            </div>
+                            <div class="form-inline-row">
+                                <div class="form-group"><label>Paciente / Destino:</label><input type="text" id="disp-paciente" placeholder="Nome do Paciente ou Uso Geral"></div>
+                                <div class="form-group"><label>Nº Prescrição / Req:</label><input type="text" id="disp-req" placeholder="Nº Controle"></div>
+                            </div>
+                            <div class="form-inline-row">
+                                <div class="form-group">
+                                    <label>Setor Requisitante:</label>
+                                    <select id="disp-setor"><option value="Clínica Médica">Clínica Médica</option><option value="UTI">UTI</option></select>
+                                </div>
+                                <div class="form-group"><label>Qtd Solicitada:</label><input type="number" id="disp-qtd"></div>
+                            </div>
+                            <button type="submit" class="action-btn orange">⚡ Processar Dispensação</button>
+                        </form>
+                        <h4 style="margin-top:20px; font-size:12px; color:#555;">Últimas Movimentações Sincronizadas (Tempo Real)</h4>
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>ID</th><th>Tipo</th><th>Qtd</th><th>Destino</th><th>Paciente/Fins</th><th>Data/Hora</th></tr></thead>
+                                <tbody id="rows-movimentacoes"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: MONITOR DE ALERTAS (image_3b1d01.png) -->
+                <div id="tab-alertas" class="tab-content" style="display:none;">
+                    <div class="panel-card">
+                        <h2>Alertas Clínicos & Validação Sanitária Crítica</h2>
+                        <div class="alert-box-clean">
+                            ✔ Sistema Limpo: Nenhum lote de medicamento ou insumo fora da validade.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: ADMINISTRAÇÃO MASTER (Seu Requisito de Liberação por senha de Cliente/Unidade) -->
+                <div id="tab-admin-unidades" class="tab-content" style="display:none;">
+                    <div class="panel-card">
+                        <h2>Gerenciador de Licenciamento de Unidades / Clientes</h2>
+                        <form id="form-admin-cadastro">
+                            <div class="form-inline-row">
+                                <div class="form-group"><label>Nome do Cliente:</label><input type="text" id="adm-nome" placeholder="Ex: Hospital Unidade II" required></div>
+                                <div class="form-group"><label>Identificador/User:</label><input type="text" id="adm-user" placeholder="Ex: unidade2.admin" required></div>
+                            </div>
+                            <div class="form-inline-row">
+                                <div class="form-group"><label>Senha do Cliente:</label><input type="password" id="adm-pass" placeholder="Senha do cliente ou unidade" required></div>
+                                <div class="form-group">
+                                    <label>Perfil Mestre:</label>
+                                    <select id="adm-perfil"><option value="Farmacêutico Chefe">Farmacêutico Chefe</option><option value="Diretor Técnico">Diretor Técnico</option></select>
+                                </div>
+                            </div>
+                            <button type="submit" class="action-btn green">🚀 Ativar e Liberar Unidade</button>
+                        </form>
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>ID</th><th>Unidade / Identificador</th><th>Perfil Atribuído</th><th>Status de Conexão</th></tr></thead>
+                                <tbody id="rows-admin-usuarios"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+   <script>
+        const API_URL = "/api";
+        let operadorLogado = "";
+
+        // Garante que o corpo do sistema carrega visível para a tela de login aparecer
+        document.body.style.display = 'block';
+
+        // ==========================================
+        // 🔒 1. LÓGICA DE LOGIN PRINCIPAL DOS HOSPITAIS
+        // ==========================================
+        document.getElementById("form-login-sistema").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            
+            const usuario = document.getElementById("login-usuario-unidade").value;
+            const senha = document.getElementById("login-senha-unidade").value;
+
+            try {
+                const res = await fetch(`${API_URL}/auth/login`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ usuario, senha })
+                });
+
+                const dados = await res.json();
+
+                if (res.ok) {
+                    operadorLogado = dados.usuario;
+                    
+                    // Atualiza a Topbar com os dados reais vindos do banco PostgreSQL
+                    document.getElementById("user-display").innerText = `Operador: ${dados.usuario} (${dados.perfil})`;
+                    
+                    // Transiciona da tela de login para o Workspace do Sistema
+                    document.getElementById("view-login").style.display = "none";
+                    document.getElementById("view-dashboard").style.display = "flex";
+                    
+                    // Inicializa abrindo a aba do Catálogo de Medicamentos
+                    switchTab('tab-catalogo');
+                } else {
+                    alert(dados.detail || "Acesso Negado. Usuário ou senha incorretos.");
+                }
+            } catch (err) {
+                alert("Erro ao conectar ao servidor PostgreSQL em nuvem.");
+            }
         });
-        const dados = await res.json();
 
-        if (res.ok) {
-            operadorAtual = dados.usuario;
-            document.getElementById("user-display").innerText = `Operador: ${dados.usuario} (${dados.perfil})`;
-            document.getElementById("view-login").style.display = "none";
-            document.getElementById("view-dashboard").style.display = "flex";
-            switchTab('tab-catalogo');
-        } else {
-            alert(dados.detail || "Acesso Negado.");
+        // ==========================================
+        // 🔄 2. GERENCIADOR DE NAVEGAÇÃO ENTRE ABAS
+        // ==========================================
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.style.display = 'none';
+            });
+            document.getElementById(tabId).style.display = 'block';
+
+            // Se o usuário clicar na aba de monitoramento/ativação, puxa a lista atualizada
+            if (tabId === 'tab-admin-unidades') {
+                carregarUnidadesMaster();
+            }
         }
-    } catch (err) {
-        alert("Falha ao alcançar o servidor PostgreSQL em Nuvem.");
-    }
-});
 
-// Envio de novo medicamento estruturado
-document.getElementById("form-med").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const payload = {
-        nome: document.getElementById("med-nome").value,
-        principio_ativo: document.getElementById("med-principio").value,
-        categoria: document.getElementById("med-categoria").value,
-        controlado: document.getElementById("med-controlado").checked ? 1 : 0,
-        codigo_barras: document.getElementById("med-ean").value || "Nenhum"
-    };
+        // ==========================================
+        // 🏢 3. FORMULÁRIO: CADASTRO OU ALTERAÇÃO DE UNIDADES
+        // ==========================================
+        document.getElementById("form-admin-cadastro").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            
+            // Verifica se há um ID guardado no atributo customizado para saber se é Edição
+            const idExistente = document.getElementById("form-admin-cadastro").dataset.id;
+            
+            const nome = document.getElementById("adm-nome").value;
+            const user = document.getElementById("adm-user").value;
+            const pass = document.getElementById("adm-pass").value;
+            const perfil = document.getElementById("adm-perfil").value;
 
-    const res = await fetch(`${API_URL}/medicamentos`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    });
+            const payload = {
+                usuario: user,
+                senha: pass,
+                perfil: `${perfil} - ${nome}`
+            };
 
-    if (res.ok) {
-        document.getElementById("form-med").reset();
-        carregarProdutos();
-    }
-});
+            try {
+                let url = `${API_URL}/auth/registrar`;
+                let metodo = "POST";
 
-async function carregarProdutos() {
-    const res = await fetch(`${API_URL}/medicamentos`);
-    const dados = await res.json();
-    const box = document.getElementById("rows-catalogo");
-    box.innerHTML = "";
-    dados.forEach(m => {
-        box.innerHTML += `<tr><td>${m.id}</td><td>${m.nome}</td><td>${m.principio_ativo}</td><td>${m.categoria}</td><td>${m.codigo_barras}</td><td>${m.controlado ? 'SIM':'NÃO'}</td></tr>`;
-    });
-}
+                if (idExistente) {
+                    url = `${API_URL}/auth/usuarios/${idExistente}`;
+                    metodo = "PUT";
+                }
 
-// Módulo de Cadastro Administrativo de Unidades por Senha do Cliente
-document.getElementById("form-admin-cadastro").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const payload = {
-        usuario: document.getElementById("adm-user").value,
-        senha: document.getElementById("adm-pass").value,
-        perfil: `${document.getElementById("adm-perfil").value} - ${document.getElementById("adm-nome").value}`
-    };
+                const res = await fetch(url, {
+                    method: metodo,
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
 
-    const res = await fetch(`${API_URL}/auth/registrar`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    });
+                if (res.ok) {
+                    alert(idExistente ? "Dados da unidade atualizados!" : "Nova Unidade integrada ao PostgreSQL!");
+                    resetarFormularioInterno();
+                    carregarUnidadesMaster();
+                } else {
+                    const erro = await res.json();
+                    alert(`Falha: ${erro.detail || 'Erro na operação'}`);
+                }
+            } catch (err) {
+                alert("Erro de comunicação com o servidor.");
+            }
+        });
 
-    if (res.ok) {
-        alert("Nova Unidade e senha de Cliente validadas em nuvem!");
-        document.getElementById("form-admin-cadastro").reset();
-        carregarUnidadesMaster();
-    }
-});
+        // ==========================================
+        // 📥 4. LISTAGEM COM BOTÕES DE AÇÃO (EDITAR / EXCLUIR)
+        // ==========================================
+        async function carregarUnidadesMaster() {
+            try {
+                const res = await fetch(`${API_URL}/auth/usuarios`);
+                if (!res.ok) return;
 
-async function carregarUnidadesMaster() {
-    const res = await fetch(`${API_URL}/auth/usuarios`);
-    const dados = await res.json();
-    const box = document.getElementById("rows-admin-usuarios");
-    box.innerHTML = "";
-    dados.forEach(u => {
-        box.innerHTML += `<tr><td>${u.id}</td><td>${u.usuario}</td><td>${u.perfil}</td><td><b style='color:green;'>● ATIVA</b></td></tr>`;
-    });
-}
+                const dados = await res.json();
+                const box = document.getElementById("rows-admin-usuarios");
+                box.innerHTML = "";
+
+                dados.forEach(u => {
+                    const perfilEscapado = u.perfil.replace(/'/g, "\\'");
+                    const usuarioEscapado = u.usuario.replace(/'/g, "\\'");
+                    const senhaEscapada = (u.senha || '').replace(/'/g, "\\'");
+
+                    box.innerHTML += `
+                        <tr>
+                            <td>${u.id}</td>
+                            <td><strong>${u.usuario}</strong></td>
+                            <td>${u.perfil}</td>
+                            <td><span style="color: #10b981; font-weight: bold;">🟢 Ativo</span></td>
+                            <td>
+                                <button class="btn-action" style="background-color: #f97316; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 11px; margin-right: 5px;" onclick="prepararEdicaoInterna(${u.id}, '${usuarioEscapado}', '${senhaEscapada}', '${perfilEscapado}')">✏️ Editar</button>
+                                <button class="btn-action" style="background-color: #b91c1c; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 11px;" onclick="excluirUnidadeInterna(${u.id})">🗑️ Deletar</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                console.error("Erro ao sincronizar listagem:", err);
+            }
+        }
+
+        // ==========================================
+        // ✏️ 5. PREPARAR INTERFACE INTERNA PARA EDIÇÃO
+        // ==========================================
+        function prepararEdicaoInterna(id, usuario, senha, perfilCompleto) {
+            // Guarda o ID no dataset do formulário
+            document.getElementById("form-admin-cadastro").dataset.id = id;
+            
+            document.getElementById("adm-user").value = usuario;
+            document.getElementById("adm-pass").value = senha;
+
+            let perfilParte = "FARMACÊUTICO";
+            let nomeParte = perfilCompleto;
+
+            if (perfilCompleto.includes(" - ")) {
+                const partes = perfilCompleto.split(" - ");
+                perfilParte = partes[0];
+                nomeParte = partes.slice(1).join(" - ");
+            }
+
+            document.getElementById("adm-perfil").value = perfilParte;
+            document.getElementById("adm-nome").value = nomeParte;
+
+            // Altera o texto do botão de envio para feedback visual
+            document.querySelector("#form-admin-cadastro button[type='submit']").innerText = "💾 Salvar Alterações";
+        }
+
+        // ==========================================
+        // 🗑️ 6. EXCLUIR REGISTRO DA UNIDADE
+        // ==========================================
+        async function excluirUnidadeInterna(id) {
+            if (!confirm("⚠️ Deseja revogar e excluir permanentemente este acesso do banco de dados Neon?")) return;
+
+            try {
+                const res = await fetch(`${API_URL}/auth/usuarios/${id}`, {
+                    method: "DELETE"
+                });
+
+                if (res.ok) {
+                    alert("Acesso excluído com sucesso!");
+                    carregarUnidadesMaster();
+                } else {
+                    alert("Erro ao tentar excluir a unidade.");
+                }
+            } catch (err) {
+                alert("Erro de rede ao conectar à API.");
+            }
+        }
+
+        // 🔄 RESETAR FORMULÁRIO INTERNO
+        function resetarFormularioInterno() {
+            document.getElementById("form-admin-cadastro").reset();
+            delete document.getElementById("form-admin-cadastro").dataset.id;
+            document.querySelector("#form-admin-cadastro button[type='submit']").innerText = "Validar Nova Unidade";
+        }
     </script>
+</body>
+</html>
 </body>
 </html>
