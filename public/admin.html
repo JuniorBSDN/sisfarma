@@ -5,332 +5,444 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YANA v1.1 - Painel de Controle Master</title>
     <style>
-                /* Configurações Globais e Rolagem Suave */
-html {
-    scroll-behavior: smooth;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
+        :root {
+            --bg-main: #d9d9d9;
+            --sidebar-bg: #e6e6e6;
+            --topbar-bg: #1a365d;
+            --btn-blue: #3b82f6;
+            --btn-green: #10b981;
+            --btn-red: #ef4444;
+            --btn-orange: #f97316;
+            --text-dark: #1e293b;
+        }
 
-body {
-    margin: 0;
-    padding: 0;
-    background-color: #f4f6f9;
-    color: #333;
-}
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-main);
+            overflow: hidden;
+        }
 
-/* Barra de Navegação Superior */
-.navbar {
-    position: fixed;
-    top: 0;
-    width: 100%;
-    height: 70px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 50px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    z-index: 1000;
-    box-sizing: border-box;
-}
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
 
-.logo {
-    font-size: 24px;
-    font-weight: 700;
-    color: #1e293b;
-}
+        .topbar {
+            height: 45px;
+            background-color: var(--topbar-bg);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 13px;
+            font-weight: bold;
+        }
 
-.logo span {
-    color: #0284c7;
-    font-size: 14px;
-}
+        .main-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
 
-.nav-links {
-    list-style: none;
-    display: flex;
-    gap: 30px;
-}
+        .sidebar {
+            width: 220px;
+            background-color: var(--sidebar-bg);
+            padding: 15px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            border-right: 1px solid #bccc;
+        }
 
-.nav-links a {
-    text-decoration: none;
-    color: #64748b;
-    font-weight: 500;
-    transition: color 0.3s;
-}
+        .menu-group {
+            font-size: 10px;
+            color: #666;
+            font-weight: bold;
+            margin: 10px 0 3px 5px;
+            text-transform: uppercase;
+        }
 
-.nav-links a:hover {
-    color: #0284c7;
-}
+        .menu-btn {
+            width: 100%;
+            text-align: left;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            color: white;
+            font-weight: 500;
+            background-color: #34495e;
+        }
 
-/* Seções de Tela Cheia para o efeito de rolagem */
-.scroll-section {
-    min-height: 100vh;
-    padding-top: 100px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-    border-bottom: 1px solid #e2e8f0;
-}
+        .content-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
 
-.container {
-    width: 90%;
-    max-width: 1200px;
-}
+        .panel-card {
+            background-color: #e0e0e0;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+            min-height: 85vh;
+        }
 
-/* Layouts Baseados em Grid */
-.grid-2col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
-    margin-top: 20px;
-}
+        .panel-card h2 {
+            margin-top: 0;
+            font-size: 18px;
+            color: #000;
+            margin-bottom: 25px;
+        }
 
-/* Cartões Modernos */
-.card {
-    background: #ffffff;
-    border-radius: 12px;
-    padding: 30px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-    border: 1px solid #f1f5f9;
-    transition: transform 0.3s ease;
-}
+        .form-inline-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
 
-.card:hover {
-    transform: translateY(-5px);
-}
+        .form-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-.card-login {
-    width: 400px;
-    text-align: center;
-}
+        .form-group label {
+            font-size: 13px;
+            color: #333;
+            white-space: nowrap;
+            text-align: right;
+            width: 120px;
+        }
 
-/* Elementos de Formulários */
-input, select, textarea {
-    width: 100%;
-    padding: 12px;
-    margin: 10px 0;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    box-sizing: border-box;
-    font-size: 14px;
-    background: #f8fafc;
-}
+        .form-group input, .form-group select {
+            padding: 6px 10px;
+            border: 1px solid #a3a3a3;
+            border-radius: 4px;
+            background: #fff;
+            font-size: 13px;
+            width: 220px;
+        }
 
-input:focus, select:focus, textarea:focus {
-    border-color: #0284c7;
-    outline: none;
-    background: #fff;
-}
+        .table-container {
+            background: white;
+            border: 1px solid #b5b5b5;
+            margin-top: 20px;
+            min-height: 250px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
 
-/* Botões Padronizados */
-button {
-    cursor: pointer;
-    font-weight: 600;
-    border: none;
-    border-radius: 6px;
-    padding: 12px 20px;
-    font-size: 14px;
-    transition: filter 0.2s;
-}
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
 
-button:hover {
-    filter: brightness(0.9);
-}
+        th {
+            background: #fff;
+            color: #333;
+            font-weight: normal;
+            padding: 8px;
+            border-bottom: 1px solid #ccc;
+            border-right: 1px solid #eee;
+        }
 
-.btn-primary { background: #0284c7; color: white; }
-.btn-success { background: #10b981; color: white; }
-.btn-danger { background: #ef4444; color: white; }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            border-right: 1px solid #eee;
+        }
 
-/* Tabelas */
-.table-wrapper {
-    max-height: 400px;
-    overflow-y: auto;
-}
+        .action-btn {
+            padding: 8px 16px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 15px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: bold;
+        }
+        .action-btn.green { background-color: var(--btn-green); }
+        .action-btn.orange { background-color: var(--btn-orange); }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: left;
-}
-
-th, td {
-    padding: 12px;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-th { background: #f8fafc; color: #64748b; }
-
-/* Alertas Estilizados */
-.alerta-item {
-    background: #fee2e2;
-    border-left: 5px solid #ef4444;
-    padding: 15px;
-    border-radius: 4px;
-    margin-bottom: 10px;
-    color: #991b1b;
-}
-
-.feedback {
-    margin-top: 15px;
-    font-weight: 500;
-}
+        .row-btn {
+            padding: 3px 8px;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-right: 5px;
+        }
+        .row-btn.edit { background-color: var(--btn-orange); }
+        .row-btn.delete { background-color: var(--btn-red); }
     </style>
 </head>
 <body>
 
-    <!-- Navbar Administrativa -->
-    <nav class="navbar" style="background: rgba(15, 23, 42, 0.95); border-bottom: 2px solid #0284c7;">
-        <div class="logo" style="color: #fff;">YANA <span style="color: #38bdf8;">ADMIN Master</span></div>
-        <ul class="nav-links">
-            <li><a href="#unidades-section" style="color: #cbd5e1;">Cadastrar Unidade</a></li>
-            <li><a href="#gerenciamento-section" style="color: #cbd5e1;">Acessos Liberados</a></li>
-            <li><a href="index.html" style="color: #38bdf8; font-weight: bold;">Voltar ao Sistema ↩</a></li>
-        </ul>
-    </nav>
+    <div class="app-container">
+        <div class="topbar">
+            <div>⚙️ PAINEL MASTER - ADMINISTRAÇÃO DE CLIENTES</div>
+            <div>Perfil: Administrador Global</div>
+        </div>
 
-    <!-- Seção 1: Cadastro de Unidades Hospitalares e Ativação -->
-    <section id="unidades-section" class="scroll-section" style="background: #0f172a; color: #fff;">
-        <div class="container">
-            <h2 style="color: #38bdf8; text-align: center;">🏢 Ativação e Licenciamento de Unidades</h2>
-            <p style="text-align: center; color: #94a3b8; margin-bottom: 40px;">Registre o cliente hospitalar e defina a senha mestre de liberação do ecossistema.</p>
+        <div class="main-layout">
+            <aside class="sidebar">
+                <div class="menu-group">Licenciamento</div>
+                <button class="menu-btn" style="background-color: #1a365d;">🏢 Unidades e Acessos</button>
+                <div class="menu-group">Navegação</div>
+                <a href="index.html" style="text-decoration: none;">
+                    <button class="menu-btn" style="background-color: #7f8c8d;">↩ Voltar ao Sistema</button>
+                </a>
+            </aside>
 
-            <div class="card" style="max-width: 600px; margin: 0 auto; background: #1e293b; border-color: #334155;">
-                <h3 style="color: #f8fafc; margin-top: 0;">Nova Unidade / Cliente</h3>
-                <form id="form-cadastro-unidade">
-                    <label style="color: #94a3b8;">Razão Social / Identificação da Unidade</label>
-                    <input type="text" id="adm-unidade-nome" placeholder="Ex: Hospital Regional de Alta Complexidade" style="background: #0f172a; color: #fff; border-color: #475569;" required>
+            <main class="content-area">
+                <div class="panel-card">
+                    <h2 id="form-titulo">Ativação e Cadastro de Nova Unidade Hospitalar</h2>
 
-                    <label style="color: #94a3b8;">CNPJ ou Identificador Interno</label>
-                    <input type="text" id="adm-unidade-cnpj" placeholder="00.000.000/0001-00" style="background: #0f172a; color: #fff; border-color: #475569;" required>
+                    <form id="form-admin-cadastro-unidade">
+                        <input type="hidden" id="adm-unidade-id" value="">
 
-                    <div class="grid-2col" style="margin-top: 0; gap: 15px;">
-                        <div>
-                            <label style="color: #94a3b8;">Usuário Admin da Unidade</label>
-                            <input type="text" id="adm-unidade-user" placeholder="Ex: admin.hospital" style="background: #0f172a; color: #fff; border-color: #475569;" required>
+                        <div class="form-inline-row">
+                            <div class="form-group">
+                                <label>Nome da Unidade:</label>
+                                <input type="text" id="adm-unidade-nome" placeholder="Ex: Hospital Regional" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Usuário / Login:</label>
+                                <input type="text" id="adm-unidade-user" placeholder="Ex: hospital.admin" required>
+                            </div>
                         </div>
-                        <div>
-                            <label style="color: #94a3b8;">Senha de Acesso / Cliente</label>
-                            <input type="password" id="adm-unidade-pass" placeholder="Defina a senha do cliente" style="background: #0f172a; color: #fff; border-color: #475569;" required>
+
+                        <div class="form-inline-row">
+                            <div class="form-group">
+                                <label>Senha do Cliente:</label>
+                                <input type="password" id="adm-unidade-pass" placeholder="Defina a senha de acesso" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Perfil Mestre:</label>
+                                <select id="adm-unidade-perfil">
+                                    <option value="Farmacêutico Chefe">Farmacêutico Chefe</option>
+                                    <option value="Diretor Técnico">Diretor Técnico</option>
+                                    <option value="Administrador Hospitalar">Administrador Hospitalar</option>
+                                </select>
+                            </div>
                         </div>
+
+                        <button type="submit" id="btn-submit-form" class="action-btn green">🚀 Ativar e Liberar Unidade</button>
+                        <button type="button" id="btn-cancelar-edicao" class="action-btn" style="background-color:#7f8c8d; display:none;" onclick="resetarFormulario()">Cancelar Edição</button>
+                    </form>
+
+                    <h4 style="margin-top: 30px; font-size: 13px; color: #333;">Clientes com Acesso Liberado no PostgreSQL</h4>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Usuário Gerado</th>
+                                    <th>Perfil / Unidade Vinculada</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-usuarios-unidades">
+                                </tbody>
+                        </table>
                     </div>
-
-                    <label style="color: #94a3b8;">Perfil de Responsabilidade do Usuário</label>
-                    <select id="adm-unidade-perfil" style="background: #0f172a; color: #fff; border-color: #475569;">
-                        <option value="Farmacêutico Chefe">Farmacêutico Chefe</option>
-                        <option value="Administrador Hospitalar">Administrador Hospitalar</option>
-                        <option value="Diretor Clínico">Diretor Clínico</option>
-                    </select>
-
-                    <button type="submit" class="btn-primary" style="width: 100%; background: #0284c7; margin-top: 15px;">
-                        🚀 Liberar Acesso e Ativar Unidade
-                    </button>
-                </form>
-            </div>
+                </div>
+            </main>
         </div>
-    </section>
-
-    <!-- Seção 2: Monitoramento de Unidades e Acessos Ativos -->
-    <section id="gerenciamento-section" class="scroll-section">
-        <div class="container">
-            <h2>🖥️ Gerenciamento de Clientes e Credenciais Ativas</h2>
-            <p style="color: #64748b;">Abaixo estão listadas as unidades cadastradas no seu PostgreSQL que possuem liberação de login ativa no sistema.</p>
-
-            <div class="card table-wrapper" style="margin-top: 30px;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Usuário Cadastrado</th>
-                            <th>Perfil / Cargo</th>
-                            <th>Status de Ativação</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabela-usuarios-unidades">
-                        <!-- Alimentado dinamicamente via API -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </section>
+    </div>
 
     <script>
-        // Endpoint da API do seu backend FastAPI
-const API_URL = "http://localhost:8000/api";
+        const API_URL = "/api";
 
-document.addEventListener("DOMContentLoaded", () => {
-    carregarUnidadesCadastradas();
-});
+        // Bloqueio visual imediato por segurança
+        document.body.style.display = 'none';
 
-// 🚀 Enviar Nova Unidade/Cliente para o Banco de Dados
-document.getElementById("form-cadastro-unidade").addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    // Captura dos dados inseridos
-    const usuario = document.getElementById("adm-unidade-user").value;
-    const senha = document.getElementById("adm-unidade-pass").value;
-    const perfil = document.getElementById("adm-unidade-perfil").value;
-    const nomeUnidade = document.getElementById("adm-unidade-nome").value;
-
-    // Ajustado para bater exatamente com o Schema esperado pela nossa API de Login/Registro
-    const payload = {
-        usuario: usuario,
-        senha: senha,
-        perfil: `${perfil} - ${nomeUnidade}` // Associa o cargo à unidade específica
-    };
-
-    try {
-        // Aproveitamos a rota de criação de usuários do seu ecossistema
-        // Nota: Garanta que seu app.py tenha um endpoint POST em '/api/auth/registrar'
-        // ou adapte para a rota correspondente de inserção na tabela 'usuarios'.
-        const res = await fetch(`${API_URL}/auth/registrar`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
+        document.addEventListener("DOMContentLoaded", async () => {
+            await autenticarPainelAdmin();
         });
 
-        if (res.ok) {
-            alert(`Sucesso! Acesso liberado para a unidade: ${nomeUnidade}`);
-            document.getElementById("form-cadastro-unidade").reset();
-            carregarUnidadesCadastradas(); // Recarrega a tabela de monitoramento inferior
+        // 🔒 1. PROMPT MASTER DE AUTENTICAÇÃO
+        async function autenticarPainelAdmin() {
+            const senhaDigitada = prompt("🔒 Acesso Restrito! Digite a Senha Master do Painel Administrador:");
 
-            // Efeito visual de rolagem suave para ver o item adicionado na tabela
-            document.getElementById("gerenciamento-section").scrollIntoView();
-        } else {
-            const erro = await res.json();
-            alert(`Falha ao liberar acesso: ${erro.detail || 'Usuário já existente'}`);
+            if (!senhaDigitada) {
+                window.location.href = "index.html";
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/auth/verificar-admin`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ senha: senhaDigitada })
+                });
+
+                if (res.ok) {
+                    document.body.style.display = 'block';
+                    carregarUnidadesCadastradas();
+                } else {
+                    alert("❌ Senha Master Inválida!");
+                    window.location.href = "index.html";
+                }
+            } catch (err) {
+                alert("Erro ao conectar ao servidor de segurança.");
+                window.location.href = "index.html";
+            }
         }
-    } catch (err) {
-        alert("Erro de comunicação com o servidor em nuvem PostgreSQL.");
-    }
-});
 
-// 📊 Buscar usuários/unidades cadastrados para exibir na tabela de monitoramento
-async function carregarUnidadesCadastradas() {
-    try {
-        // Rota para listar usuários do sistema
-        const res = await fetch(`${API_URL}/auth/usuarios`);
-        if (!res.ok) return;
+        // 📥 2. LISTAR USUÁRIOS/UNIDADES
+        async function carregarUnidadesCadastradas() {
+            try {
+                const res = await fetch(`${API_URL}/auth/usuarios`);
+                if (!res.ok) return;
 
-        const usuarios = await res.json();
-        const tabela = document.getElementById("tabela-usuarios-unidades");
-        tabela.innerHTML = "";
+                const usuarios = await res.json();
+                const tabela = document.getElementById("tabela-usuarios-unidades");
+                tabela.innerHTML = "";
 
-        usuarios.forEach(user => {
-            tabela.innerHTML += `
-                <tr>
-                    <td>${user.id}</td>
-                    <td><strong>${user.usuario}</strong></td>
-                    <td>${user.perfil}</td>
-                    <td><span style="color: #10b981; font-weight: bold;">🟢 Ativo / Liberado</span></td>
-                </tr>
-            `;
+                usuarios.forEach(user => {
+                    // Escapa as strings para evitar quebra de HTML nas funções inline
+                    const perfilEscapado = user.perfil.replace(/'/g, "\\'");
+                    const usuarioEscapado = user.usuario.replace(/'/g, "\\'");
+                    const senhaEscapada = (user.senha || '').replace(/'/g, "\\'");
+
+                    tabela.innerHTML += `
+                        <tr>
+                            <td>${user.id}</td>
+                            <td><strong>${user.usuario}</strong></td>
+                            <td>${user.perfil}</td>
+                            <td><span style="color: #10b981; font-weight: bold;">🟢 Ativo</span></td>
+                            <td>
+                                <button class="row-btn edit" onclick="prepararEdicao(${user.id}, '${usuarioEscapado}', '${senhaEscapada}', '${perfilEscapado}')">✏️ Editar</button>
+                                <button class="row-btn delete" onclick="excluirUnidade(${user.id})">🗑️ Excluir</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                console.error("Erro ao sincronizar lista:", err);
+            }
+        }
+
+        // 💾 3. FORMULÁRIO: SALVAR OU ALTERAR CADASTRO
+        document.getElementById("form-admin-cadastro-unidade").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const idExistente = document.getElementById("adm-unidade-id").value;
+            const usuario = document.getElementById("adm-unidade-user").value;
+            const senha = document.getElementById("adm-unidade-pass").value;
+            const perfilCombo = document.getElementById("adm-unidade-perfil").value;
+            const nomeUnidade = document.getElementById("adm-unidade-nome").value;
+
+            const payload = {
+                usuario: usuario,
+                senha: senha,
+                perfil: `${perfilCombo} - ${nomeUnidade}`
+            };
+
+            try {
+                let url = `${API_URL}/auth/registrar`;
+                let metodo = "POST";
+
+                // Se houver um ID preenchido no hidden input, muda o fluxo para Atualização (PUT)
+                if (idExistente) {
+                    url = `${API_URL}/auth/usuarios/${idExistente}`;
+                    metodo = "PUT";
+                }
+
+                const res = await fetch(url, {
+                    method: metodo,
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    alert(idExistente ? "Dados da unidade atualizados com sucesso!" : `Acesso liberado para a unidade: ${nomeUnidade}`);
+                    resetarFormulario();
+                    carregarUnidadesCadastradas();
+                } else {
+                    const erro = await res.json();
+                    alert(`Falha na operação: ${erro.detail || 'Usuário já existente'}`);
+                }
+            } catch (err) {
+                alert("Erro de comunicação com o servidor PostgreSQL em nuvem.");
+            }
         });
-    } catch (err) {
-        console.error("Erro ao sincronizar lista de credenciais:", err);
-    }
-}
+
+        // ✏️ 4. PREPARAR INTERFACE PARA EDIÇÃO
+        function prepararEdicao(id, usuario, senha, perfilCompleto) {
+            document.getElementById("adm-unidade-id").value = id;
+            document.getElementById("adm-unidade-user").value = usuario;
+            document.getElementById("adm-unidade-pass").value = senha;
+
+            // Divide a string "Perfil - Nome do Hospital" guardada no banco
+            let perfilParte = "Farmacêutico Chefe";
+            let nomeParte = perfilCompleto;
+
+            if (perfilCompleto.includes(" - ")) {
+                const partes = perfilCompleto.split(" - ");
+                perfilParte = partes[0];
+                nomeParte = partes.slice(1).join(" - "); // Junta caso o nome tenha hífens
+            }
+
+            document.getElementById("adm-unidade-perfil").value = perfilParte;
+            document.getElementById("adm-unidade-nome").value = nomeParte;
+
+            // Altera visualmente os botões do formulário
+            document.getElementById("form-titulo").innerText = "✏️ Alterar Dados da Unidade Cadastrada";
+            const btnSubmit = document.getElementById("btn-submit-form");
+            btnSubmit.innerText = "💾 Salvar Alterações";
+            btnSubmit.className = "action-btn orange";
+            document.getElementById("btn-cancelar-edicao").style.display = "inline-flex";
+        }
+
+        // 🗑️ 5. EXCLUIR ACESSO DA UNIDADE
+        async function excluirUnidade(id) {
+            if (!confirm("⚠️ Tem certeza de que deseja revogar permanentemente o acesso desta unidade hospitalar?")) return;
+
+            try {
+                const res = await fetch(`${API_URL}/auth/usuarios/${id}`, {
+                    method: "DELETE"
+                });
+
+                if (res.ok) {
+                    alert("Acesso revogado e removido com sucesso!");
+                    carregarUnidadesCadastradas();
+                } else {
+                    alert("Não foi possível excluir a unidade selecionada.");
+                }
+            } catch (err) {
+                alert("Erro de rede ao tentar deletar o registro.");
+            }
+        }
+
+        // 🔄 RESETAR FORMULÁRIO DE VOLTA PARA CRIAÇÃO
+        function resetarFormulario() {
+            document.getElementById("form-admin-cadastro-unidade").reset();
+            document.getElementById("adm-unidade-id").value = "";
+            document.getElementById("form-titulo").innerText = "Ativação e Cadastro de Nova Unidade Hospitalar";
+
+            const btnSubmit = document.getElementById("btn-submit-form");
+            btnSubmit.innerText = "🚀 Ativar e Liberar Unidade";
+            btnSubmit.className = "action-btn green";
+            document.getElementById("btn-cancelar-edicao").style.display = "none";
+        }
     </script>
 </body>
 </html>
