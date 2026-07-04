@@ -655,34 +655,84 @@
          }
      }
 
+    // ==========================================
+     // 📦 CORREÇÃO: ENTRADA DE LOTES MEDICAMENTOS
+     // ==========================================
      async function carregarLotesMedicamentos() {
-         const res = await fetch(`${API_URL}/lotes`);
-         if (!res.ok) return;
-         const lotes = await res.json();
-         const tbody = document.getElementById("tabela-lotes-med-rows");
-         tbody.innerHTML = "";
-         lotes.forEach(l => {
-             tbody.innerHTML += `<tr><td>${l.id}</td><td>${l.medicamento_nome || 'N/A'}</td><td><strong>${l.numero_lote}</strong></td><td>${l.fabricante}</td><td>${l.validade}</td><td>${l.quantidade}</td></tr>`;
-         });
+         try {
+             const res = await fetch(`${API_URL}/lotes`);
+             if (!res.ok) {
+                 console.error("Erro ao buscar lotes:", res.statusText);
+                 return;
+             }
+             const lotes = await res.json();
+             const tbody = document.getElementById("tabela-lotes-med-rows");
+             tbody.innerHTML = "";
+             
+             if (lotes.length === 0) {
+                 tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:15px; color:#666;">Nenhum lote registrado.</td></tr>`;
+                 return;
+             }
+
+             lotes.forEach(l => {
+                 // Formata a exibição da data para DD/MM/AAAA na tabela
+                 let dataFormatada = l.validade;
+                 if (l.validade && l.validade.includes("-")) {
+                     const partes = l.validade.split("-");
+                     dataFormatada = `${partes[2]}/${partes[1]}/${partes[0]}`;
+                 }
+
+                 tbody.innerHTML += `<tr>
+                     <td>${l.id}</td>
+                     <td>${l.medicamento_nome || 'N/A'}</td>
+                     <td><strong>${l.numero_lote}</strong></td>
+                     <td>${l.fabricante}</td>
+                     <td>${dataFormatada}</td>
+                     <td>${l.quantidade}</td>
+                 </tr>`;
+             });
+         } catch (err) {
+             console.error("Erro de conexão ao carregar lotes:", err);
+         }
      }
 
      document.getElementById("form-lote-med").addEventListener("submit", async (e) => {
          e.preventDefault();
+         
+         const medIdInput = document.getElementById("lote-med-id").value;
+         if (!medIdInput) {
+             alert("Por favor, selecione um medicamento base.");
+             return;
+         }
+
          const payload = {
-             medicamento_id: parseInt(document.getElementById("lote-med-id").value),
-             numero_lote: document.getElementById("lote-med-numero").value,
-             fabricante: document.getElementById("lote-med-fabricante").value,
-             validade: document.getElementById("lote-med-validade").value,
+             medicamento_id: parseInt(medIdInput),
+             numero_lote: document.getElementById("lote-med-numero").value.trim(),
+             fabricante: document.getElementById("lote-med-fabricante").value.trim(),
+             validade: document.getElementById("lote-med-validade").value, // Mantém o padrão ISO exigido por APIs (AAAA-MM-DD)
              quantidade: parseInt(document.getElementById("lote-med-qtd").value)
          };
-         const res = await fetch(`${API_URL}/lotes`, {
-             method: "POST",
-             headers: { "Content-Type": "application/json" },
-             body: JSON.stringify(payload)
-         });
-         if (res.ok) { document.getElementById("form-lote-med").reset(); carregarLotesMedicamentos(); }
-     });
 
+         try {
+             const res = await fetch(`${API_URL}/lotes`, {
+                 method: "POST",
+                 headers: { "Content-Type": "application/json" },
+                 body: JSON.stringify(payload)
+             });
+
+             if (res.ok) {
+                 alert("✅ Lote registrado com sucesso!");
+                 document.getElementById("form-lote-med").reset(); 
+                 await carregarLotesMedicamentos(); 
+             } else {
+                 const errDados = await res.json();
+                 alert(`❌ Erro do Servidor (${res.status}): ${errDados.detail || JSON.stringify(errDados)}`);
+             }
+         } catch (err) {
+             alert("❌ Erro técnico: Não foi possível conectar à API.");
+             console.error(err);
+         }
+     });
 
      // ==========================================
      // 💉 4. MÓDULO INSUMOS (BASE & LOTES)
