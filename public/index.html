@@ -330,23 +330,26 @@
                 <div id="tab-lotes-med" class="tab-content" style="display:none;">
                     <div class="panel-card">
                         <h2>📦 Recebimento e Inventário de Lotes (Medicamentos)</h2>
-                        <form id="form-lote-med">
-                            <div class="form-inline-row">
-                                <div class="form-group">
-                                    <label>Medicamento Base:</label>
-                                    <select id="lote-med-id" required><option value="">Carregando...</option></select>
-                                </div>
-                                <div class="form-group"><label>Número do Lote:</label><input type="text" id="lote-med-numero" required></div>
-                            </div>
-                            <div class="form-inline-row">
-                                <div class="form-group"><label>Fabricante:</label><input type="text" id="lote-med-fabricante" required></div>
-                                <div class="form-group"><label>Data Validade:</label><input type="date" id="lote-med-validade" required></div>
-                            </div>
-                            <div class="form-inline-row">
-                                <div class="form-group"><label>Qtd Recebida:</label><input type="number" id="lote-med-qtd" required></div>
-                            </div>
-                            <button type="submit" class="action-btn green">➕ Dar Entrada de Lote</button>
-                        </form>
+                       <form id="form-lote-med">
+    <label>Medicamento Base:</label>
+    <select id="lote-med-id-selecionado" required>
+        <option value="1">SURFA (trimetropina)</option> 
+    </select>
+
+    <label>Número do Lote:</label>
+    <input type="text" id="lote-med-numero" required>
+
+    <label>Fabricante:</label>
+    <input type="text" id="lote-med-fabricante" required>
+
+    <label>Data Validade:</label>
+    <input type="date" id="lote-med-validade" required>
+
+    <label>Qtd Recebida:</label>
+    <input type="number" id="lote-med-qtd" required>
+
+    <button type="submit" class="action-btn green">➕ Dar Entrada de Lote</button>
+</form>
                         <div class="table-container">
                             <table>
                                 <thead><tr><th>ID Lote</th><th>Medicamento</th><th>Lote</th><th>Fabricante</th><th>Validade</th><th>Estoque</th></tr></thead>
@@ -697,47 +700,55 @@
      }
 
     // Localize o evento de envio do formulário de lotes no seu arquivo de medicamentos
+// Garante o mapeamento correto do envio do formulário
 document.getElementById("form-lote-med").addEventListener("submit", async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Impede o recarregamento incorreto da página
 
-    // Verifique se o seu formulário tem um input hidden para o ID do lote (igual ao admin.html)
-    const idLoteExistente = document.getElementById("lote-med-id") ? document.getElementById("lote-med-id").value : null;
+    // Captura os elementos com segurança
+    const selectMed = document.getElementById("lote-med-id-selecionado");
+    const inputNumero = document.getElementById("lote-med-numero");
+    const inputFabricante = document.getElementById("lote-med-fabricante");
+    const inputValidade = document.getElementById("lote-med-validade");
+    const inputQtd = document.getElementById("lote-med-qtd");
 
-    const payload = {
-        medicamento_id: parseInt(document.getElementById("lote-med-id-selecionado").value), // ID do medicamento base
-        numero_lote: document.getElementById("lote-med-numero").value.trim(),
-        fabricante: document.getElementById("lote-med-fabricante").value.trim(),
-        validade: document.getElementById("lote-med-validade").value, 
-        quantidade: parseInt(document.getElementById("lote-med-qtd").value)
-    };
-
-    // Definição dinâmica da rota para evitar o erro 404
-    let url = `${API_URL}/lotes`; 
-    let metodo = "POST";
-
-    // Se for uma edição, adiciona o ID do lote corretamente na URL
-    if (idLoteExistente) {
-        url = `${API_URL}/lotes/${idLoteExistente}`;
-        metodo = "PUT";
+    // Validação básica se o medicamento foi selecionado
+    if (!selectMed.value || selectMed.value === "Nenhum cadastrado") {
+        alert("❌ Por favor, cadastre e selecione um medicamento base primeiro!");
+        return;
     }
 
+    // Monta o payload estruturado exatamente como o seu banco PostgreSQL / API espera
+    const payload = {
+        medicamento_id: parseInt(selectMed.value),
+        numero_lote: inputNumero.value.trim(),
+        fabricante: inputFabricante.value.trim(),
+        validade: inputValidade.value, // Envia o formato correto nativo YAAA-MM-DD
+        quantidade: parseInt(inputQtd.value)
+    };
+
     try {
-        const res = await fetch(url, {
-            method: metodo,
+        // Envia a requisição POST para salvar o lote
+        const res = await fetch(`${API_URL}/lotes`, {
+            method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
         });
 
         if (res.ok) {
-            alert("✅ Operação realizada com sucesso!");
-            document.getElementById("form-lote-med").reset();
-            if (typeof carregarLotesMedicamentos === "function") await carregarLotesMedicamentos();
+            alert("✅ Lote registrado com sucesso!");
+            document.getElementById("form-lote-med").reset(); // Limpa a tela
+            
+            // Recarrega a tabela de lotes na parte inferior da página se a função existir
+            if (typeof carregarLotesMedicamentos === "function") {
+                await carregarLotesMedicamentos();
+            }
         } else {
             const errDados = await res.json().catch(() => ({}));
-            alert(`❌ Erro do Servidor (${res.status}): ${errDados.detail || 'Verifique os parâmetros ou a rota do endpoint.'}`);
+            alert(`❌ Erro técnico (${res.status}): ${errDados.detail || 'Verifique as informações inseridas.'}`);
         }
     } catch (err) {
-        alert("❌ Erro técnico: Falha na conexão com o servidor.");
+        alert("❌ Erro de conexão: Verifique se o servidor backend está online.");
+        console.error(err);
     }
 });
 
