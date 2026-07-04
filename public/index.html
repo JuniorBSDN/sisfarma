@@ -217,6 +217,22 @@
         }
         tr:nth-child(even) { background-color: #f8fafc; }
 
+        /* Alertas de Cores Estilizados */
+        .status-vencido {
+            background-color: #fee2e2;
+            color: #b91c1c;
+            font-weight: bold;
+            padding: 3px 6px;
+            border-radius: 4px;
+        }
+        .status-critico {
+            background-color: #ffedd5;
+            color: #d97706;
+            font-weight: bold;
+            padding: 3px 6px;
+            border-radius: 4px;
+        }
+
         /* Botões de Ação */
         .action-btn {
             padding: 8px 16px;
@@ -233,10 +249,12 @@
         .action-btn.green { background-color: var(--btn-green); }
         .action-btn.orange { background-color: var(--btn-orange); }
         .action-btn.blue { background-color: var(--btn-blue); }
+        .action-btn.red { background-color: var(--btn-red); }
     </style>
 </head>
 <body>
 
+    <!-- 🔒 TELA DE LOGIN PRINCIPAL -->
     <div id="view-login" class="login-wrapper">
         <div class="login-box">
             <h1>🔒 CAF HOSPITALAR</h1>
@@ -249,6 +267,7 @@
         </div>
     </div>
 
+    <!-- 🌐 DASHBOARD OPERACIONAL PRINCIPAL -->
     <div id="view-dashboard" class="app-container" style="display: none;">
         <div class="topbar">
             <div>🏣 CENTRAL DE GESTÃO E DISPENSAÇÃO FARMACÊUTICA</div>
@@ -256,6 +275,7 @@
         </div>
 
         <div class="main-layout">
+            <!-- BARRA LATERAL CONSOLIDADA -->
             <aside class="sidebar">
                 <div class="menu-group">Medicamentos</div>
                 <button class="menu-btn btn-med" onclick="switchTab('tab-catalogo')">💊 Catálogo Base</button>
@@ -269,13 +289,16 @@
                 <button class="menu-btn btn-orange" onclick="switchTab('tab-dispensar')">⚡ Dispensar Itens</button>
 
                 <div class="menu-group">Auditoria & POP</div>
+                <button class="menu-btn btn-aud" onclick="switchTab('tab-alertas')">⚠️ Alertas Clínicos</button>
                 <button class="menu-btn btn-aud" onclick="switchTab('tab-rastreabilidade')">🔍 Rastreabilidade</button>
                 <button class="menu-btn btn-tec" onclick="switchTab('tab-tecnovigilancia')">⚠️ Tecnovigilância (POP)</button>
                 <button class="menu-btn btn-sobre" onclick="switchTab('tab-sobre')">ℹ️ Sobre o Sistema</button>
             </aside>
 
+            <!-- ÁREA DE CONTEÚDO DINÂMICA -->
             <main class="content-area">
 
+                <!-- INDICADORES FIXOS DE TOPO -->
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
                     <div style="background: white; border-left: 5px solid #3b82f6; padding: 12px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                         <div style="font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Medicamentos Cadastrados</div>
@@ -289,12 +312,13 @@
                         <div style="font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Alertas Críticos</div>
                         <div id="card-estoque-critico" style="font-size: 22px; font-weight: bold; color: #ef4444; margin-top: 5px;">0</div>
                     </div>
-                    <div style="background: white; border-left: 5px solid #ef4444; padding: 12px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <div style="background: white; border-left: 5px solid #ef4444; padding: 12px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer;" onclick="switchTab('tab-alertas')">
                         <div style="font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Lotes Vencendo/Vencidos</div>
                         <div id="card-vencimentos" style="font-size: 22px; font-weight: bold; color: #b91c1c; margin-top: 5px;">0</div>
                     </div>
                 </div>
 
+                <!-- 1. TAB: CATÁLOGO DE MEDICAMENTOS -->
                 <div id="tab-catalogo" class="tab-content">
                     <div class="panel-card">
                         <h2>💊 Catálogo Base de Medicamentos</h2>
@@ -329,6 +353,7 @@
                     </div>
                 </div>
 
+                <!-- 2. TAB: ENTRADA DE LOTES (MEDICAMENTOS) -->
                 <div id="tab-lotes-med" class="tab-content" style="display:none;">
                     <div class="panel-card">
                         <h2>📦 Entrada de Lotes e Suprimentos (Medicamentos)</h2>
@@ -359,6 +384,7 @@
                     </div>
                 </div>
 
+                <!-- 3. TAB: CADASTRO DE INSUMOS -->
                 <div id="tab-cadastro-insumo" class="tab-content" style="display:none;">
                     <div class="panel-card">
                         <h2>📝 Cadastro Base de Insumos e Correlatos</h2>
@@ -389,6 +415,7 @@
                     </div>
                 </div>
 
+                <!-- 4. TAB: RECEBER INSUMOS (LOTES INSUMOS) -->
                 <div id="tab-lotes-insumo" class="tab-content" style="display:none;">
                     <div class="panel-card">
                         <h2>📥 Recebimento e Armazenamento de Insumos</h2>
@@ -415,6 +442,7 @@
                     </div>
                 </div>
 
+                <!-- 5. TAB: DISPENSAÇÃO / MOVIMENTAÇÃO -->
                 <div id="tab-dispensar" class="tab-content" style="display:none;">
                     <div class="panel-card">
                         <h2>⚡ Painel Unificado de Dispensação e Baixa de Materiais</h2>
@@ -453,6 +481,23 @@
                     </div>
                 </div>
 
+                <!-- 6. TAB: ALERTAS CLÍNICOS E VALIDAÇÃO SANITÁRIA -->
+                <div id="tab-alertas" class="tab-content" style="display:none;">
+                    <div class="panel-card">
+                        <h2>⚠️ Controle de Validade e Alertas de Segurança Sanitária</h2>
+                        <p style="font-size: 12px; color: #555;">Exibição imediata de itens com validade expirada ou em atenção (vencimento crítico em até 30 dias).</p>
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>Tipo</th><th>Item/Descrição</th><th>Nº Lote</th><th>Estoque</th><th>Data de Validade</th><th>Status de Risco</th></tr></thead>
+                                <tbody id="rows-alertas-clinicos">
+                                    <tr><td colspan="6" style="text-align:center; color:#666;">Buscando lotes no banco Neon...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. TAB: RASTREABILIDADE (AUDITORIA) -->
                 <div id="tab-rastreabilidade" class="tab-content" style="display:none;">
                     <div class="panel-card">
                         <h2>🔍 Histórico de Rastreabilidade Global e Auditoria</h2>
@@ -466,6 +511,7 @@
                     </div>
                 </div>
 
+                <!-- 8. TAB: TECNOVIGILÂNCIA (POP.FARM.019) -->
                 <div id="tab-tecnovigilancia" class="tab-content" style="display:none;">
                     <div class="panel-card">
                         <h2>⚠️ Livro de Registro de Ocorrências e Tecnovigilância (POP.FARM.019)</h2>
@@ -510,6 +556,7 @@
                     </div>
                 </div>
 
+                <!-- 9. TAB: SOBRE -->
                 <div id="tab-sobre" class="tab-content" style="display:none;">
                     <div class="panel-card">
                         <h2>ℹ️ Sobre o Sistema YANA v1.1</h2>
@@ -584,6 +631,7 @@
             if (tabId === 'tab-cadastro-insumo') carregarInsumosBase();
             if (tabId === 'tab-lotes-insumo') carregarLotesInsumos();
             if (tabId === 'tab-dispensar') alternarSelecaoLoteDispensa();
+            if (tabId === 'tab-alertas') carregarAlertasClinicos();
             if (tabId === 'tab-rastreabilidade') carregarLogsRastreabilidade();
             if (tabId === 'tab-tecnovigilancia') carregarTecnovigilancia();
         }
@@ -639,14 +687,11 @@
         });
 
         async function carregarLotesMedicamentos() {
-            // Preenche o Select do formulário
             const resMed = await fetch(`${API_URL}/medicamentos`);
             if(resMed.ok) {
                 const meds = await resMed.json();
-                const select = document.getElementById("lote-med-id");
-                select.innerHTML = meds.map(m => `<option value="${m.id}">${m.nome} (${m.principio_ativo})</option>`).join('');
+                document.getElementById("lote-med-id").innerHTML = meds.map(m => `<option value="${m.id}">${m.nome} (${m.principio_ativo})</option>`).join('');
             }
-            // Preenche a tabela
             const resLotes = await fetch(`${API_URL}/lotes/medicamentos`);
             if(resLotes.ok) {
                 const lotes = await resLotes.json();
@@ -745,7 +790,6 @@
                 operador: operadorLogado
             };
 
-            // Rota genérica de movimentação do backend
             const res = await fetch(`${API_URL}/movimentacoes`, {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
@@ -755,6 +799,61 @@
             if(res.ok) { alert("Dispensação validada e baixa concluída!"); document.getElementById("form-dispensa-real").reset(); alternarSelecaoLoteDispensa(); }
             else { alert("Falha ao registrar dispensa. Verifique o estoque."); }
         });
+
+        // ==========================================
+        // ⚠️ PROCESSADOR DE ALERTAS CLÍNICOS (VALIDADE)
+        // ==========================================
+        async function carregarAlertasClinicos() {
+            const body = document.getElementById("rows-alertas-clinicos");
+            body.innerHTML = "";
+
+            try {
+                const [resMeds, resIns] = await Promise.all([
+                    fetch(`${API_URL}/lotes/medicamentos`),
+                    fetch(`${API_URL}/lotes/insumos`)
+                ]);
+
+                let lotesMeds = resMeds.ok ? await resMeds.json() : [];
+                let lotesIns = resIns.ok ? await resIns.json() : [];
+
+                const hoje = new Date();
+                const limiteAlerta = new Date();
+                limiteAlerta.setDate(hoje.getDate() + 30); // 30 dias de margem
+
+                let totalAlertasencontrados = 0;
+
+                // Processa Medicamentos
+                lotesMeds.forEach(l => {
+                    const dataValidade = new Date(l.validade);
+                    if (dataValidade <= hoje) {
+                        totalAlertasencontrados++;
+                        body.innerHTML += `<tr><td>💊 Medicamento</td><td><strong>${l.medicamento_nome}</strong></td><td>${l.numero_lote}</td><td>${l.quantidade} u.</td><td>${l.validade}</td><td><span class="status-vencido">🛑 EXPIRADO (Risco!)</span></td></tr>`;
+                    } else if (dataValidade <= limiteAlerta) {
+                        totalAlertasencontrados++;
+                        body.innerHTML += `<tr><td>💊 Medicamento</td><td><strong>${l.medicamento_nome}</strong></td><td>${l.numero_lote}</td><td>${l.quantidade} u.</td><td>${l.validade}</td><td><span class="status-critico">⚠️ Vence em < 30 dias</span></td></tr>`;
+                    }
+                });
+
+                // Processa Insumos
+                lotesIns.forEach(l => {
+                    const dataValidade = new Date(l.validade);
+                    if (dataValidade <= hoje) {
+                        totalAlertasencontrados++;
+                        body.innerHTML += `<tr><td>📦 Insumo</td><td><strong>${l.insumo_nome}</strong></td><td>${l.numero_lote}</td><td>${l.quantidade} u.</td><td>${l.validade}</td><td><span class="status-vencido">🛑 EXPIRADO (Risco!)</span></td></tr>`;
+                    } else if (dataValidade <= limiteAlerta) {
+                        totalAlertasencontrados++;
+                        body.innerHTML += `<tr><td>📦 Insumo</td><td><strong>${l.insumo_nome}</strong></td><td>${l.numero_lote}</td><td>${l.quantidade} u.</td><td>${l.validade}</td><td><span class="status-critico">⚠️ Vence em < 30 dias</span></td></tr>`;
+                    }
+                });
+
+                if (totalAlertasencontrados === 0) {
+                    body.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#10b981; font-weight:bold; padding: 15px;">🟢 Nenhum item vencido ou próximo do vencimento no estoque!</td></tr>`;
+                }
+
+            } catch(e) {
+                body.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">Falha ao calcular dados de validade.</td></tr>`;
+            }
+        }
 
         // ==========================================
         // 🔍 RASTREABILIDADE LOGS
