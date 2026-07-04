@@ -671,30 +671,56 @@
             } catch (err) { console.error(err); }
         }
 
-        document.getElementById("form-lote-med").addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const selectMed = document.getElementById("lote-med-id-selecionado");
-            const payload = {
-                medicamento_id: parseInt(selectMed.value),
-                numero_lote: document.getElementById("lote-med-numero").value.trim(),
-                fabricante: document.getElementById("lote-med-fabricante").value.trim(),
-                validade: document.getElementById("lote-med-validade").value,
-                quantidade: parseInt(document.getElementById("lote-med-qtd").value)
-            };
+       document.getElementById("form-lote-med").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const selectMed = document.getElementById("lote-med-id-selecionado");
+    
+    // 1. Captura o valor digitado (ex: "05/07/2026")
+    const dataDigitada = document.getElementById("lote-med-validade").value.trim();
+    let dataFormatada = dataDigitada;
 
-            const res = await fetch(`${API_URL}/lotes`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-            if (res.ok) {
-                alert("✅ Lote registrado!");
-                document.getElementById("form-lote-med").reset();
-                carregarLotesMedicamentos();
-            } else {
-                alert("Erro ao salvar o lote.");
-            }
+    // 2. Converte de DD/MM/AAAA para AAAA-MM-DD se o usuário usou barras
+    if (dataDigitada.includes("/")) {
+        const partes = dataDigitada.split("/"); // ["05", "07", "2026"]
+        if (partes.length === 3) {
+            dataFormatada = `${partes[2]}-${partes[1]}-${partes[0]}`; // "2026-07-05"
+        }
+    }
+
+    const payload = {
+        medicamento_id: parseInt(selectMed.value),
+        numero_lote: document.getElementById("lote-med-numero").value.trim(),
+        fabricante: document.getElementById("lote-med-fabricante").value.trim(),
+        validade: dataFormatada, // <--- Agora envia no formato correto (AAAA-MM-DD)
+        quantidade: parseInt(document.getElementById("lote-med-qtd").value)
+    };
+
+    // Validação simples antes de enviar
+    if (isNaN(payload.medicamento_id)) {
+        alert("Por favor, selecione um medicamento válido.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/lotes`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
         });
+        
+        if (res.ok) {
+            alert("✅ Lote registrado!");
+            document.getElementById("form-lote-med").reset();
+            carregarLotesMedicamentos();
+        } else {
+            // Dica extra: Tente capturar a mensagem de erro real vinda do servidor para ajudar no debug
+            const erroServidor = await res.json().catch(() => ({}));
+            alert(`Erro ao salvar o lote: ${erroServidor.detail || 'Verifique os dados enviados.'}`);
+        }
+    } catch (err) {
+        alert("Erro de rede ao tentar conectar com o servidor.");
+    }
+});
 
         // ==========================================
         // 📝 4. MÓDULO INSUMOS
