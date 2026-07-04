@@ -180,7 +180,7 @@
             width: 220px;
         }
 
-        /* Tabelas Alinhadas */
+        /* Tabelas Hospitalares Clássicas */
         .table-container {
             background: white;
             border: 1px solid #b5b5b5;
@@ -192,20 +192,25 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 12px;
+            font-size: 13px;
+            background: #ffffff;
         }
         th {
-            background: #fff;
-            color: #333;
-            font-weight: normal;
-            padding: 8px;
-            border-bottom: 1px solid #ccc;
-            border-right: 1px solid #eee;
+            background: #1a365d;
+            color: white;
+            font-weight: 500;
+            padding: 10px;
+            text-align: left;
+            border-right: 1px solid #2c4a75;
         }
         td {
-            padding: 8px;
-            border-bottom: 1px solid #eee;
-            border-right: 1px solid #eee;
+            padding: 8px 10px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #334155;
+            border-right: 1px solid #edf2f7;
+        }
+        tr:nth-child(even) {
+            background-color: #f8fafc;
         }
 
         /* Botões de Ação Inferiores */
@@ -283,6 +288,25 @@
             <main class="content-area">
 
                 <div id="tab-catalogo" class="tab-content">
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px;">
+                        <div style="background: white; border-left: 5px solid #3b82f6; padding: 15px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            <div style="font-size: 12px; color: #64748b; font-weight: bold; text-transform: uppercase;">Medicamentos Cadastrados</div>
+                            <div id="card-total-meds" style="font-size: 24px; font-weight: bold; color: #1e293b; margin-top: 5px;">0</div>
+                        </div>
+                        <div style="background: white; border-left: 5px solid #10b981; padding: 15px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            <div style="font-size: 12px; color: #64748b; font-weight: bold; text-transform: uppercase;">Insumos Hospitalares</div>
+                            <div id="card-total-insumos" style="font-size: 24px; font-weight: bold; color: #1e293b; margin-top: 5px;">0</div>
+                        </div>
+                        <div style="background: white; border-left: 5px solid #f97316; padding: 15px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            <div style="font-size: 12px; color: #64748b; font-weight: bold; text-transform: uppercase;">Alertas de Estoque Crítico</div>
+                            <div id="card-estoque-critico" style="font-size: 24px; font-weight: bold; color: #ef4444; margin-top: 5px;">0</div>
+                        </div>
+                        <div style="background: white; border-left: 5px solid #ef4444; padding: 15px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            <div style="font-size: 12px; color: #64748b; font-weight: bold; text-transform: uppercase;">Lotes Próximos ao Vencimento</div>
+                            <div id="card-vencimentos" style="font-size: 24px; font-weight: bold; color: #b91c1c; margin-top: 5px;">0</div>
+                        </div>
+                    </div>
+
                     <div class="panel-card">
                         <h2>Catálogo de Medicamentos Hospitalares</h2>
                         <form id="form-med">
@@ -403,19 +427,40 @@
      document.body.style.display = 'block';
 
      // ==========================================
-     // 🔒 1. LÓGICA DE LOGIN PRINCIPAL DOS HOSPITAIS (Corrigido para evitar conflito de variáveis)
+     // 📊 FUNÇÃO PARA ALIMENTAR O DASHBOARD REALTIME
+     // ==========================================
+     async function atualizarDashboardRealtime() {
+         try {
+             const res = await fetch(`${API_URL}/dashboard/resumo`);
+             if (res.ok) {
+                 const dados = await res.json();
+                 document.getElementById("card-total-meds").innerText = dados.total_medicamentos || 0;
+                 document.getElementById("card-total-insumos").innerText = dados.total_insumos || 0;
+                 document.getElementById("card-estoque-critico").innerText = dados.estoque_critico || 0;
+                 document.getElementById("card-vencimentos").innerText = dados.alertas_vencimento || 0;
+             }
+         } catch (err) {
+             console.error("Falha ao sincronizar dados do dashboard:", err);
+         }
+     }
+
+     // Sincroniza os contadores automaticamente a cada 30 segundos
+     setInterval(atualizarDashboardRealtime, 30000);
+
+     // ==========================================
+     // 🔒 1. LÓGICA DE LOGIN PRINCIPAL DOS HOSPITAIS
      // ==========================================
      document.getElementById("form-login-sistema").addEventListener("submit", async (e) => {
          e.preventDefault();
 
-         const usuarioDigitado = document.getElementById("login-usuario-unidade").value.trim();
-         const senhaDigitada = document.getElementById("login-senha-unidade").value;
+         const usuario = document.getElementById("login-usuario-unidade").value.trim();
+         const senha = document.getElementById("login-senha-unidade").value;
 
          try {
              const res = await fetch(`${API_URL}/auth/login`, {
                  method: "POST",
                  headers: { "Content-Type": "application/json" },
-                 body: JSON.stringify({ usuario: usuarioDigitado, senha: senhaDigitada })
+                 body: JSON.stringify({ usuario, senha })
              });
 
              const dados = await res.json();
@@ -430,10 +475,12 @@
                  document.getElementById("view-login").style.display = "none";
                  document.getElementById("view-dashboard").style.display = "flex";
 
+                 // Executa a primeira carga dos indicadores
+                 atualizarDashboardRealtime();
+
                  // Inicializa abrindo a aba do Catálogo de Medicamentos
                  switchTab('tab-catalogo');
              } else {
-                 // Exibe exatamente a mensagem customizada que você configurou na API ou o fallback
                  alert(dados.detail || "❌ Credenciais Inválidas ou Unidade não ativada master!");
              }
          } catch (err) {
@@ -450,7 +497,9 @@
          });
          document.getElementById(tabId).style.display = 'block';
 
-         // Se o usuário clicar na aba de monitoramento/ativação, puxa a lista atualizada
+         // Ao mudar de aba, atualiza os contadores do dashboard
+         atualizarDashboardRealtime();
+
          if (tabId === 'tab-admin-unidades') {
              carregarUnidadesMaster();
          }
@@ -462,9 +511,7 @@
      document.getElementById("form-admin-cadastro").addEventListener("submit", async (e) => {
          e.preventDefault();
 
-         // Verifica se há um ID guardado no atributo customizado para saber se é Edição
          const idExistente = document.getElementById("form-admin-cadastro").dataset.id;
-
          const nome = document.getElementById("adm-nome").value;
          const user = document.getElementById("adm-user").value;
          const pass = document.getElementById("adm-pass").value;
@@ -492,7 +539,7 @@
              });
 
              if (res.ok) {
-                 alert(idExistente ? "Dados da unidade updated!" : "Nova Unidade integrada ao PostgreSQL!");
+                 alert(idExistente ? "Dados da unidade de saúde atualizados!" : "Nova Unidade integrada ao PostgreSQL!");
                  resetarFormularioInterno();
                  carregarUnidadesMaster();
              } else {
@@ -505,7 +552,7 @@
      });
 
      // ==========================================
-     // 📥 4. LISTAGEM COM BOTÕES DE AÇÃO (EDITAR / EXCLUIR)
+     // 📥 4. LISTAGEM COM BOTÕES DE AÇÃO
      // ==========================================
      async function carregarUnidadesMaster() {
          try {
@@ -528,8 +575,8 @@
                          <td>${u.perfil}</td>
                          <td><span style="color: #10b981; font-weight: bold;">🟢 Ativo</span></td>
                          <td>
-                             <button class="btn-action" style="background-color: #f97316; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 11px; margin-right: 5px;" onclick="prepararEdicaoInterna(${u.id}, '${usuarioEscapado}', '${senhaEscapada}', '${perfilEscapado}')">✏️ Editar</button>
-                             <button class="btn-action" style="background-color: #b91c1c; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 11px;" onclick="excluirUnidadeInterna(${u.id})">🗑️ Deletar</button>
+                             <button style="background-color: #f97316; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px; margin-right: 5px;" onclick="prepararEdicaoInterna(${u.id}, '${usuarioEscapado}', '${senhaEscapada}', '${perfilEscapado}')">✏️ Editar</button>
+                             <button style="background-color: #b91c1c; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;" onclick="excluirUnidadeInterna(${u.id})">🗑️ Deletar</button>
                          </td>
                      </tr>
                  `;
@@ -540,15 +587,14 @@
      }
 
      // ==========================================
-     // ✏️ 5. PREPARAR INTERFACE INTERNA PARA EDIÇÃO
+     // ✏️ 5. PREPARAR INTERFACE PARA EDIÇÃO
      // ==========================================
      function prepararEdicaoInterna(id, usuario, senha, perfilCompleto) {
          document.getElementById("form-admin-cadastro").dataset.id = id;
-
          document.getElementById("adm-user").value = usuario;
          document.getElementById("adm-pass").value = senha;
 
-         let perfilParte = "FARMACÊUTICO";
+         let perfilParte = "Farmacêutico Chefe";
          let nomeParte = perfilCompleto;
 
          if (perfilCompleto.includes(" - ")) {
@@ -585,11 +631,10 @@
          }
      }
 
-     // 🔄 RESETAR FORMULÁRIO INTERNO
      function resetarFormularioInterno() {
          document.getElementById("form-admin-cadastro").reset();
          delete document.getElementById("form-admin-cadastro").dataset.id;
-         document.querySelector("#form-admin-cadastro button[type='submit']").innerText = "Validar Nova Unidade";
+         document.querySelector("#form-admin-cadastro button[type='submit']").innerText = "🚀 Ativar e Liberar Unidade";
      }
 </script>
 </body>
