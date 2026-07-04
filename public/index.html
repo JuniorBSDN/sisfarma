@@ -127,7 +127,6 @@
         }
         .btn-med { background-color: #3a86ca; }
         .btn-ins { background-color: #2c3e50; }
-        .btn-imp { background-color: #0fa37f; }
         .btn-aud { background-color: #4a90e2; }
         .btn-tec { background-color: #a80000; }
         .btn-sobre { background-color: #34495e; }
@@ -282,17 +281,11 @@
                 <button class="menu-btn btn-ins" onclick="switchTab('tab-cadastro-insumo')">📝 Cadastro de Insumos</button>
                 <button class="menu-btn btn-ins" onclick="switchTab('tab-lotes-insumo')">📥 Receber Insumos</button>
 
-                <div class="menu-group">Serviços de Impressão</div>
-                <button class="menu-btn btn-imp" onclick="alert('Funcionalidade de Impressão de Etiquetas acionada via Client Driver local.')">🏷️ Gerador de Etiquetas</button>
-
                 <div class="menu-group">Auditoria</div>
                 <button class="menu-btn btn-aud" onclick="switchTab('tab-rastreabilidade')">🔍 Rastreabilidade</button>
                 <button class="menu-btn btn-aud" onclick="switchTab('tab-alertas')">⚠️ Alertas Clínicos</button>
                 <button class="menu-btn btn-tec" onclick="switchTab('tab-tecnovigilancia')">⚠️ Tecnovigilância (POP)</button>
                 <button class="menu-btn btn-sobre" onclick="alert('YANA v1.1\nDesenvolvido em total conformidade com as diretrizes da RDC 430/2020 ANVISA.')">ℹ️ Sobre o Sistema</button>
-
-                <div class="menu-group" style="color: #0284c7;">Configurações Master</div>
-                <button class="menu-btn" style="background-color: #0284c7;" onclick="switchTab('tab-admin-unidades')">🏢 Ativar Clientes/Unidades</button>
             </aside>
 
             <main class="content-area">
@@ -558,32 +551,6 @@
                     </div>
                 </div>
 
-                <div id="tab-admin-unidades" class="tab-content" style="display:none;">
-                    <div class="panel-card">
-                        <h2>Gerenciador de Licenciamento de Unidades / Clientes</h2>
-                        <form id="form-admin-cadastro">
-                            <div class="form-inline-row">
-                                <div class="form-group"><label>Nome do Cliente:</label><input type="text" id="adm-nome" placeholder="Ex: Hospital Unidade II" required></div>
-                                <div class="form-group"><label>Identificador/User:</label><input type="text" id="adm-user" placeholder="Ex: unidade2.admin" required></div>
-                            </div>
-                            <div class="form-inline-row">
-                                <div class="form-group"><label>Senha do Cliente:</label><input type="password" id="adm-pass" placeholder="Senha do cliente ou unidade" required></div>
-                                <div class="form-group">
-                                    <label>Perfil Mestre:</label>
-                                    <select id="adm-perfil"><option value="Farmacêutico Chefe">Farmacêutico Chefe</option><option value="Diretor Técnico">Diretor Técnico</option></select>
-                                </div>
-                            </div>
-                            <button type="submit" class="action-btn green">🚀 Ativar e Liberar Unidade</button>
-                        </form>
-                        <div class="table-container">
-                            <table>
-                                <thead><tr><th>ID</th><th>Unidade / Identificador</th><th>Perfil Atribuído</th><th>Status de Conexão</th><th>Ações</th></tr></thead>
-                                <tbody id="rows-admin-usuarios"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
             </main>
         </div>
     </div>
@@ -592,7 +559,11 @@
      const API_URL = "/api";
      let operadorLogado = "admin";
 
-     document.body.style.display = 'block';
+     // Garantir exibição inicial correta
+     document.addEventListener("DOMContentLoaded", () => {
+         document.getElementById("view-login").style.display = "flex";
+         document.getElementById("view-dashboard").style.display = "none";
+     });
 
      // ==========================================
      // 🔒 1. AUTENTICAÇÃO DO USUÁRIO
@@ -612,12 +583,12 @@
 
              if (res.ok) {
                  operadorLogado = dados.usuario;
-                 document.getElementById("user-display").innerText = `Operador: ${dados.usuario} (${dados.perfil})`;
+                 document.getElementById("user-display").innerText = `Operador: ${dados.usuario} (${dados.perfil || 'Farmacêutico Chefe'})`;
                  document.getElementById("view-login").style.display = "none";
                  document.getElementById("view-dashboard").style.display = "flex";
                  switchTab('tab-catalogo');
              } else {
-                 alert(dados.detail || "❌ Credenciais Inválidas ou Unidade não ativada master!");
+                 alert(dados.detail || "❌ Credenciais Inválidas!");
              }
          } catch (err) {
              alert("Erro ao conectar ao servidor de autenticação.");
@@ -640,15 +611,7 @@
          if (tabId === 'tab-rastreabilidade') carregarHistoricoRastreabilidade();
          if (tabId === 'tab-alertas') carregarAlertasClinicos();
          if (tabId === 'tab-tecnovigilancia') carregarOcorrenciasTecnovigilancia();
-         if (tabId === 'tab-admin-unidades') carregarUnidadesMaster();
      }
-
-     // Inicialização Global
-     document.addEventListener("DOMContentLoaded", () => {
-         // Se quiser pular o login em ambiente de teste, comente as duas linhas abaixo e remova style="display:none" do container.
-         document.getElementById("view-login").style.display = "flex";
-         document.getElementById("view-dashboard").style.display = "none";
-     });
 
 
      // ==========================================
@@ -834,7 +797,7 @@
          });
 
          if (res.ok) {
-             alert("✅ Dispensação efetuada com baixa automática no estoque Neon!");
+             alert("✅ Dispensação efetuada com baixa automática!");
              document.getElementById("form-dispensa-real").reset();
              carregarItensDispensacao();
              carregarMovimentacoesRealtime();
@@ -850,7 +813,6 @@
          const movs = await res.json();
          const tbody = document.getElementById("rows-movimentacoes");
          tbody.innerHTML = "";
-         // Mostra apenas as 5 últimas na tela rápida de dispensação
          movs.slice(-5).reverse().forEach(m => {
              tbody.innerHTML += `<tr><td>${m.id}</td><td>${m.tipo}</td><td>${m.quantidade}</td><td>${m.setor_destino}</td><td>${m.paciente_nome || 'Uso Geral'}</td><td>${m.data_movimentacao}</td></tr>`;
          });
@@ -919,11 +881,11 @@
 
          if (lotesCriticos.length === 0) {
              boxStatus.className = "alert-box-success";
-             boxStatus.innerText = "✔ Sistema Limpo: Nenhum lote de medicamento ou insumo fora da validade ou próximo do vencimento.";
+             boxStatus.innerText = "✔ Sistema Limpo: Nenhum lote fora da validade ou próximo do vencimento.";
              tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:green; padding:15px;">Nenhum lote crítico encontrado no estoque.</td></tr>`;
          } else {
              boxStatus.className = "alert-box-clean";
-             boxStatus.innerText = `⚠ Atenção! Foram detectados ${lotesCriticos.length} lotes que exigem atenção sanitária urgente.`;
+             boxStatus.innerText = `⚠ Atenção! Foram detectados ${lotesCriticos.length} lotes que exigem atenção urgente.`;
              lotesCriticos.forEach(c => {
                  tbody.innerHTML += `
                      <tr style="background-color: ${c.vencido ? '#fee2e2' : '#fef3c7'}">
@@ -980,89 +942,6 @@
          });
          if (res.ok) { document.getElementById("form-tecnovigilancia").reset(); carregarOcorrenciasTecnovigilancia(); }
      });
-
-
-     // ==========================================
-     // 🏢 9. CONFIGURAÇÕES MASTER (USUÁRIOS/UNIDADES)
-     // ==========================================
-     document.getElementById("form-admin-cadastro").addEventListener("submit", async (e) => {
-         e.preventDefault();
-         const idExistente = document.getElementById("form-admin-cadastro").dataset.id;
-         const nome = document.getElementById("adm-nome").value;
-         const user = document.getElementById("adm-user").value;
-         const pass = document.getElementById("adm-pass").value;
-         const perfil = document.getElementById("adm-perfil").value;
-
-         const payload = { usuario: user, senha: pass, perfil: `${perfil} - ${nome}` };
-         let url = `${API_URL}/auth/registrar`, metodo = "POST";
-
-         if (idExistente) { url = `${API_URL}/auth/usuarios/${idExistente}`; metodo = "PUT"; }
-
-         const res = await fetch(url, {
-             method: metodo,
-             headers: { "Content-Type": "application/json" },
-             body: JSON.stringify(payload)
-         });
-
-         if (res.ok) {
-             alert(idExistente ? "Dados da unidade atualizados!" : "Nova Unidade integrada ao PostgreSQL!");
-             resetarFormularioInterno();
-             carregarUnidadesMaster();
-         }
-     });
-
-     async function carregarUnidadesMaster() {
-         const res = await fetch(`${API_URL}/auth/usuarios`);
-         if (!res.ok) return;
-         const dados = await res.json();
-         const box = document.getElementById("rows-admin-usuarios");
-         box.innerHTML = "";
-
-         dados.forEach(u => {
-             const perfilEscapado = u.perfil.replace(/'/g, "\\'");
-             const usuarioEscapado = u.usuario.replace(/'/g, "\\'");
-             const senhaEscapada = (u.senha || '').replace(/'/g, "\\'");
-
-             box.innerHTML += `
-                 <tr>
-                     <td>${u.id}</td>
-                     <td><strong>${u.usuario}</strong></td>
-                     <td>${u.perfil}</td>
-                     <td><span style="color: #10b981; font-weight: bold;">🟢 Ativo</span></td>
-                     <td>
-                         <button class="action-btn orange" style="padding:2px 6px; font-size:11px; margin:0;" onclick="prepararEdicaoInterna(${u.id}, '${usuarioEscapado}', '${senhaEscapada}', '${perfilEscapado}')">✏️ Editar</button>
-                         <button class="action-btn red" style="padding:2px 6px; font-size:11px; margin:0;" onclick="excluirUnidadeInterna(${u.id})">🗑️ Deletar</button>
-                     </td>
-                 </tr>`;
-         });
-     }
-
-     function prepararEdicaoInterna(id, usuario, senha, perfilCompleto) {
-         document.getElementById("form-admin-cadastro").dataset.id = id;
-         document.getElementById("adm-user").value = usuario;
-         document.getElementById("adm-pass").value = senha;
-         let perfilParte = "Farmacêutico Chefe", nomeParte = perfilCompleto;
-         if (perfilCompleto.includes(" - ")) {
-             const partes = perfilCompleto.split(" - ");
-             perfilParte = partes[0];
-             nomeParte = partes.slice(1).join(" - ");
-         }
-         document.getElementById("adm-perfil").value = perfilParte;
-         document.getElementById("adm-nome").value = nomeParte;
-         document.querySelector("#form-admin-cadastro button[type='submit']").innerText = "💾 Salvar Alterações";
-     }
-
-     async function excluirUnidadeInterna(id) {
-         if (!confirm("⚠️ Deseja revogar permanentemente este acesso do banco de dados Neon?")) return;
-         const res = await fetch(`${API_URL}/auth/usuarios/${id}`, { method: "DELETE" });
-         if (res.ok) carregarUnidadesMaster();
-     }
-
-     function resetarFormularioInterno() {
-         document.getElementById("form-admin-cadastro").reset();
-         delete document.getElementById("form-admin-cadastro").dataset.id;
-         document.querySelector("#form-admin-cadastro button[type='submit']").innerText = "🚀 Ativar e Liberar Unidade";
-     }
 </script>
 </body>
 </html>
