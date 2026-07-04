@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sis Hospitalar v.1</title>
+    <title>YANA v1.1 - Central Farmacêutica Hospitalar</title>
     <style>
         :root {
             --bg-main: #d9d9d9;
             --sidebar-bg: #e6e6e6;
             --topbar-bg: #1a365d;
-            --btn-blue: #3a86ca;
+            --btn-blue: #3b82f6;
             --btn-green: #10b981;
             --btn-orange: #f97316;
             --btn-red: #b91c1c;
@@ -24,59 +24,12 @@
             background-color: var(--bg-main);
         }
 
-        /* --- TELA DE LOGIN --- */
-        .login-wrapper {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #f3f4f6;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        .login-box {
-            width: 100%;
-            max-width: 460px;
-            background: #e5e7eb;
-            padding: 30px;
-            border-radius: 24px;
-            text-align: center;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-        }
-        .login-box h1 {
-            font-size: 24px;
-            color: #111827;
-            margin: 10px 0;
-        }
-        .login-box p { color: #6b7280; font-style: italic; margin-bottom: 30px; font-size: 14px; }
-        .login-box input {
-            width: 100%;
-            padding: 14px;
-            margin: 12px 0;
-            border: 1px solid #9ca3af;
-            border-radius: 8px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-        .btn-login {
-            width: 100%;
-            background-color: #3b82f6;
-            color: white;
-            padding: 14px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 15px;
-        }
-
-        /* --- GESTÃO DE LAYOUT --- */
         .app-container {
             display: flex;
             flex-direction: column;
             height: 100vh;
         }
+
         .topbar {
             min-height: 45px;
             background-color: var(--topbar-bg);
@@ -90,13 +43,14 @@
             font-weight: bold;
             gap: 10px;
         }
+
         .main-layout {
             display: flex;
             flex: 1;
             overflow: hidden;
         }
 
-        /* Barra Lateral Responsiva */
+        /* Menu Lateral Responsivo */
         .sidebar {
             width: 220px;
             background-color: var(--sidebar-bg);
@@ -104,92 +58,78 @@
             display: flex;
             flex-direction: column;
             gap: 5px;
-            border-right: 1px solid #bcbcbc;
+            border-right: 1px solid #bccc;
             overflow-y: auto;
         }
+
         .menu-group {
             font-size: 10px;
-            color: #555;
+            color: #666;
             font-weight: bold;
-            margin: 12px 0 4px 5px;
+            margin: 10px 0 3px 5px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
+
         .menu-btn {
             width: 100%;
             text-align: left;
-            padding: 9px 12px;
+            padding: 8px 12px;
             border: none;
             border-radius: 6px;
             font-size: 12px;
             cursor: pointer;
             color: white;
             font-weight: 500;
-            transition: opacity 0.2s;
+            background-color: #34495e;
+            transition: background 0.2s;
         }
-        .menu-btn:hover { opacity: 0.9; }
-        .btn-med { background-color: #3a86ca; }
-        .btn-ins { background-color: #2c3e50; }
-        .btn-aud { background-color: #4a90e2; }
-        .btn-tec { background-color: #a80000; }
-        .btn-sobre { background-color: #708090; }
+        .menu-btn:hover { background-color: #2c3e50; }
+        .menu-btn.active { background-color: var(--btn-blue); }
 
-        /* Área de Trabalho */
         .content-area {
             flex: 1;
             padding: 20px;
             overflow-y: auto;
             box-sizing: border-box;
         }
+
         .panel-card {
             background-color: #e0e0e0;
             border-radius: 12px;
-            padding: 22px;
+            padding: 25px;
             box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+            min-height: 82vh;
+            box-sizing: border-box;
             margin-bottom: 20px;
         }
+
         .panel-card h2 {
             margin-top: 0;
-            font-size: 17px;
-            color: #1a365d;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #bcbcbc;
-            padding-bottom: 8px;
+            font-size: 18px;
+            color: #000;
+            margin-bottom: 25px;
         }
 
-        /* Indicadores em Grid Dinâmico */
-        .indicators-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        .indicator-card {
-            background: white;
-            border-left: 5px solid #3b82f6;
-            padding: 12px;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-
-        /* Formulários Flex/Grid Responsivos */
+        /* Grid Responsivo de Formulários */
         .form-inline-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
             margin-bottom: 15px;
         }
+
         .form-group {
             display: flex;
             flex-direction: column;
             gap: 5px;
         }
+
         .form-group label {
-            font-size: 12px;
+            font-size: 13px;
             color: #333;
-            text-align: left;
             font-weight: bold;
         }
+
         .form-group input, .form-group select, .form-group textarea {
             padding: 8px 10px;
             border: 1px solid #a3a3a3;
@@ -199,409 +139,306 @@
             width: 100%;
             box-sizing: border-box;
         }
-        .form-group textarea { height: 60px; resize: none; }
-        .full-width-row { grid-column: 1 / -1; }
 
-        /* Tabelas Corporativas com Rolagem Horizontal Ativa */
+        /* Tabelas Responsivas */
         .table-container {
             background: white;
             border: 1px solid #b5b5b5;
-            margin-top: 15px;
-            max-height: 300px;
-            overflow-x: auto; /* Rolagem lateral para telas pequenas */
+            margin-top: 20px;
+            max-height: 350px;
+            overflow-x: auto;
             overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
             font-size: 12px;
-            background: #ffffff;
-            white-space: nowrap; /* Impede que quebre as colunas de forma feia */
+            white-space: nowrap;
         }
+
         th {
-            background: #1a365d;
-            color: white;
-            font-weight: 500;
+            background: #f8f9fa;
+            color: #333;
+            font-weight: bold;
             padding: 10px;
+            border-bottom: 1px solid #ccc;
             text-align: left;
             position: sticky;
             top: 0;
         }
+
         td {
             padding: 9px 10px;
-            border-bottom: 1px solid #e2e8f0;
-            color: #334155;
+            border-bottom: 1px solid #eee;
         }
-        tr:nth-child(even) { background-color: #f8fafc; }
 
-        /* Status */
-        .status-vencido { background-color: #fee2e2; color: #b91c1c; font-weight: bold; padding: 3px 6px; border-radius: 4px; }
-        .status-critico { background-color: #ffedd5; color: #d97706; font-weight: bold; padding: 3px 6px; border-radius: 4px; }
-
-        /* Botões de Ação */
         .action-btn {
-            padding: 10px 18px;
+            padding: 10px 20px;
             color: white;
             border: none;
             border-radius: 4px;
             font-size: 12px;
-            font-weight: bold;
             cursor: pointer;
+            font-weight: bold;
             display: inline-flex;
             align-items: center;
             gap: 5px;
-            width: auto;
+            margin-top: 10px;
         }
-        .action-btn.green { background-color: var(--btn-green); }
-        .action-btn.orange { background-color: var(--btn-orange); }
         .action-btn.blue { background-color: var(--btn-blue); }
+        .action-btn.green { background-color: var(--btn-green); }
         .action-btn.red { background-color: var(--btn-red); }
+        .action-btn.teal { background-color: #16a085; }
 
-        /* ==========================================
-           📱 MEDIA QUERIES (RESPONSIVIDADE COMPLETA)
-           ========================================== */
-        @media (max-width: 900px) {
-            .indicators-grid {
-                grid-template-columns: repeat(2, 1fr); /* 2 colunas para tablets */
-            }
-        }
-
+        /* Media Queries para Mobile */
         @media (max-width: 768px) {
-            .main-layout {
-                flex-direction: column; /* Joga a barra lateral para cima ou baixo se necessário */
-                overflow-y: auto;
-            }
+            .main-layout { flex-direction: column; overflow-y: auto; }
             .sidebar {
                 width: 100%;
                 height: auto;
-                border-right: none;
-                border-bottom: 1px solid #bcbcbc;
-                flex-direction: row; /* Transforma o menu lateral em horizontal scroller */
+                flex-direction: row;
                 overflow-x: auto;
                 padding: 10px;
-                gap: 8px;
+                border-right: none;
+                border-bottom: 1px solid #bccc;
             }
-            .menu-group { display: none; } /* Oculta títulos de grupo no mobile para economizar espaço */
-            .menu-btn {
-                white-space: nowrap;
-                width: auto;
-                padding: 8px 12px;
-            }
-            .indicators-grid {
-                grid-template-columns: 1fr; /* 1 coluna total no celular */
-            }
-            .form-inline-row {
-                grid-template-columns: 1fr; /* Inputs um embaixo do outro */
-            }
-            body, html {
-                overflow: auto; /* Permite rolagem geral da tela no celular */
-            }
-            .app-container {
-                height: auto;
-                min-height: 100vh;
-            }
+            .menu-group { display: none; }
+            .menu-btn { width: auto; white-space: nowrap; }
+            .action-btn { width: 100%; justify-content: center; }
         }
     </style>
 </head>
 <body>
 
-    <!-- 🔒 TELA DE LOGIN PRINCIPAL -->
-    <div id="view-login" class="login-wrapper">
-        <div class="login-box">
-            <h1>🔒 CAF HOSPITALAR</h1>
-            <p>Controle Interno & Rastreabilidade</p>
-            <form id="form-login-sistema">
-                <input type="text" id="login-usuario-unidade" placeholder="Usuário ou Registro" required>
-                <input type="password" id="login-senha-unidade" placeholder="Senha" required>
-                <button type="submit" class="btn-login">Autenticar no Sistema</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- 🌐 DASHBOARD OPERACIONAL PRINCIPAL -->
-    <div id="view-dashboard" class="app-container" style="display: none;">
+    <div class="app-container">
         <div class="topbar">
-            <div>🏣 Sis Hospitalar v.1 - CAF </div>
-            <div id="user-display">Operador: Carregando...</div>
+            <div>🏥 CENTRAL DE GESTÃO E DISPENSAÇÃO FARMACÊUTICA</div>
+            <div id="info-usuario-logado">Operador: Carregando...</div>
         </div>
 
         <div class="main-layout">
-            <!-- BARRA LATERAL CONSOLIDADA E RESPONSIVA -->
             <aside class="sidebar">
-                <button class="menu-btn btn-med" onclick="switchTab('tab-catalogo')">💊 Catálogo Base</button>
-                <button class="menu-btn btn-med" onclick="switchTab('tab-lotes-med')">📦 Entrada Lotes</button>
-                <button class="menu-btn btn-ins" onclick="switchTab('tab-cadastro-insumo')">📝 Cad. Insumos</button>
-                <button class="menu-btn btn-ins" onclick="switchTab('tab-lotes-insumo')">📥 Rec. Insumos</button>
-                <button class="menu-btn btn-orange" onclick="switchTab('tab-dispensar')">⚡ Dispensar</button>
-                <button class="menu-btn btn-aud" onclick="switchTab('tab-alertas')">⚠️ Alertas Clínicos</button>
-                <button class="menu-btn btn-aud" onclick="switchTab('tab-rastreabilidade')">🔍 Rastreabilidade</button>
-                <button class="menu-btn btn-tec" onclick="switchTab('tab-tecnovigilancia')">⚠️ Tecnovigilância</button>
-                <button class="menu-btn btn-sobre" onclick="switchTab('tab-sobre')">ℹ️ Info</button>
+                <div class="menu-group">Medicamentos</div>
+                <button class="menu-btn" onclick="alternarAba('tab-meds')">💊 Catálogo Base</button>
+                <button class="menu-btn" onclick="alternarAba('tab-lotes')">📦 Entrada de Lotes</button>
+                <button class="menu-btn" onclick="alternarAba('tab-dispensacao')">⚡ Dispensar Itens</button>
+
+                <div class="menu-group">Insumos / Materiais</div>
+                <button class="menu-btn" onclick="alternarAba('tab-insumos')">💉 Cadastro Insumos</button>
+                <button class="menu-btn" onclick="alternarAba('tab-lotes-insumos')">📥 Receber Insumos</button>
+
+                <div class="menu-group">Auditoria & POP</div>
+                <button class="menu-btn" onclick="alternarAba('tab-tecnovigilancia')">⚠️ Tecnovigilância</button>
+                <a href="admin.html" style="text-decoration: none; margin-top: auto;">
+                    <button class="menu-btn" style="background-color: #7f8c8d;">⚙ Panel Admin</button>
+                </a>
             </aside>
 
-            <!-- ÁREA DE CONTEÚDO DINÂMICA -->
             <main class="content-area">
 
-                <!-- INDICADORES FIXOS DE TOPO -->
-                <div class="indicators-grid">
-                    <div class="indicator-card" style="border-left-color: #3b82f6;">
-                        <div style="font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Medicamentos</div>
-                        <div id="card-total-meds" style="font-size: 22px; font-weight: bold; color: #1e293b; margin-top: 5px;">0</div>
-                    </div>
-                    <div class="indicator-card" style="border-left-color: #10b981;">
-                        <div style="font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Insumos</div>
-                        <div id="card-total-insumos" style="font-size: 22px; font-weight: bold; color: #1e293b; margin-top: 5px;">0</div>
-                    </div>
-                    <div class="indicator-card" style="border-left-color: #f97316;">
-                        <div style="font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Alertas Críticos</div>
-                        <div id="card-estoque-critico" style="font-size: 22px; font-weight: bold; color: #ef4444; margin-top: 5px;">0</div>
-                    </div>
-                    <div class="indicator-card" style="border-left-color: #ef4444; cursor: pointer;" onclick="switchTab('tab-alertas')">
-                        <div style="font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Lotes Críticos</div>
-                        <div id="card-vencimentos" style="font-size: 22px; font-weight: bold; color: #b91c1c; margin-top: 5px;">0</div>
-                    </div>
-                </div>
-
-                <!-- 1. TAB: CATÁLOGO DE MEDICAMENTOS -->
-                <div id="tab-catalogo" class="tab-content">
+                <div id="tab-meds" class="tab-content" style="display:none;">
                     <div class="panel-card">
-                        <h2>💊 Catálogo Base de Medicamentos</h2>
-                        <form id="form-med">
+                        <h2>Catálogo de Medicamentos Hospitalares</h2>
+                        <form id="form-cadastro-med">
                             <div class="form-inline-row">
-                                <div class="form-group"><label>Nome Comercial:</label><input type="text" id="med-nome" required></div>
-                                <div class="form-group"><label>Princípio Ativo:</label><input type="text" id="med-principio" required></div>
+                                <div class="form-group">
+                                    <label>Nome Comercial:</label>
+                                    <input type="text" id="med-nome" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Princípio Ativo:</label>
+                                    <input type="text" id="med-principio" required>
+                                </div>
                             </div>
                             <div class="form-inline-row">
                                 <div class="form-group">
                                     <label>Categoria:</label>
                                     <select id="med-categoria">
                                         <option value="Antimicrobiano">Antimicrobiano</option>
-                                        <option value="Analgésico/Anestésico">Analgésico/Anestésico</option>
-                                        <option value="Cardiovascular">Cardiovascular</option>
-                                        <option value="Injetável Geral">Injetável Geral</option>
+                                        <option value="Opioide">Opioide</option>
+                                        <option value="Anestésico">Anestésico</option>
+                                        <option value="Psicotrópico">Psicotrópico</option>
+                                        <option value="Injetável Comum">Injetável Comum</option>
+                                        <option value="Soros/Soluções">Soros/Soluções</option>
                                     </select>
                                 </div>
-                                <div class="form-group"><label>Código EAN (Barras):</label><input type="text" id="med-ean"></div>
-                            </div>
-                            <div class="form-inline-row full-width-row">
-                                <label style="font-size:12px; color:red; font-weight: bold;"><input type="checkbox" id="med-controlado" value="1"> Sujeito a Controle Especial (Portaria 344/98)</label>
+                                <div class="form-group">
+                                    <label>Código de Barras (EAN):</label>
+                                    <input type="text" id="med-cod-barras" placeholder="Leitura óptica...">
+                                </div>
                             </div>
                             <button type="submit" class="action-btn green">➕ Adicionar ao Catálogo</button>
                         </form>
                         <div class="table-container">
                             <table>
-                                <thead><tr><th>ID</th><th>Nome Comercial</th><th>Princípio Ativo</th><th>Categoria</th><th>EAN</th><th>Controlado</th></tr></thead>
-                                <tbody id="rows-catalogo"></tbody>
+                                <thead>
+                                    <tr><th>ID</th><th>Nome</th><th>Princípio Ativo</th><th>Categoria</th><th>Código Barras</th></tr>
+                                </thead>
+                                <tbody id="tabela-meds-body"></tbody>
                             </table>
                         </div>
                     </div>
                 </div>
 
-                <!-- 2. TAB: ENTRADA DE LOTES -->
-                <div id="tab-lotes-med" class="tab-content" style="display:none;">
+                <div id="tab-lotes" class="tab-content" style="display:none;">
                     <div class="panel-card">
-                        <h2>📦 Entrada de Lotes (Medicamentos)</h2>
+                        <h2>📦 Recebimento e Inventário de Lotes (Medicamentos)</h2>
                         <form id="form-lote-med">
                             <div class="form-inline-row">
                                 <div class="form-group">
                                     <label>Medicamento Base:</label>
-                                    <select id="lote-med-id" required><option value="">Carregando...</option></select>
+                                    <select id="lote-med-id" required>
+                                        <option value="">Carregando medicamentos...</option>
+                                    </select>
                                 </div>
-                                <div class="form-group"><label>Número do Lote:</label><input type="text" id="lote-med-numero" required></div>
+                                <div class="form-group">
+                                    <label>Número do Lote (ANVISA):</label>
+                                    <input type="text" id="lote-med-numero" required>
+                                </div>
                             </div>
                             <div class="form-inline-row">
-                                <div class="form-group"><label>Qtd Recebida:</label><input type="number" id="lote-med-qtd" required></div>
-                                <div class="form-group"><label>Data de Validade:</label><input type="date" id="lote-med-validade" required></div>
+                                <div class="form-group">
+                                    <label>Fabricante:</label>
+                                    <input type="text" id="lote-med-fabricante" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Data de Validade (AAAA-MM-DD):</label>
+                                    <input type="date" id="lote-med-validade" required>
+                                </div>
                             </div>
                             <div class="form-inline-row">
-                                <div class="form-group"><label>Fabricante:</label><input type="text" id="lote-med-fabricante"></div>
-                                <div class="form-group"><label>Preço Unitário (R$):</label><input type="number" step="0.01" id="lote-med-preco"></div>
+                                <div class="form-group">
+                                    <label>Quantidade Recebida:</label>
+                                    <input type="number" id="lote-med-qtd" required>
+                                </div>
                             </div>
-                            <button type="submit" class="action-btn blue">📥 Registrar Entrada</button>
+                            <button type="submit" class="action-btn green">➕ Dar Entrada de Lote</button>
                         </form>
                         <div class="table-container">
                             <table>
-                                <thead><tr><th>ID Lote</th><th>Medicamento</th><th>Lote</th><th>Estoque</th><th>Validade</th><th>Fabricante</th></tr></thead>
-                                <tbody id="rows-lotes-med"></tbody>
+                                <thead>
+                                    <tr><th>ID Lote</th><th>Medicamento</th><th>Lote</th><th>Fabricante</th><th>Validade</th><th>Estoque</th></tr>
+                                </thead>
+                                <tbody id="tabela-lotes-body"></tbody>
                             </table>
                         </div>
                     </div>
                 </div>
 
-                <!-- 3. TAB: CADASTRO DE INSUMOS -->
-                <div id="tab-cadastro-insumo" class="tab-content" style="display:none;">
+                <div id="tab-dispensacao" class="tab-content" style="display:none;">
                     <div class="panel-card">
-                        <h2>📝 Cadastro Base de Insumos</h2>
-                        <form id="form-insumo">
+                        <h2>⚡ Dispensação e Saída Logística Hospitalar</h2>
+                        <form id="form-dispensacao">
                             <div class="form-inline-row">
-                                <div class="form-group"><label>Descrição Insumo:</label><input type="text" id="ins-nome" required></div>
+                                <div class="form-group">
+                                    <label>Selecione o Lote Disponível:</label>
+                                    <select id="disp-lote-id" required>
+                                        <option value="">Carregando lotes em estoque...</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Quantidade a Dispensar:</label>
+                                    <input type="number" id="disp-qtd" required>
+                                </div>
+                            </div>
+                            <div class="form-inline-row">
+                                <div class="form-group">
+                                    <label>Setor de Destino:</label>
+                                    <input type="text" id="disp-setor" placeholder="Ex: UTI Adulto" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Nome do Paciente:</label>
+                                    <input type="text" id="disp-paciente" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="action-btn blue">⚡ Confirmar Baixa no Estoque</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="tab-insumos" class="tab-content" style="display:none;">
+                    <div class="panel-card">
+                        <h2>Catálogo Geral de Insumos & Materiais Correlatos</h2>
+                        <form id="form-cadastro-insumo">
+                            <div class="form-inline-row">
+                                <div class="form-group">
+                                    <label>Nome do Insumo:</label>
+                                    <input type="text" id="ins-nome" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Especificação Técnica:</label>
+                                    <input type="text" id="ins-especificacao">
+                                </div>
+                            </div>
+                            <div class="form-inline-row">
+                                <div class="form-group">
+                                    <label>Unidade de Medida:</label>
+                                    <select id="ins-unidade">
+                                        <option value="Unidade">Unidade</option>
+                                        <option value="Frasco">Frasco</option>
+                                        <option value="Caixa">Caixa</option>
+                                    </select>
+                                </div>
                                 <div class="form-group">
                                     <label>Grupo / Classe:</label>
                                     <select id="ins-grupo">
-                                        <option value="Seringas e Agulhas">Seringas e Agulhas</option>
-                                        <option value="EPI / Proteção">EPI / Proteção</option>
-                                        <option value="Fios Cirúrgicos">Fios Cirúrgicos</option>
-                                        <option value="Gases e Pensos">Gases e Pensos</option>
+                                        <option value="Correlatos/Descartáveis">Correlatos/Descartáveis</option>
+                                        <option value="EPIs">EPIs</option>
+                                        <option value="Acessórios de Infusão">Acessórios de Infusão</option>
                                     </select>
                                 </div>
                             </div>
-                            <div class="form-inline-row">
-                                <div class="form-group"><label>Unidade de Medida:</label><input type="text" id="ins-unidade" placeholder="Ex: CX, UN" required></div>
-                            </div>
-                            <button type="submit" class="action-btn green">📝 Cadastrar Insumo</button>
+                            <button type="submit" class="action-btn teal">➕ Cadastrar Insumo</button>
                         </form>
-                        <div class="table-container">
-                            <table>
-                                <thead><tr><th>ID</th><th>Descrição</th><th>Grupo</th><th>Unid. Medida</th></tr></thead>
-                                <tbody id="rows-insumos-base"></tbody>
-                            </table>
-                        </div>
                     </div>
                 </div>
 
-                <!-- 4. TAB: RECEBER INSUMOS -->
-                <div id="tab-lotes-insumo" class="tab-content" style="display:none;">
+                <div id="tab-lotes-insumos" class="tab-content" style="display:none;">
                     <div class="panel-card">
-                        <h2>📥 Recebimento de Insumos</h2>
+                        <h2>📥 Recebimento de Lotes (Insumos e Materiais)</h2>
                         <form id="form-lote-insumo">
                             <div class="form-inline-row">
                                 <div class="form-group">
-                                    <label>Insumo Alvo:</label>
-                                    <select id="lote-ins-id" required><option value="">Carregando...</option></select>
-                                </div>
-                                <div class="form-group"><label>Nº Lote/Série:</label><input type="text" id="lote-ins-numero" required></div>
-                            </div>
-                            <div class="form-inline-row">
-                                <div class="form-group"><label>Quantidade:</label><input type="number" id="lote-ins-qtd" required></div>
-                                <div class="form-group"><label>Validade:</label><input type="date" id="lote-ins-validade" required></div>
-                            </div>
-                            <button type="submit" class="action-btn blue">📥 Vincular Lote</button>
-                        </form>
-                        <div class="table-container">
-                            <table>
-                                <thead><tr><th>ID Lote</th><th>Insumo</th><th>Lote/Série</th><th>Qtd</th><th>Validade</th></tr></thead>
-                                <tbody id="rows-lotes-insumo"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 5. TAB: DISPENSAÇÃO -->
-                <div id="tab-dispensar" class="tab-content" style="display:none;">
-                    <div class="panel-card">
-                        <h2>⚡ Painel Unificado de Dispensação</h2>
-                        <form id="form-dispensa-real">
-                            <div class="form-inline-row">
-                                <div class="form-group">
-                                    <label>Tipo de Item:</label>
-                                    <select id="disp-tipo-material" onchange="alternarSelecaoLoteDispensa()">
-                                        <option value="MEDICAMENTO">💊 Medicamento por Lote</option>
-                                        <option value="INSUMO">📦 Insumo Hospitalar</option>
-                                    </select>
+                                    <label>Insumo Base:</label>
+                                    <select id="lote-ins-id" required></select>
                                 </div>
                                 <div class="form-group">
-                                    <label>Lote Selecionado:</label>
-                                    <select id="disp-lote-select" required><option value="">Selecione...</option></select>
+                                    <label>Número do Lote:</label>
+                                    <input type="text" id="lote-ins-numero" required>
                                 </div>
                             </div>
-                            <div class="form-inline-row">
-                                <div class="form-group"><label>Paciente / Fins:</label><input type="text" id="disp-paciente" required></div>
-                                <div class="form-group"><label>Nº Prescrição:</label><input type="text" id="disp-req" required></div>
-                            </div>
-                            <div class="form-inline-row">
-                                <div class="form-group">
-                                    <label>Setor Destino:</label>
-                                    <select id="disp-setor">
-                                        <option value="UTI Adulto">UTI Adulto</option>
-                                        <option value="Bloco Cirúrgico">Bloco Cirúrgico</option>
-                                        <option value="Pronto Atendimento">Pronto Atendimento</option>
-                                        <option value="Enfermaria">Enfermaria</option>
-                                    </select>
-                                </div>
-                                <div class="form-group"><label>Qtd Solicitada:</label><input type="number" id="disp-qtd" required></div>
-                            </div>
-                            <button type="submit" class="action-btn orange">⚡ Processar Saída</button>
+                            <button type="submit" class="action-btn teal">📥 Registrar Lote de Insumo</button>
                         </form>
                     </div>
                 </div>
 
-                <!-- 6. TAB: ALERTAS CLÍNICOS -->
-                <div id="tab-alertas" class="tab-content" style="display:none;">
-                    <div class="panel-card">
-                        <h2>⚠️ Controle de Validade Sanitária</h2>
-                        <div class="table-container">
-                            <table>
-                                <thead><tr><th>Tipo</th><th>Item</th><th>Nº Lote</th><th>Estoque</th><th>Validade</th><th>Status de Risco</th></tr></thead>
-                                <tbody id="rows-alertas-clinicos"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 7. TAB: RASTREABILIDADE -->
-                <div id="tab-rastreabilidade" class="tab-content" style="display:none;">
-                    <div class="panel-card">
-                        <h2>🔍 Rastreabilidade Global e Auditoria</h2>
-                        <div class="table-container">
-                            <table>
-                                <thead><tr><th>ID Mov.</th><th>Tipo</th><th>Quantidade</th><th>Destino</th><th>Responsável</th><th>Data/Hora</th></tr></thead>
-                                <tbody id="rows-movimentacoes"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 8. TAB: TECNOVIGILÂNCIA -->
                 <div id="tab-tecnovigilancia" class="tab-content" style="display:none;">
                     <div class="panel-card">
-                        <h2>⚠️ Registro de Tecnovigilância (POP.FARM.019)</h2>
+                        <h2>⚠️ Registro de Ocorrência de Tecnovigilância (POP.FARM.019)</h2>
                         <form id="form-tecnovigilancia">
                             <div class="form-inline-row">
-                                <div class="form-group"><label>Lote / Item Alvo:</label><input type="text" id="tec-lote" required></div>
                                 <div class="form-group">
-                                    <label>Ocorrência:</label>
+                                    <label>Lote / Item Suspeito:</label>
+                                    <input type="text" id="tec-lote" placeholder="Ex: Lote LOT2411 - Ambroxol" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Tipo de Inconformidade:</label>
                                     <select id="tec-tipo">
                                         <option value="Desvio de Qualidade">Desvio de Qualidade</option>
-                                        <option value="Quebra de Cadeia de Frio">Quebra de Cadeia de Frio</option>
-                                        <option value="Reação Adversa Inesperada">Reação Adversa Inesperada</option>
+                                        <option value="Queixa Técnica">Queixa Técnica</option>
+                                        <option value="Efeito Adverso">Efeito Adverso</option>
                                     </select>
                                 </div>
                             </div>
                             <div class="form-inline-row">
                                 <div class="form-group">
-                                    <label>Gravidade:</label>
-                                    <select id="tec-gravidade">
-                                        <option value="Leve">Leve</option>
-                                        <option value="Moderada">Moderada</option>
-                                        <option value="Crítica / Bloqueio">Crítica / Bloqueio Seguro</option>
-                                    </select>
-                                </div>
-                                <div class="form-group"><label>Conduta Adotada:</label><input type="text" id="tec-conduta" required></div>
-                            </div>
-                            <div class="form-inline-row full-width-row">
-                                <div class="form-group">
                                     <label>Descrição Detalhada:</label>
-                                    <textarea id="tec-descricao" required></textarea>
+                                    <textarea id="tec-desc" rows="3" required></textarea>
                                 </div>
                             </div>
-                            <button type="submit" class="action-btn red">⚠️ Registrar Notificação</button>
+                            <button type="submit" class="action-btn red">💾 Registrar Evento Sanitário</button>
                         </form>
-                        <div class="table-container">
-                            <table>
-                                <thead><tr><th>Data</th><th>Item/Lote</th><th>Ocorrência</th><th>Gravidade</th><th>Conduta</th><th>Responsável</th></tr></thead>
-                                <tbody id="rows-tecnovigilancia"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 9. TAB: SOBRE -->
-                <div id="tab-sobre" class="tab-content" style="display:none;">
-                    <div class="panel-card">
-                        <h2>ℹ️ Sobre o YANA v1.1</h2>
-                        <p><strong>Desenvolvimento:</strong> Central de Abastecimento Farmacêutico (CAF)</p>
-                        <p><strong>Banco de Dados:</strong> PostgreSQL (Neon Cloud)</p>
                     </div>
                 </div>
 
@@ -611,286 +448,161 @@
 
     <script>
         const API_URL = "/api";
-        let operadorLogado = "";
+        let usuarioSessao = "admin"; 
 
-        async function atualizarDashboard() {
-            try {
-                const res = await fetch(`${API_URL}/dashboard/resumo`);
-                if (res.ok) {
-                    const d = await res.json();
-                    document.getElementById("card-total-meds").innerText = d.total_medicamentos || 0;
-                    document.getElementById("card-total-insumos").innerText = d.total_insumos || 0;
-                    document.getElementById("card-estoque-critico").innerText = d.estoque_critico || 0;
-                    document.getElementById("card-vencimentos").innerText = d.alertas_vencimento || 0;
-                }
-            } catch(e) { console.error(e); }
+        // 🔄 1. GERENCIADOR DE ABAS DA SIDEBAR
+        function alternarAba(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
+            
+            const abaAlvo = document.getElementById(tabId);
+            if(abaAlvo) {
+                abaAlvo.style.display = 'block';
+                // Gatilhos de carregamento de dados quando entra na aba
+                if (tabId === 'tab-lotes') carregarMedsNoCombo();
+                if (tabId === 'tab-dispensacao') carregarLotesDisponiveis();
+            }
         }
 
-        document.getElementById("form-login-sistema").addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const usuario = document.getElementById("login-usuario-unidade").value.trim();
-            const senha = document.getElementById("login-senha-unidade").value;
-
-            try {
-                const res = await fetch(`${API_URL}/auth/login`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ usuario, senha })
-                });
-                const dados = await res.json();
-
-                if (res.ok) {
-                    operadorLogado = dados.usuario;
-                    document.getElementById("user-display").innerText = `Operador: ${dados.usuario}`;
-                    document.getElementById("view-login").style.display = "none";
-                    document.getElementById("view-dashboard").style.display = "flex";
-                    switchTab('tab-catalogo');
-                } else { alert(dados.detail || "Erro"); }
-            } catch (err) { alert("Erro de comunicação."); }
+        // Inicializar na aba de catálogo por padrão
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("info-usuario-logado").innerText = `Operador: ${usuarioSessao} (Farmacêutico Chefe)`;
+            alternarAba('tab-meds');
+            carregarTabelaMedicamentos();
+            carregarTabelaLotes();
         });
 
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
-            document.getElementById(tabId).style.display = 'block';
-            atualizarDashboard();
-
-            if (tabId === 'tab-catalogo') carregarMedicamentos();
-            if (tabId === 'tab-lotes-med') carregarLotesMedicamentos();
-            if (tabId === 'tab-cadastro-insumo') carregarInsumosBase();
-            if (tabId === 'tab-lotes-insumo') carregarLotesInsumos();
-            if (tabId === 'tab-dispensar') alternarSelecaoLoteDispensa();
-            if (tabId === 'tab-alertas') carregarAlertasClinicos();
-            if (tabId === 'tab-rastreabilidade') carregarLogsRastreabilidade();
-            if (tabId === 'tab-tecnovigilancia') carregarTecnovigilancia();
+        // 📥 2. PREENCHER COMBOBOX DE MEDICAMENTOS PARA ENTRADA DE LOTE
+        async function carregarMedsNoCombo() {
+            try {
+                const res = await fetch(`${API_URL}/medicamentos`);
+                if (!res.ok) return;
+                const medicamentos = await res.json();
+                const select = document.getElementById("lote-med-id");
+                
+                select.innerHTML = '<option value="">-- Selecione o Medicamento --</option>';
+                medicamentos.forEach(m => {
+                    select.innerHTML += `<option value="${m.id}">${m.nome} (${m.principio_ativo})</option>`;
+                });
+            } catch (err) {
+                console.error("Erro ao alimentar combobox:", err);
+            }
         }
 
-        // --- FUNÇÕES DE CARREGAMENTO / SUBMIT (MANTIDAS EXATAMENTE IGUAIS) ---
-        document.getElementById("form-med").addEventListener("submit", async (e) => {
+        // 📥 3. SALVAR NOVA ENTRADA DE LOTE (MÓDULO CORRIGIDO)
+        document.getElementById("form-lote-med").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const medId = parseInt(document.getElementById("lote-med-id").value);
+            const numeroLote = document.getElementById("lote-med-numero").value.strip ? document.getElementById("lote-med-numero").value.strip() : document.getElementById("lote-med-numero").value;
+            const fabricante = document.getElementById("lote-med-fabricante").value;
+            const validade = document.getElementById("lote-med-validade").value;
+            const quantidade = parseInt(document.getElementById("lote-med-qtd").value);
+
+            if (!medId || isNaN(medId)) {
+                alert("Por favor, selecione um medicamento base válido.");
+                return;
+            }
+
+            const payload = {
+                medicamento_id: medId,
+                numero_lote: numeroLote,
+                fabricante: fabricante,
+                validade: validade,
+                quantidade: quantidade
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/lotes`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    alert("✅ Entrada de Lote registrada com sucesso na base Neon/PostgreSQL!");
+                    document.getElementById("form-lote-med").reset();
+                    carregarTabelaLotes();
+                } else {
+                    const erro = await res.json();
+                    alert(`Erro do servidor: ${erro.detail || 'Falha ao salvar'}`);
+                }
+            } catch (err) {
+                alert("Falha de comunicação na rede com a API.");
+            }
+        });
+
+        // 📊 4. ATUALIZAR TABELA DE LOTES
+        async function carregarTabelaLotes() {
+            try {
+                const res = await fetch(`${API_URL}/lotes`);
+                if(!res.ok) return;
+                const lotes = await res.json();
+                const tbody = document.getElementById("tabela-lotes-body");
+                tbody.innerHTML = "";
+                
+                lotes.forEach(l => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${l.id}</td>
+                            <td>${l.medicamento_nome || 'N/A'}</td>
+                            <td><strong>${l.numero_lote}</strong></td>
+                            <td>${l.fabricante}</td>
+                            <td>${l.validade}</td>
+                            <td>${l.quantidade}</td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // 📊 5. ATUALIZAR TABELA DE MEDICAMENTOS BASE
+        async function carregarTabelaMedicamentos() {
+            try {
+                const res = await fetch(`${API_URL}/medicamentos`);
+                if(!res.ok) return;
+                const meds = await res.json();
+                const tbody = document.getElementById("tabela-meds-body");
+                tbody.innerHTML = "";
+                meds.forEach(m => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${m.id}</td>
+                            <td><strong>${m.nome}</strong></td>
+                            <td>${m.principio_ativo}</td>
+                            <td>${m.categoria}</td>
+                            <td>${m.codigo_barras || 'Nenhum'}</td>
+                        </tr>
+                    `;
+                });
+            } catch(err) { console.error(err); }
+        }
+
+        // 📥 6. CADASTRO DE MEDICAMENTO BASE
+        document.getElementById("form-cadastro-med").addEventListener("submit", async (e) => {
             e.preventDefault();
             const payload = {
                 nome: document.getElementById("med-nome").value,
                 principio_ativo: document.getElementById("med-principio").value,
                 categoria: document.getElementById("med-categoria").value,
-                codigo_barras: document.getElementById("med-ean").value,
-                controlado: document.getElementById("med-controlado").checked ? 1 : 0
+                codigo_barras: document.getElementById("med-cod-barras").value || "Nenhum",
+                controlado: 0
             };
+
             const res = await fetch(`${API_URL}/medicamentos`, {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(payload)
             });
-            if(res.ok) { alert("Medicamento adicionado!"); document.getElementById("form-med").reset(); carregarMedicamentos(); }
-        });
 
-        async function carregarMedicamentos() {
-            const res = await fetch(`${API_URL}/medicamentos`);
-            if(!res.ok) return;
-            const dados = await res.json();
-            const body = document.getElementById("rows-catalogo");
-            body.innerHTML = dados.map(m => `<tr><td>${m.id}</td><td>${m.nome}</td><td>${m.principio_ativo}</td><td>${m.categoria}</td><td>${m.codigo_barras || '-'}</td><td>${m.controlado ? '⚠️ SIM' : 'NÃO'}</td></tr>`).join('');
-        }
-
-        document.getElementById("form-lote-med").addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const payload = {
-                medicamento_id: parseInt(document.getElementById("lote-med-id").value),
-                numero_lote: document.getElementById("lote-med-numero").value,
-                quantidade: parseInt(document.getElementById("lote-med-qtd").value),
-                validade: document.getElementById("lote-med-validade").value,
-                fabricante: document.getElementById("lote-med-fabricante").value,
-                preco_unitario: parseFloat(document.getElementById("lote-med-preco").value || 0)
-            };
-            const res = await fetch(`${API_URL}/lotes/medicamentos`, {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify(payload)
-            });
-            if(res.ok) { alert("Lote registrado!"); document.getElementById("form-lote-med").reset(); carregarLotesMedicamentos(); }
-        });
-
-        async function carregarLotesMedicamentos() {
-            const resMed = await fetch(`${API_URL}/medicamentos`);
-            if(resMed.ok) {
-                const meds = await resMed.json();
-                document.getElementById("lote-med-id").innerHTML = meds.map(m => `<option value="${m.id}">${m.nome}</option>`).join('');
-            }
-            const resLotes = await fetch(`${API_URL}/lotes/medicamentos`);
-            if(resLotes.ok) {
-                const lotes = await resLotes.json();
-                document.getElementById("rows-lotes-med").innerHTML = lotes.map(l => `<tr><td>${l.id}</td><td>${l.medicamento_nome || l.medicamento_id}</td><td>${l.numero_lote}</td><td>${l.quantidade}</td><td>${l.validade}</td><td>${l.fabricante || '-'}</td></tr>`).join('');
-            }
-        }
-
-        document.getElementById("form-insumo").addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const payload = {
-                nome: document.getElementById("ins-nome").value,
-                grupo: document.getElementById("ins-grupo").value,
-                unidade_medida: document.getElementById("ins-unidade").value
-            };
-            const res = await fetch(`${API_URL}/insumos`, {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify(payload)
-            });
-            if(res.ok) { alert("Insumo cadastrado!"); document.getElementById("form-insumo").reset(); carregarInsumosBase(); }
-        });
-
-        async function carregarInsumosBase() {
-            const res = await fetch(`${API_URL}/insumos`);
             if(res.ok) {
-                const dados = await res.json();
-                document.getElementById("rows-insumos-base").innerHTML = dados.map(i => `<tr><td>${i.id}</td><td>${i.nome}</td><td>${i.grupo}</td><td>${i.unidade_medida}</td></tr>`).join('');
+                alert("Medicamento cadastrado!");
+                document.getElementById("form-cadastro-med").reset();
+                carregarTabelaMedicamentos();
             }
-        }
-
-        document.getElementById("form-lote-insumo").addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const payload = {
-                insumo_id: parseInt(document.getElementById("lote-ins-id").value),
-                numero_lote: document.getElementById("lote-ins-numero").value,
-                quantidade: parseInt(document.getElementById("lote-ins-qtd").value),
-                validade: document.getElementById("lote-ins-validade").value
-            };
-            const res = await fetch(`${API_URL}/lotes/insumos`, {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify(payload)
-            });
-            if(res.ok) { alert("Lote de insumo armazenado!"); document.getElementById("form-lote-insumo").reset(); carregarLotesInsumos(); }
         });
-
-        async function carregarLotesInsumos() {
-            const resIns = await fetch(`${API_URL}/insumos`);
-            if(resIns.ok) {
-                const ins = await resIns.json();
-                document.getElementById("lote-ins-id").innerHTML = ins.map(i => `<option value="${i.id}">${i.nome}</option>`).join('');
-            }
-            const resLotes = await fetch(`${API_URL}/lotes/insumos`);
-            if(resLotes.ok) {
-                const lotes = await resLotes.json();
-                document.getElementById("rows-lotes-insumo").innerHTML = lotes.map(l => `<tr><td>${l.id}</td><td>${l.insumo_nome || l.insumo_id}</td><td>${l.numero_lote}</td><td>${l.quantidade}</td><td>${l.validade}</td></tr>`).join('');
-            }
-        }
-
-        async function alternarSelecaoLoteDispensa() {
-            const tipo = document.getElementById("disp-tipo-material").value;
-            const select = document.getElementById("disp-lote-select");
-            select.innerHTML = "<option>Buscando lotes ativos...</option>";
-
-            if(tipo === "MEDICAMENTO") {
-                const res = await fetch(`${API_URL}/lotes/medicamentos`);
-                if(res.ok) {
-                    const lotes = await res.json();
-                    select.innerHTML = lotes.filter(l => l.quantidade > 0).map(l => `<option value="${l.id}">Lote: ${l.numero_lote} - ${l.medicamento_nome} (${l.quantidade})</option>`).join('');
-                }
-            } else {
-                const res = await fetch(`${API_URL}/lotes/insumos`);
-                if(res.ok) {
-                    const lotes = await res.json();
-                    select.innerHTML = lotes.filter(l => l.quantidade > 0).map(l => `<option value="${l.id}">Lote: ${l.numero_lote} - ${l.insumo_nome} (${l.quantidade})</option>`).join('');
-                }
-            }
-        }
-
-        document.getElementById("form-dispensa-real").addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const tipo = document.getElementById("disp-tipo-material").value;
-            const payload = {
-                tipo_movimentacao: `SAÍDA - ${tipo}`,
-                quantidade: parseInt(document.getElementById("disp-qtd").value),
-                destino_setor: document.getElementById("disp-setor").value,
-                paciente_detalhe: document.getElementById("disp-paciente").value,
-                prescricao_vinculo: document.getElementById("disp-req").value,
-                operador: operadorLogado
-            };
-
-            const res = await fetch(`${API_URL}/movimentacoes`, {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify(payload)
-            });
-
-            if(res.ok) { alert("Dispensação concluída!"); document.getElementById("form-dispensa-real").reset(); alternarSelecaoLoteDispensa(); }
-            else { alert("Falha ao registrar dispensa."); }
-        });
-
-        async function carregarAlertasClinicos() {
-            const body = document.getElementById("rows-alertas-clinicos");
-            body.innerHTML = "";
-            try {
-                const [resMeds, resIns] = await Promise.all([
-                    fetch(`${API_URL}/lotes/medicamentos`),
-                    fetch(`${API_URL}/lotes/insumos`)
-                ]);
-                let lotesMeds = resMeds.ok ? await resMeds.json() : [];
-                let lotesIns = resIns.ok ? await resIns.json() : [];
-
-                const hoje = new Date();
-                const limiteAlerta = new Date();
-                limiteAlerta.setDate(hoje.getDate() + 30);
-                let alertas = 0;
-
-                lotesMeds.forEach(l => {
-                    const dv = new Date(l.validade);
-                    if (dv <= hoje) {
-                        alertas++;
-                        body.innerHTML += `<tr><td>💊 Med</td><td><strong>${l.medicamento_nome}</strong></td><td>${l.numero_lote}</td><td>${l.quantidade}</td><td>${l.validade}</td><td><span class="status-vencido">🛑 EXPIRADO</span></td></tr>`;
-                    } else if (dv <= limiteAlerta) {
-                        alertas++;
-                        body.innerHTML += `<tr><td>💊 Med</td><td><strong>${l.medicamento_nome}</strong></td><td>${l.numero_lote}</td><td>${l.quantidade}</td><td>${l.validade}</td><td><span class="status-critico">⚠️ Vence < 30d</span></td></tr>`;
-                    }
-                });
-
-                lotesIns.forEach(l => {
-                    const dv = new Date(l.validade);
-                    if (dv <= hoje) {
-                        alertas++;
-                        body.innerHTML += `<tr><td>📦 Ins</td><td><strong>${l.insumo_nome}</strong></td><td>${l.numero_lote}</td><td>${l.quantidade}</td><td>${l.validade}</td><td><span class="status-vencido">🛑 EXPIRADO</span></td></tr>`;
-                    } else if (dv <= limiteAlerta) {
-                        alertas++;
-                        body.innerHTML += `<tr><td>📦 Ins</td><td><strong>${l.insumo_nome}</strong></td><td>${l.numero_lote}</td><td>${l.quantidade}</td><td>${l.validade}</td><td><span class="status-critico">⚠️ Vence < 30d</span></td></tr>`;
-                    }
-                });
-
-                if(alertas === 0) body.innerHTML = `<tr><td colspan="6" style="text-align:center; color:green;">🟢 Tudo regularizado.</td></tr>`;
-            } catch(e) { body.innerHTML = `<tr><td colspan="6">Erro ao processar validades.</td></tr>`; }
-        }
-
-        async function carregarLogsRastreabilidade() {
-            const res = await fetch(`${API_URL}/movimentacoes`);
-            if(res.ok) {
-                const dados = await res.json();
-                document.getElementById("rows-movimentacoes").innerHTML = dados.map(m => `<tr><td>${m.id}</td><td><strong>${m.tipo_movimentacao}</strong></td><td>${m.quantidade}</td><td>${m.destino_setor}</td><td>${m.operador}</td><td>${m.data_hora}</td></tr>`).join('');
-            }
-        }
-
-        document.getElementById("form-tecnovigilancia").addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const payload = {
-                lote_texto: document.getElementById("tec-lote").value,
-                tipo_ocorrencia: document.getElementById("tec-tipo").value,
-                descricao: document.getElementById("tec-descricao").value,
-                gravidade: document.getElementById("tec-gravidade").value,
-                conduta: document.getElementById("tec-conduta").value,
-                data_registro: new Date().toISOString().split('T')[0],
-                operador: operadorLogado
-            };
-            const res = await fetch(`${API_URL}/tecnovigilancia`, {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify(payload)
-            });
-            if(res.ok) { alert("Notificação gravada!"); document.getElementById("form-tecnovigilancia").reset(); carregarTecnovigilancia(); }
-        });
-
-        async function carregarTecnovigilancia() {
-            const res = await fetch(`${API_URL}/tecnovigilancia`);
-            if(res.ok) {
-                const dados = await res.json();
-                document.getElementById("rows-tecnovigilancia").innerHTML = dados.map(t => `<tr><td>${t.data_registro}</td><td><strong>${t.lote_texto}</strong></td><td>${t.tipo_ocorrencia}</td><td>${t.gravidade}</td><td>${t.conduta}</td><td>${t.operador}</td></tr>`).join('');
-            }
-        }
     </script>
 </body>
 </html>
