@@ -22,7 +22,6 @@
             height: 100%;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-main);
-            overflow: hidden;
         }
 
         .app-container {
@@ -32,15 +31,17 @@
         }
 
         .topbar {
-            height: 45px;
+            min-height: 45px;
             background-color: var(--topbar-bg);
             color: white;
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
-            padding: 0 20px;
+            padding: 10px 20px;
             font-size: 13px;
             font-weight: bold;
+            gap: 10px;
         }
 
         .main-layout {
@@ -49,6 +50,7 @@
             overflow: hidden;
         }
 
+        /* Barra Lateral Responsiva */
         .sidebar {
             width: 220px;
             background-color: var(--sidebar-bg);
@@ -57,6 +59,7 @@
             flex-direction: column;
             gap: 5px;
             border-right: 1px solid #bccc;
+            overflow-y: auto;
         }
 
         .menu-group {
@@ -84,6 +87,7 @@
             flex: 1;
             padding: 20px;
             overflow-y: auto;
+            box-sizing: border-box;
         }
 
         .panel-card {
@@ -92,6 +96,7 @@
             padding: 25px;
             box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
             min-height: 85vh;
+            box-sizing: border-box;
         }
 
         .panel-card h2 {
@@ -101,69 +106,74 @@
             margin-bottom: 25px;
         }
 
+        /* Grid de Formulário Responsivo */
         .form-inline-row {
-            display: flex;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
             gap: 20px;
-            align-items: center;
             margin-bottom: 20px;
         }
 
         .form-group {
             display: flex;
-            align-items: center;
-            gap: 10px;
+            flex-direction: column;
+            gap: 5px;
         }
 
         .form-group label {
             font-size: 13px;
             color: #333;
-            white-space: nowrap;
-            text-align: right;
-            width: 120px;
+            text-align: left;
+            width: 100%;
+            font-weight: bold;
         }
 
         .form-group input, .form-group select {
-            padding: 6px 10px;
+            padding: 8px 10px;
             border: 1px solid #a3a3a3;
             border-radius: 4px;
             background: #fff;
             font-size: 13px;
-            width: 220px;
+            width: 100%;
+            box-sizing: border-box;
         }
 
+        /* Tabelas com Suporte a Rolagem Lateral */
         .table-container {
             background: white;
             border: 1px solid #b5b5b5;
             margin-top: 20px;
-            min-height: 250px;
             max-height: 400px;
+            overflow-x: auto;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             font-size: 12px;
+            white-space: nowrap;
         }
 
         th {
             background: #fff;
             color: #333;
-            font-weight: normal;
-            padding: 8px;
+            font-weight: bold;
+            padding: 10px;
             border-bottom: 1px solid #ccc;
             border-right: 1px solid #eee;
+            text-align: left;
         }
 
         td {
-            padding: 8px;
+            padding: 9px 10px;
             border-bottom: 1px solid #eee;
             border-right: 1px solid #eee;
         }
 
         .action-btn {
-            padding: 8px 16px;
+            padding: 10px 18px;
             color: white;
             border: none;
             border-radius: 4px;
@@ -174,12 +184,13 @@
             align-items: center;
             gap: 5px;
             font-weight: bold;
+            width: auto;
         }
         .action-btn.green { background-color: var(--btn-green); }
         .action-btn.orange { background-color: var(--btn-orange); }
 
         .row-btn {
-            padding: 3px 8px;
+            padding: 4px 10px;
             color: white;
             border: none;
             border-radius: 3px;
@@ -189,6 +200,59 @@
         }
         .row-btn.edit { background-color: var(--btn-orange); }
         .row-btn.delete { background-color: var(--btn-red); }
+
+        /* ==========================================
+           📱 MEDIA QUERIES (ADAPTAÇÃO MOBILE)
+           ========================================== */
+        @media (max-width: 768px) {
+            .main-layout {
+                flex-direction: column;
+                overflow-y: auto;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid #bccc;
+                flex-direction: row;
+                overflow-x: auto;
+                padding: 10px;
+                gap: 8px;
+            }
+            
+            .menu-group { display: none; }
+            
+            .menu-btn {
+                white-space: nowrap;
+                width: auto;
+                padding: 8px 14px;
+            }
+
+            body, html {
+                overflow: auto;
+            }
+
+            .app-container {
+                height: auto;
+                min-height: 100vh;
+            }
+
+            .panel-card {
+                min-height: auto;
+                padding: 15px;
+            }
+
+            .form-inline-row {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .action-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
     </style>
 </head>
 <body>
@@ -201,9 +265,7 @@
 
         <div class="main-layout">
             <aside class="sidebar">
-                <div class="menu-group">Licenciamento</div>
                 <button class="menu-btn" style="background-color: #1a365d;">🏢 Unidades e Acessos</button>
-                <div class="menu-group">Navegação</div>
                 <a href="index.html" style="text-decoration: none;">
                     <button class="menu-btn" style="background-color: #7f8c8d;">↩ Voltar ao Sistema</button>
                 </a>
@@ -259,7 +321,7 @@
                                 </tr>
                             </thead>
                             <tbody id="tabela-usuarios-unidades">
-                                </tbody>
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -317,7 +379,6 @@
                 tabela.innerHTML = "";
 
                 usuarios.forEach(user => {
-                    // Escapa as strings para evitar quebra de HTML nas funções inline
                     const perfilEscapado = user.perfil.replace(/'/g, "\\'");
                     const usuarioEscapado = user.usuario.replace(/'/g, "\\'");
                     const senhaEscapada = (user.senha || '').replace(/'/g, "\\'");
@@ -360,7 +421,6 @@
                 let url = `${API_URL}/auth/registrar`;
                 let metodo = "POST";
 
-                // Se houver um ID preenchido no hidden input, muda o fluxo para Atualização (PUT)
                 if (idExistente) {
                     url = `${API_URL}/auth/usuarios/${idExistente}`;
                     metodo = "PUT";
@@ -391,20 +451,18 @@
             document.getElementById("adm-unidade-user").value = usuario;
             document.getElementById("adm-unidade-pass").value = senha;
 
-            // Divide a string "Perfil - Nome do Hospital" guardada no banco
             let perfilParte = "Farmacêutico Chefe";
             let nomeParte = perfilCompleto;
 
             if (perfilCompleto.includes(" - ")) {
                 const partes = perfilCompleto.split(" - ");
                 perfilParte = partes[0];
-                nomeParte = partes.slice(1).join(" - "); // Junta caso o nome tenha hífens
+                nomeParte = partes.slice(1).join(" - ");
             }
 
             document.getElementById("adm-unidade-perfil").value = perfilParte;
             document.getElementById("adm-unidade-nome").value = nomeParte;
 
-            // Altera visualmente os botões do formulário
             document.getElementById("form-titulo").innerText = "✏️ Alterar Dados da Unidade Cadastrada";
             const btnSubmit = document.getElementById("btn-submit-form");
             btnSubmit.innerText = "💾 Salvar Alterações";
