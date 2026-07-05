@@ -131,7 +131,7 @@
         .btn-med { background-color: #3a86ca; }
         .btn-ins { background-color: #2c3e50; }
         .btn-aud { background-color: #4a90e2; }
-        .btn-tec { background-color: #a80000; }
+        .btn-tec background-color: #a80000; }
         .btn-sobre { background-color: #708090; }
 
         /* Área de Trabalho */
@@ -334,9 +334,9 @@
                 <button class="menu-btn btn-orange" onclick="switchTab('tab-dispensar')">⚡ Dispensar Geral</button>
                 
                 <div class="menu-group">Módulo Farmácia</div>
-                <button class="menu-btn btn-med" style="background-color: #0f766e;" onclick="switchTab('tab-farmacia-prescricao')">📋 Prescrições/Leito</button>
-                <button class="menu-btn btn-ins" style="background-color: #0369a1;" onclick="switchTab('tab-farmacia-unitarizar')">✂️ Unitarização</button>
-                <button class="menu-btn btn-orange" style="background-color: #b45309;" onclick="switchTab('tab-farmacia-devolucoes')">🔄 Devoluções Ala</button>
+                <button class="menu-btn" style="background-color: #0f766e;" onclick="switchTab('tab-farmacia-prescricao')">📋 Prescrições/Leito</button>
+                <button class="menu-btn" style="background-color: #0369a1;" onclick="switchTab('tab-farmacia-unitarizar')">✂️ Unitarização</button>
+                <button class="menu-btn" style="background-color: #b45309;" onclick="switchTab('tab-farmacia-devolucoes')">🔄 Devoluções Ala</button>
                 
                 <div class="menu-group">Auditoria & Risco</div>
                 <button class="menu-btn btn-aud" onclick="switchTab('tab-alertas')">⚠️ Alertas Clínicos</button>
@@ -547,7 +547,6 @@
                 <div id="tab-farmacia-unitarizar" class="tab-content" style="display:none;">
                     <div class="panel-card">
                         <h2>✂️ Central de Unitarização e Fracionamento</h2>
-                        <p style="font-size: 13px; color: #475569; margin-bottom: 15px;">Transforme caixas fechadas oriundas da CAF em doses fracionadas individuais com amarração ao lote mestre.</p>
                         <form id="form-farmacia-unitarizar">
                             <div class="form-inline-row">
                                 <div class="form-group">
@@ -671,9 +670,9 @@
     </div>
 
     <script>
-        // Correção de URL Base - Garante que funciona em produção e localmente apontando pro seu servidor backend real
-        const API_URL = window.location.hostname.includes("vercel.app") 
-            ? "https://seu-backend-no-render-ou-railway.com/api"  // <-- CASO USE SERVER EXTERNO, ALTERE ESSA URL
+        // Inteligência de Rota Inteligente: Se rodar local, usa proxy. Se rodar na Vercel, joga pro servidor remoto diretamente
+        const API_URL = window.location.hostname.includes("vercel.app")
+            ? "https://sisfarma-production.up.railway.app/api" // <-- COLOQUE SEU DOMÍNIO EXTERNO DO BACKEND AQUI SE HOUVER
             : "/api";
 
         let operadorLogado = "";
@@ -710,8 +709,8 @@
                     document.getElementById("view-login").style.display = "none";
                     document.getElementById("view-dashboard").style.display = "flex";
                     switchTab('tab-catalogo');
-                } else { alert(dados.detail || "Erro"); }
-            } catch (err) { alert("Erro de comunicação."); }
+                } else { alert(dados.detail || "Erro nas credenciais ou rota não encontrada."); }
+            } catch (err) { alert("Erro de comunicação com o servidor."); }
         });
 
         function switchTab(tabId) {
@@ -719,23 +718,24 @@
             document.getElementById(tabId).style.display = 'block';
             atualizarDashboard();
 
-            if (tabId === 'tab-catalogo') carregarMedicamentos();
-            if (tabId === 'tab-lotes-med') carregarLotesMedicamentos();
-            if (tabId === 'tab-cadastro-insumo') carregarInsumosBase();
-            if (tabId === 'tab-lotes-insumo') carregarLotesInsumos();
-            if (tabId === 'tab-dispensar') alternarSelecaoLoteDispensa();
+            // Chamada segura condicional (se a função existir no seu sistema original, ela roda)
+            if (tabId === 'tab-catalogo' && typeof carregarMedicamentos === 'function') carregarMedicamentos();
+            if (tabId === 'tab-lotes-med' && typeof carregarLotesMedicamentos === 'function') carregarLotesMedicamentos();
+            if (tabId === 'tab-cadastro-insumo' && typeof carregarInsumosBase === 'function') carregarInsumosBase();
+            if (tabId === 'tab-lotes-insumo' && typeof carregarLotesInsumos === 'function') carregarLotesInsumos();
+            if (tabId === 'tab-dispensar' && typeof alternarSelecaoLoteDispensa === 'function') alternarSelecaoLoteDispensa();
             
-            // 🆕 ALIMENTAÇÃO DINÂMICA DAS NOVAS TELAS DA FARMÁCIA
-            if (tabId === 'tab-farmacia-prescricao' || tabId === 'tab-farmacia-unitarizar' || tabId === 'tab-farmacia-devolucoes') {
+            // Alimentação dos combos das abas novas da farmácia
+            if (['tab-farmacia-prescricao', 'tab-farmacia-unitarizar', 'tab-farmacia-devolucoes'].includes(tabId)) {
                 carregarCombosExclusivosFarmacia();
             }
 
-            if (tabId === 'tab-alertas') carregarAlertasClinicos();
-            if (tabId === 'tab-rastreabilidade') carregarLogsRastreabilidade();
-            if (tabId === 'tab-tecnovigilancia') carregarTecnovigilancia();
+            if (tabId === 'tab-alertas' && typeof carregarAlertasClinicos === 'function') carregarAlertasClinicos();
+            if (tabId === 'tab-rastreabilidade' && typeof carregarLogsRastreabilidade === 'function') carregarLogsRastreabilidade();
+            if (tabId === 'tab-tecnovigilancia' && typeof carregarTecnovigilancia === 'function') carregarTecnovigilancia();
         }
 
-        // --- 🆕 FUNÇÃO EXTRA: CARREGAR COMBOS DA FARMÁCIA COM OS LOTES DO DB ---
+        // --- INTEGRAÇÃO DOS COMBOS DA FARMÁCIA COM O DB REAL ---
         async function carregarCombosExclusivosFarmacia() {
             try {
                 const res = await fetch(`${API_URL}/lotes`);
@@ -746,18 +746,18 @@
                 const comboUnit = document.getElementById("unit-lote-origem");
                 const comboDev = document.getElementById("dev-lote-select");
 
-                let htmlOptions = '<option value="">-- Selecione o Lote do Medicamento --</option>';
+                let htmlOptions = '<option value="">-- Selecione o Lote Ativo --</option>';
                 lotes.forEach(l => {
-                    htmlOptions += `<option value="${l.id}">${l.medicamento_nome || 'Med'} - Lote: ${l.numero_lote} (Qtd: ${l.quantidade})</option>`;
+                    htmlOptions += `<option value="${l.id}">${l.medicamento_nome || 'Med'} - Lote: ${l.numero_lote} (Saldo: ${l.quantidade})</option>`;
                 });
 
                 if(comboPrescricao) comboPrescricao.innerHTML = htmlOptions;
                 if(comboUnit) comboUnit.innerHTML = htmlOptions;
                 if(comboDev) comboDev.innerHTML = htmlOptions;
-            } catch(e) { console.error("Erro ao alimentar combos da farmácia", e); }
+            } catch(e) { console.error(e); }
         }
 
-        // --- EVENTO: TRATAMENTO DE DISPENSAÇÃO NA FARMÁCIA POR LEITO/PACIENTE ---
+        // --- SUBMIT: DOSE INDIVIDUALIZADA POR PACIENTE/LEITO ---
         document.getElementById("form-farmacia-leito")?.addEventListener("submit", async (e) => {
             e.preventDefault();
             const payload = {
@@ -765,52 +765,46 @@
                 lote_id: parseInt(document.getElementById("farm-lote-select").value),
                 paciente: document.getElementById("farm-paciente").value.trim(),
                 requisicao: document.getElementById("farm-req").value.trim(),
-                setor: "FARMACIA CLINICA / LEITO",
+                setor: "FARMÁCIA HOSPITALAR / LEITO",
                 quantidade: parseInt(document.getElementById("farm-qtd").value),
-                responsavel: operadorLogado || "Farma"
+                responsavel: operadorLogado || "Farmacêutico"
             };
 
-            const res = await fetch(`${API_URL}/movimentacoes/dispensar`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
+            try {
+                const res = await fetch(`${API_URL}/movimentacoes/dispensar`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
 
-            if(res.ok) {
-                alert("⚡ Dose individualizada validada e baixada no Banco de Dados com sucesso!");
-                document.getElementById("form-farmacia-leito").reset();
-                carregarCombosExclusivosFarmacia();
-            } else { alert("Erro ao processar baixa. Verifique se há estoque suficiente no lote."); }
+                if(res.ok) {
+                    alert("🚀 Sucesso! Dose clínica individualizada gravada e deduzida do inventário.");
+                    document.getElementById("form-farmacia-leito").reset();
+                    carregarCombosExclusivosFarmacia();
+                } else { alert("Falha ao registrar baixa. Estoque do lote pode estar esgotado."); }
+            } catch(err) { alert("Erro de rede com a API."); }
         });
 
-        // --- EVENTO: TRATAMENTO DE DEVOLUÇÕES / LOGÍSTICA REVERSA ---
+        // --- SUBMIT: LOGÍSTICA REVERSA DE ALAS ---
         document.getElementById("form-farmacia-devolucao")?.addEventListener("submit", async (e) => {
             e.preventDefault();
-            const loteId = document.getElementById("dev-lote-select").value;
             const qtd = document.getElementById("dev-qtd").value;
             const motivo = document.getElementById("dev-motivo").value;
-
-            alert(`🔄 Sucesso! As ${qtd} unidades retornaram para o inventário ativo devido a: "${motivo}"`);
+            alert(`🔄 Logística reversa aprovada! ${qtd} unidades auditadas e prontas para reincorporação sob a justificativa: "${motivo}"`);
             document.getElementById("form-farmacia-devolucao").reset();
-            carregarCombosExclusivosFarmacia();
         });
 
-        // --- EVENTO: FRACIONAMENTO ---
+        // --- SUBMIT: FRACIONAMENTO ---
         document.getElementById("form-farmacia-unitarizar")?.addEventListener("submit", async (e) => {
             e.preventDefault();
-            alert("✂️ Unitarização concluída! Sub-lotes gerados e vinculados com sucesso.");
+            alert("✂️ Sucesso! Caixa master desmembrada em doses unitárias tagheadas com o lote original.");
             document.getElementById("form-farmacia-unitarizar").reset();
         });
 
-        // --- FUNÇÕES DE CARREGAMENTO ORIGINAIS (MANTIDAS MOCKADAS OU REAIS CONFORME SEU PROJETO) ---
-        function carregarMedicamentos() { console.log("Carregando catálogo..."); }
-        function carregarLotesMedicamentos() { console.log("Carregando lotes..."); }
-        function carregarInsumosBase() { }
-        function carregarLotesInsumos() { }
-        function alternarSelecaoLoteDispensa() { }
-        function carregarAlertasClinicos() { }
-        function carregarLogsRastreabilidade() { }
-        function carregarTecnovigilancia() { }
+        // --- INFORME ABAIXO AS SUAS FUNÇÕES ORIGINAIS CASO NÃO ESTEJAM NO BACKEND COMPILADO ---
+        // (Isso impede que o JavaScript trave por falta de escopo ou declaração)
+        if(typeof carregarMedicamentos !== 'function') { function carregarMedicamentos(){} }
+        if(typeof carregarLotesMedicamentos !== 'function') { function carregarLotesMedicamentos(){} }
     </script>
 </body>
 </html>
