@@ -6,104 +6,85 @@
     <title>SisFarma v.1 - Painel de Controle Master</title>
     <style>
         :root {
-            --bg-main: #d9d9d9;
-            --sidebar-bg: #e6e6e6;
-            --topbar-bg: #1a365d;
-            --btn-blue: #3b82f6;
-            --btn-green: #10b981;
-            --btn-red: #ef4444;
-            --btn-orange: #f97316;
+            --bg-main: #f1f5f9;
+            --topbar-bg: #0f172a;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
             --text-dark: #1e293b;
         }
-        body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-main); }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', system-ui, sans-serif; background-color: var(--bg-main); color: var(--text-dark); }
         .app-container { display: flex; flex-direction: column; height: 100vh; }
-        .topbar { min-height: 45px; background-color: var(--topbar-bg); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-weight: bold; }
-        .main-layout { display: flex; flex: 1; overflow: hidden; }
-        .content-area { flex: 1; padding: 25px; overflow-y: auto; background: #fff; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1.3fr; gap: 30px; }
-        .card { border: 1px solid #ccc; padding: 20px; border-radius: 8px; background: #fafafa; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 6px; font-weight: bold; color: var(--text-dark); }
-        .form-group input, .form-group select { width: 100%; padding: 9px; border: 1px solid #bbb; border-radius: 4px; box-sizing: border-box; }
-        .action-btn { padding: 10px 20px; border: none; border-radius: 4px; color: white; cursor: pointer; font-weight: bold; margin-right: 10px; }
-        .action-btn.green { background: var(--btn-green); }
-        .action-btn.blue { background: var(--btn-blue); }
-        .action-btn.red { background: var(--btn-red); }
-        .action-btn.orange { background: var(--btn-orange); }
+        .topbar { height: 60px; background-color: var(--topbar-bg); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; font-weight: 600; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .content-area { flex: 1; padding: 35px; overflow-y: auto; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1.3fr; gap: 35px; }
+        .card { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+        .action-btn { padding: 12px 24px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600; transition: opacity 0.2s; }
+        .action-btn:hover { opacity: 0.9; }
+        .action-btn.green { background: var(--accent-green); }
+        .action-btn.blue { background: var(--accent-blue); }
+        .action-btn.red { background: var(--accent-red); }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #ccc; padding: 12px; text-align: left; }
-        th { background: #f1f5f9; color: var(--text-dark); }
-        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
-        .badge.hospital { background: #e0f2fe; color: #0369a1; }
-        .badge.admin { background: #fef3c7; color: #92400e; }
-        .admin-auth-overlay { position: fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.95); display:flex; justify-content:center; align-items:center; z-index:9999; }
-        .auth-card { background: white; padding: 35px; border-radius: 8px; max-width: 450px; width: 100%; text-align: center; }
+        th, td { padding: 14px; text-align: left; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+        th { background: #f8fafc; font-weight: 600; }
+        .admin-auth-overlay { position: fixed; top:0; left:0; width:100vw; height:100vh; background:#0f172a; display:flex; justify-content:center; align-items:center; z-index:9999; }
+        .auth-card { background: white; padding: 40px; border-radius: 16px; max-width: 450px; width: 100%; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
     </style>
 </head>
 <body>
 
     <div id="overlay-lock" class="admin-auth-overlay">
         <div class="auth-card">
-            <h2 style="color:var(--topbar-bg); margin-top:0;">Autenticação Restrita Master</h2>
-            <p>Insira a credencial mestre do sistema para gerenciar as credenciais hospitalares na nuvem.</p>
+            <h2 style="margin-top:0;">Autenticação Restrita Master</h2>
+            <p style="color:#64748b; margin-bottom:25px;">Insira a chave mestre para gerenciamento de clusters e unidades hospitalares.</p>
             <form id="form-trava-master">
                 <div class="form-group">
                     <input type="password" id="senha-master-verificar" required placeholder="Digite a Senha Mestre" style="text-align:center; font-size:16px;">
                 </div>
-                <button type="submit" class="action-btn blue" style="width:100%; margin:0; padding:12px;">🔓 Autenticar Console</button>
+                <button type="submit" class="action-btn blue" style="width:100%;">🔓 Autenticar Console</button>
             </form>
         </div>
     </div>
 
     <div class="app-container">
         <div class="topbar">
-            <span>YANA Framework - Console de Governança Corporativa e TI</span>
-            <span>Ambiente: Nuvem Ativa (PostgreSQL)</span>
+            <span>YANA Framework - Console de Governance Corporativa</span>
+            <span>Ambiente: Cluster Nuvem Ativa (PostgreSQL)</span>
         </div>
-        <div class="main-layout">
-            <div class="content-area">
-                
-                <h2 style="margin-top:0; color:var(--topbar-bg);">Controle de Credenciais e Unidades Hospitalares</h2>
-
-                <div class="grid-2">
-                    <div class="card">
-                        <h3 id="form-titulo" style="margin-top:0; color:var(--text-dark);">Ativação e Cadastro de Nova Unidade Hospitalar</h3>
-                        <form id="form-admin-cadastro-unidade">
-                            <input type="hidden" id="adm-unidade-id">
-                            <div class="form-group">
-                                <label>Identificador Único da Unidade (Login)</label>
-                                <input type="text" id="adm-usuario" required placeholder="Ex: hospital_regional">
-                            </div>
-                            <div class="form-group">
-                                <label>Chave de Acesso (Senha)</label>
-                                <input type="text" id="adm-senha" required placeholder="Defina uma senha">
-                            </div>
-                            <div class="form-group">
-                                <label>Perfil de Governança Operacional</label>
-                                <select id="adm-perfil">
-                                    <option value="Unidade Hospitalar Padrão">Unidade Hospitalar Padrão</option>
-                                    <option value="Central Farmacêutica Avançada">Central Farmacêutica Avançada</option>
-                                    <option value="Administrador Geral">Administrador Geral</option>
-                                </select>
-                            </div>
-                            <div style="margin-top:20px;">
-                                <button type="submit" id="btn-submit-form" class="action-btn green">🚀 Ativar e Liberar Unidade</button>
-                                <button type="button" id="btn-cancelar-edicao" class="action-btn orange" style="display:none;" onclick="resetarFormulario()">Cancelar</button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div class="card">
-                        <h3 style="margin-top:0;">Ambientes e Contas Ativas</h3>
-                        <table>
-                            <thead>
-                                <tr><th>ID</th><th>Identificador da Unidade</th><th>Perfil Técnico</th><th>Ações de TI</th></tr>
-                            </thead>
-                            <tbody id="tabela-unidades-rows"></tbody>
-                        </table>
-                    </div>
+        <div class="content-area">
+            <div class="grid-2">
+                <div class="card">
+                    <h3 id="form-titulo" style="margin-top:0; font-size:20px; font-weight:700;">Ativar Nova Unidade Hospitalar</h3>
+                    <form id="form-admin-cadastro-unidade" style="margin-top:20px;">
+                        <input type="hidden" id="adm-unidade-id">
+                        <div class="form-group">
+                            <label>Identificador Único (Login)</label>
+                            <input type="text" id="adm-usuario" required placeholder="Ex: hospital_central">
+                        </div>
+                        <div class="form-group">
+                            <label>Senha de Acesso</label>
+                            <input type="text" id="adm-senha" required placeholder="Defina uma senha robusta">
+                        </div>
+                        <div class="form-group">
+                            <label>Perfil de Governança</label>
+                            <select id="adm-perfil">
+                                <option value="Unidade Hospitalar Padrão">Unidade Hospitalar Padrão</option>
+                                <option value="Central Farmacêutica Avançada">Central Farmacêutica Avançada</option>
+                            </select>
+                        </div>
+                        <button type="submit" id="btn-submit-form" class="action-btn green" style="width:100%; margin-top:10px;">🚀 Ativar e Liberar Unidade</button>
+                    </form>
                 </div>
-
+                <div class="card">
+                    <h3 style="margin-top:0; font-size:20px; font-weight:700;">Ambientes e Unidades Ativas</h3>
+                    <table>
+                        <thead><tr><th>ID</th><th>Identificador da Unidade</th><th>Perfil Técnico</th><th>Ações</th></tr></thead>
+                        <tbody id="tabela-unidades-rows"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -111,118 +92,75 @@
     <script>
         const API_URL = "/api";
 
+        async function fetchAdmin(url, opcoes = {}) {
+            try {
+                const res = await fetch(url, opcoes);
+                if(!res.ok) throw new Error("Erro na transação de credenciais.");
+                return await res.json();
+            } catch(e) {
+                alert("❌ Erro de Conexão com o Banco Master. Verifique os logs da API.");
+                throw e;
+            }
+        }
+
         document.getElementById("form-trava-master").addEventListener("submit", async (e) => {
             e.preventDefault();
-            const senhaInjetada = document.getElementById("senha-master-verificar").value;
-
+            const senha = document.getElementById("senha-master-verificar").value;
             try {
-                const res = await fetch(`${API_URL}/auth/verificar-admin`, {
+                const dados = await fetchAdmin(`${API_URL}/auth/verificar-admin`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ senha: senhaInjetada })
+                    body: JSON.stringify({ senha })
                 });
-                const dados = await res.json();
-
-                if (res.ok && dados.autorizado) {
+                if (dados.autorizado) {
                     document.getElementById("overlay-lock").style.display = "none";
                     carregarUnidadesCadastradas();
-                } else {
-                    alert(dados.detail || "Chave Mestre Inválida.");
                 }
-            } catch (err) { alert("Falha na validação com o cluster PostgreSQL."); }
+            } catch (err) {}
         });
 
         async function carregarUnidadesCadastradas() {
             try {
-                const res = await fetch(`${API_URL}/auth/usuarios`);
-                if (!res.ok) return;
-                const rows = await res.json();
+                const rows = await fetchAdmin(`${API_URL}/auth/usuarios`);
                 const tbody = document.getElementById("tabela-unidades-rows");
                 tbody.innerHTML = "";
-
                 rows.forEach(u => {
-                    const badgeClass = u.perfil.includes("Administrador") ? "badge admin" : "badge hospital";
                     tbody.innerHTML += `
                         <tr>
                             <td>${u.id}</td>
                             <td><strong>${u.usuario}</strong></td>
-                            <td><span class="${badgeClass}">${u.perfil}</span></td>
-                            <td>
-                                <button class="action-btn blue" style="padding:4px 8px; font-size:12px; margin:0;" onclick='prepararEdicaoUnidade(${JSON.stringify(u)})'>✏️ Editar</button>
-                                <button class="action-btn red" style="padding:4px 8px; font-size:12px; margin:0;" onclick="excluirUnidade(${u.id})">🗑️ Revogar</button>
-                            </td>
+                            <td>${u.perfil}</td>
+                            <td><button class="action-btn red" style="padding:6px 12px; font-size:12px;" onclick="excluirUnidade(${u.id})">🗑️ Revogar</button></td>
                         </tr>`;
                 });
-            } catch (err) { console.error("Erro na carga de unidades.", err); }
+            } catch (err) {}
         }
 
         document.getElementById("form-admin-cadastro-unidade").addEventListener("submit", async (e) => {
             e.preventDefault();
-            const id = document.getElementById("adm-unidade-id").value;
             const payload = {
                 usuario: document.getElementById("adm-usuario").value.trim(),
                 senha: document.getElementById("adm-senha").value,
                 perfil: document.getElementById("adm-perfil").value
             };
-
-            let url = `${API_URL}/auth/registrar`;
-            let metodo = "POST";
-
-            if (id) {
-                url = `${API_URL}/auth/usuarios/${id}`;
-                metodo = "PUT";
-            }
-
             try {
-                const res = await fetch(url, {
-                    method: metodo,
+                await fetchAdmin(`${API_URL}/auth/registrar`, {
+                    method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
                 });
-                const resultado = await res.json();
-
-                if (res.ok) {
-                    alert(resultado.mensagem || "Acesso processado com sucesso.");
-                    resetarFormulario();
-                    carregarUnidadesCadastradas();
-                } else {
-                    alert(`🚨 Erro: ${resultado.detail}`);
-                }
-            } catch (err) { alert("Erro técnico ao registrar."); }
+                alert("✅ Unidade liberada com sucesso.");
+                document.getElementById("form-admin-cadastro-unidade").reset();
+                carregarUnidadesCadastradas();
+            } catch (err) {}
         });
 
-        function prepararEdicaoUnidade(u) {
-            document.getElementById("adm-unidade-id").value = u.id;
-            document.getElementById("adm-usuario").value = u.usuario;
-            document.getElementById("adm-senha").value = "";
-            document.getElementById("adm-perfil").value = u.perfil;
-
-            document.getElementById("form-titulo").innerText = "⚙️ Editando Permissões";
-            const btnSubmit = document.getElementById("btn-submit-form");
-            btnSubmit.innerText = "💾 Gravar Alterações (UPDATE)";
-            btnSubmit.className = "action-btn orange";
-            document.getElementById("btn-cancelar-edicao").style.display = "inline-flex";
-        }
-
         async function excluirUnidade(id) {
-            if (!confirm("⚠️ Revogar permanentemente o acesso?")) return;
+            if (!confirm("Deseja revogar o acesso permanente?")) return;
             try {
-                const res = await fetch(`${API_URL}/auth/usuarios/${id}`, { method: "DELETE" });
-                if (res.ok) {
-                    carregarUnidadesCadastradas();
-                }
-            } catch (err) { alert("Erro de rede."); }
-        }
-
-        function resetarFormulario() {
-            document.getElementById("form-admin-cadastro-unidade").reset();
-            document.getElementById("adm-unidade-id").value = "";
-            document.getElementById("form-titulo").innerText = "Ativação e Cadastro de Nova Unidade Hospitalar";
-
-            const btnSubmit = document.getElementById("btn-submit-form");
-            btnSubmit.innerText = "🚀 Ativar e Liberar Unidade";
-            btnSubmit.className = "action-btn green";
-            document.getElementById("btn-cancelar-edicao").style.display = "none";
+                await fetchAdmin(`${API_URL}/auth/usuarios/${id}`, { method: "DELETE" });
+                carregarUnidadesCadastradas();
+            } catch(e){}
         }
     </script>
 </body>
