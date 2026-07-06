@@ -12,7 +12,7 @@ from typing import Optional
 app = FastAPI(
     title="YANA API - Central de Abastecimento Farmacêutico (PostgreSQL)",
     description="Backend em nuvem para controle interno e rastreabilidade hospitalar",
-    version="1.1.1"
+    version="1.1.2"
 )
 
 app.add_middleware(
@@ -180,6 +180,7 @@ class DispensacaoSchema(BaseModel):
 
 
 class TecnovigilanciaSchema(BaseModel):
+    lote_suspeue_id: Optional[str] = None
     lote_suspeito: str
     tipo_ocorrencia: str
     descricao: str
@@ -325,20 +326,25 @@ def login(dados: LoginSchema):
 
 
 # =========================================================================
-# ENDPOINTS OPERACIONAIS (RETORNANDO DICIONÁRIOS MAPEADOS CORRETAMENTE)
+# ENDPOINTS OPERACIONAIS (ORDEM COMPATÍVEL COM O SEU SCRIPT FRONTEND)
 # =========================================================================
 @app.get("/api/medicamentos", tags=["Medicamentos"])
 def listar_medicamentos():
     db = conectar_bd()
     cursor = db.cursor()
-    # Forçamos o apelido exato esperado pelo frontend: codigo_barras AS codigo_barras
-    cursor.execute("""
-        SELECT id, nome, principio_ativo, categoria, codigo_barras, controlado 
-        FROM medicamentos ORDER BY id DESC
-    """)
+    cursor.execute("SELECT id, nome, principio_ativo, categoria, codigo_barras, controlado FROM medicamentos ORDER BY id DESC")
     rows = cursor.fetchall()
     db.close()
-    return rows  # Retorna dicionário puro [{id: 1, nome: "..."}] para sanar o 'undefined'
+
+    # Mapeia na ordem exata de chaves esperadas pelo seu index.html
+    return [{
+        "id": r["id"],
+        "nome": r["nome"],
+        "principio_ativo": r["principio_ativo"],
+        "categoria": r["categoria"],
+        "codigo_barras": r["codigo_barras"],
+        "controlado": r["controlado"]
+    } for r in rows]
 
 
 @app.post("/api/medicamentos", tags=["Medicamentos"])
@@ -387,12 +393,15 @@ def listar_lotes_medicamentos():
     """)
     rows = cursor.fetchall()
     db.close()
-    
-    # Formata a data para string simples para o frontend não quebrar
-    for r in rows:
-        if isinstance(r.get("validade"), (date, datetime)):
-            r["validade"] = str(r["validade"])
-    return rows
+
+    return [{
+        "id": r["id"],
+        "medicamento": r["medicamento"],
+        "numero_lote": r["numero_lote"],
+        "fabricante": r["fabricante"],
+        "validade": str(r["validade"]),
+        "quantidade": r["quantidade"]
+    } for r in rows]
 
 
 @app.post("/api/lotes/medicamentos", tags=["Lotes & Estoque"])
@@ -422,7 +431,14 @@ def listar_insumos():
     cursor.execute("SELECT id, nome, especificacao, unidade_medida, grupo FROM insumos ORDER BY id DESC")
     rows = cursor.fetchall()
     db.close()
-    return rows
+
+    return [{
+        "id": r["id"],
+        "nome": r["nome"],
+        "especificacao": r["especificacao"],
+        "unidade_medida": r["unidade_medida"],
+        "grupo": r["grupo"]
+    } for r in rows]
 
 
 @app.post("/api/insumos", tags=["Insumos"])
@@ -449,11 +465,15 @@ def listar_lotes_insumos():
     """)
     rows = cursor.fetchall()
     db.close()
-    
-    for r in rows:
-        if isinstance(r.get("validade"), (date, datetime)):
-            r["validade"] = str(r["validade"])
-    return rows
+
+    return [{
+        "id": r["id"],
+        "insumo": r["insumo"],
+        "numero_lote": r["numero_lote"],
+        "fabricante": r["fabricante"],
+        "validade": str(r["validade"]),
+        "quantidade": r["quantidade"]
+    } for r in rows]
 
 
 @app.post("/api/lotes/insumos", tags=["Lotes & Estoque"])
@@ -490,9 +510,9 @@ def processar_dispensacao(disp: DispensacaoSchema):
                            (disp.quantidade, disp.lote_id))
 
             cursor.execute("""
-                INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantity = %s, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
+                INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
                 VALUES (%s, NULL, 'SAÍDA MEDICAMENTO', %s, %s, %s, %s, %s, %s)
-            """, (disp.quantidade, disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num,
+            """, (disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num,
                   disp.responsavel, datetime.now().strftime("%Y-%m-%d %H:%M")))
 
         elif disp.tipo_material == "INSUMO":
@@ -531,7 +551,17 @@ def relatorio_rastreabilidade():
     """)
     rows = cursor.fetchall()
     db.close()
-    return rows
+
+    return [{
+        "id": r["id"],
+        "tipo": r["tipo"],
+        "quantidade": r["quantidade"],
+        "setor_destino": r["setor_destino"],
+        "paciente_nome": r["paciente_nome"],
+        "prescricao_num": r["prescricao_num"],
+        "responsavel": r["responsavel"],
+        "data_movimentacao": r["data_movimentacao"]
+    } for r in rows]
 
 
 @app.get("/api/auditoria/alertas", tags=["Auditoria & Compliance"])
@@ -597,7 +627,15 @@ def listar_ocorrencias_tecnovigilancia():
     """)
     rows = cursor.fetchall()
     db.close()
-    return rows
+
+    return [{
+        "id": r["id"],
+        "lote_suspeito": r["lote_suspeito"],
+        "tipo_ocorrencia": r["tipo_ocorrencia"],
+        "gravidade": r["gravidade"],
+        "data_registro": r["data_registro"],
+        "operador": r["operador"]
+    } for r in rows]
 
 
 if __name__ == "__main__":
