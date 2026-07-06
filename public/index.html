@@ -584,14 +584,13 @@ document.getElementById("form-med").addEventListener("submit", async (e) => {
     // Converte obrigatoriamente para inteiro 1 ou 0 para satisfazer o Pydantic
     const controladoInteiro = document.getElementById("med-controlado").checked ? 1 : 0;
 
-    // No evento de submit do seu 'form-med':
-const payload = {
-    nome: document.getElementById("med-nome").value,
-    principio_ativo: document.getElementById("med-principio").value,
-    categoria: document.getElementById("med-categoria").value,
-    controlado: document.getElementById("med-controlado").checked ? 1 : 0, 
-    codigo_barras: document.getElementById("med-ean").value
-};
+    const payload = {
+        nome: document.getElementById("med-nome").value,
+        principio_ativo: document.getElementById("med-principio").value,
+        categoria: document.getElementById("med-categoria").value,
+        controlado: controladoInteiro,
+        codigo_barras: document.getElementById("med-ean").value
+    };
 
     try {
         // Double-Behavior: Define a rota e método dinamicamente baseado no estado da variável
@@ -695,15 +694,13 @@ const payload = {
 
         document.getElementById("form-med").addEventListener("submit", async (e) => {
             e.preventDefault();
-            // No evento de submit do seu 'form-med':
-        const payload = {
-            nome: document.getElementById("med-nome").value,
-            principio_ativo: document.getElementById("med-principio").value,
-            categoria: document.getElementById("med-categoria").value,
-    // Alinhamento crucial: converte o checkbox em 1 ou 0 para não dar 422
-            controlado: document.getElementById("med-controlado").checked ? 1 : 0, 
-            codigo_barras: document.getElementById("med-ean").value
-};
+            const payload = {
+                nome: document.getElementById("med-nome").value,
+                principio_ativo: document.getElementById("med-principio").value,
+                categoria: document.getElementById("med-categoria").value,
+                codigo_barras: document.getElementById("med-ean").value || "Nenhum",
+                controlado: document.getElementById("med-controlado").checked ? 1 : 0
+            };
             const res = await fetch(`${API_URL}/medicamentos`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -725,9 +722,10 @@ const payload = {
         }
 
         async function carregarLotesMedicamentos() {
-            try {
-                const res = await fetch(`${API_URL}/lotes`);
-                if (!res.ok) return;
+    try {
+        // Ajustado para a rota correta do index.py
+        const res = await fetch(`${API_URL}/lotes/medicamentos`);
+        if (!res.ok) return;
                 const lotes = await res.json();
                 const tbody = document.getElementById("tabela-lotes-med-rows");
                 tbody.innerHTML = "";
@@ -738,21 +736,23 @@ const payload = {
         }
 
 //=================================================================================
-    document.getElementById("form-lote-med").addEventListener("submit", async (e) => {
+   // Procure por esta linha no seu index.html:
+document.getElementById("form-lote-med").addEventListener("submit", async (e) => {
     e.preventDefault();
     const payload = {
-        medicamento_id: parseInt(document.getElementById("lote-med-id-selecionado").value), // ID no Front: lote-med-id-selecionado
-        numero_lote: document.getElementById("lote-med-numero").value,                     // ID no Front: lote-med-numero
-        fabricante: document.getElementById("lote-med-fabricante").value,                 // ID no Front: lote-med-fabricante
-        validade: document.getElementById("lote-med-validade").value,                     // ID no Front: lote-med-validade
-        quantidade: parseInt(document.getElementById("lote-med-qtd").value)               // ID no Front: lote-med-qtd
+        medicamento_id: parseInt(document.getElementById("lote-med-id-selecionado").value),
+        numero_lote: document.getElementById("lote-med-numero").value,
+        fabricante: document.getElementById("lote-med-fabricante").value,
+        validade: document.getElementById("lote-med-validade").value,
+        quantidade: parseInt(document.getElementById("lote-med-qtd").value)
     };
     if (isNaN(payload.medicamento_id)) {
         alert("Por favor, selecione um medicamento válido.");
         return;
     }
     try {
-        const res = await fetch(`${API_URL}/lotes`, {
+        // CORREÇÃO AQUI: Mudado de ${API_URL}/lotes para ${API_URL}/lotes/medicamentos
+        const res = await fetch(`${API_URL}/lotes/medicamentos`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
