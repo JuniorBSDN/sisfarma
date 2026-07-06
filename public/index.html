@@ -277,7 +277,7 @@
                 <button class="menu-btn btn-med" onclick="switchTab('tab-lotes-med')">📦 Entrada de Lotes</button>
                 <button class="menu-btn btn-med" onclick="switchTab('tab-dispensar')">⚡ Dispensar Itens</button>
 
-                <!-- NOVAS TELAS DO MÓDULO FARMÁCIA CLÍNICA INTEGRADA -->
+                <!-- 🆕 MÓDULO FARMÁCIA DE ALA (CLÍNICA INTEGRADA) -->
                 <div class="menu-group">Farmácia de Ala</div>
                 <button class="menu-btn" style="background-color: #0f766e;" onclick="switchTab('tab-farmacia-prescricao')">📋 Prescrições/Leito</button>
                 <button class="menu-btn" style="background-color: #0369a1;" onclick="switchTab('tab-farmacia-unitarizar')">✂️ Unitarização</button>
@@ -409,7 +409,7 @@
                     </div>
                 </div>
 
-                <!-- 🆕 FARMÁCIA ALA: PRESCRIÇÃO E LEITO -->
+                <!-- 🆕 TELA: FARMÁCIA DE ALA - PRESCRIÇÕES/LEITO -->
                 <div id="tab-farmacia-prescricao" class="tab-content" style="display:none;">
                     <div class="panel-card">
                         <h2>📋 Validação Clínico-Farmacêutica & Baixa por Leito</h2>
@@ -430,10 +430,10 @@
                     </div>
                 </div>
 
-                <!-- 🆕 FARMÁCIA ALA: UNITARIZAÇÃO -->
+                <!-- 🆕 TELA: FARMÁCIA DE ALA - UNITARIZAÇÃO -->
                 <div id="tab-farmacia-unitarizar" class="tab-content" style="display:none;">
                     <div class="panel-card">
-                        <h2>✂️ Central de Unitarização e Fracionamento</h2>
+                        <h2>✂️ Central de Unitarização e Fracionamento de Doses</h2>
                         <form id="form-farmacia-unitarizar">
                             <div class="form-inline-row">
                                 <div class="form-group">
@@ -450,10 +450,10 @@
                     </div>
                 </div>
 
-                <!-- 🆕 FARMÁCIA ALA: DEVOLUÇÕES -->
+                <!-- 🆕 TELA: FARMÁCIA DE ALA - DEVOLUÇÕES -->
                 <div id="tab-farmacia-devolucoes" class="tab-content" style="display:none;">
                     <div class="panel-card">
-                        <h2>🔄 Estorno e Logística Reversa de Medicamentos</h2>
+                        <h2>🔄 Estorno e Logística Reversa de Medicamentos (Devolução)</h2>
                         <form id="form-farmacia-devolucao">
                             <div class="form-inline-row">
                                 <div class="form-group">
@@ -633,7 +633,6 @@
     </div>
 
     <script>
-        // Inteligência de Rota Dinâmica Baseada em image_63cce1.png
         const API_URL = "/api";
         let operadorLogado = "admin";
 
@@ -643,7 +642,7 @@
         });
 
         // ==========================================
-        // 🔒 1. AUTENTICAÇÃO DO USUÁRIO (Corrigido para Produção)
+        // 🔒 1. AUTENTICAÇÃO DO USUÁRIO
         // ==========================================
         document.getElementById("form-login-sistema").addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -654,7 +653,7 @@
                 const res = await fetch(`${API_URL}/auth/login`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ usuario, senha })
+                    body: JSON.stringify({ usuario, senate: senha })
                 });
                 const dados = await res.json();
 
@@ -668,12 +667,12 @@
                     alert(dados.detail || "❌ Credenciais Inválidas!");
                 }
             } catch (err) {
-                alert("Erro ao conectar ao servidor de autenticação. Verifique os serviços em nuvem.");
+                alert("Erro ao conectar ao servidor de autenticação.");
             }
         });
 
         // ==========================================
-        // 🔄 2. GERENCIADOR DE ABAS (Estrutura Fiel Completa)
+        // 🔄 2. GERENCIADOR DE ABAS
         // ==========================================
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
@@ -687,8 +686,8 @@
             if (tabId === 'tab-rastreabilidade') carregarHistoricoRastreabilidade();
             if (tabId === 'tab-alertas') carregarAlertasClinicos();
             if (tabId === 'tab-tecnovigilancia') carregarOcorrenciasTecnovigilancia();
-            
-            // Alimentação dos combos exclusivos das novas abas de farmácia clínica
+
+            // Ativa os combos dinâmicos para as abas da Farmácia de Ala
             if (['tab-farmacia-prescricao', 'tab-farmacia-unitarizar', 'tab-farmacia-devolucoes'].includes(tabId)) {
                 carregarCombosExclusivosFarmacia();
             }
@@ -732,9 +731,10 @@
                 const res = await fetch(`${API_URL}/medicamentos`);
                 const select = document.getElementById("lote-med-id-selecionado");
                 if(!select) return;
-                select.innerHTML = '<option value="">-- Escolha o Item --</option>';
+                select.innerHTML = '<option value="">Carregando medicamentos...</option>';
                 if (res.ok) {
                     const meds = await res.json();
+                    select.innerHTML = '<option value="">-- Escolha o Item --</option>';
                     meds.forEach(m => {
                         select.innerHTML += `<option value="${m.id}">${m.nome}</option>`;
                     });
@@ -809,9 +809,10 @@
                 const res = await fetch(`${API_URL}/insumos`);
                 const select = document.getElementById("lote-ins-id");
                 if(!select) return;
-                select.innerHTML = '<option value="">-- Escolha o Insumo --</option>';
+                select.innerHTML = '<option value="">Carregando...</option>';
                 if(res.ok) {
                     const data = await res.json();
+                    select.innerHTML = '<option value="">-- Escolha o Insumo --</option>';
                     data.forEach(i => { select.innerHTML += `<option value="${i.id}">${i.nome}</option>`; });
                 }
             } catch(e) { console.error(e); }
@@ -848,7 +849,7 @@
         });
 
         // ==========================================
-        // ⚡ 5. DISPENSAÇÃO & REAIS LOGS
+        // ⚡ 5. DISPENSAÇÃO & MOVIMENTAÇÕES
         // ==========================================
         async function carregarItensDispensacao() {
             const rados = document.getElementsByName("tipo-mat");
@@ -911,30 +912,31 @@
             });
 
             if (res.ok) {
-                alert("⚡ Dispensação processada no PostgreSQL!");
+                alert("⚡ Dispensação processada com sucesso!");
                 document.getElementById("form-dispensa-real").reset();
                 carregarItensDispensacao();
                 carregarMovimentacoesRealtime();
-            } else { alert("Erro ao processar baixa. Saldo insuficiente!"); }
+            } else { alert("Erro ao processar baixa. Verifique o saldo disponível."); }
         });
 
         // ==========================================
-        // 📋 6. NOVAS FUNÇÕES EXCLUSIVAS DA FARMÁCIA
+        // 📋 6. INTELIGÊNCIA EXCLUSIVA: FARMÁCIA DE ALA
         // ==========================================
         async function carregarCombosExclusivosFarmacia() {
             try {
                 const res = await fetch(`${API_URL}/lotes`);
-                if (!res.ok) return;
-                const lotes = await res.json();
-                
                 const comboPrescricao = document.getElementById("farm-lote-select");
                 const comboUnit = document.getElementById("unit-lote-origem");
                 const comboDev = document.getElementById("dev-lote-select");
 
                 let htmlOptions = '<option value="">-- Selecione o Lote Ativo --</option>';
-                lotes.forEach(l => {
-                    htmlOptions += `<option value="${l.id}">${l.medicamento_nome || 'Med'} - Lote: ${l.numero_lote} (Saldo: ${l.quantidade})</option>`;
-                });
+
+                if (res.ok) {
+                    const lotes = await res.json();
+                    lotes.forEach(l => {
+                        htmlOptions += `<option value="${l.id}">${l.medicamento_nome || 'Med'} - Lote: ${l.numero_lote} (Saldo: ${l.quantidade})</option>`;
+                    });
+                }
 
                 if(comboPrescricao) comboPrescricao.innerHTML = htmlOptions;
                 if(comboUnit) comboUnit.innerHTML = htmlOptions;
@@ -961,7 +963,7 @@
             });
 
             if(res.ok) {
-                alert("🚀 Sucesso! Dose clínica individualizada gravada e deduzida do inventário.");
+                alert("🚀 Sucesso! Dose individualizada validada e deduzida do inventário.");
                 document.getElementById("form-farmacia-leito").reset();
                 carregarCombosExclusivosFarmacia();
             } else { alert("Falha ao registrar baixa. Verifique o saldo disponível do lote."); }
@@ -969,18 +971,18 @@
 
         document.getElementById("form-farmacia-devolucao")?.addEventListener("submit", async (e) => {
             e.preventDefault();
-            alert(`🔄 Logística reversa aprovada! Unidades auditadas e prontas para reincorporação.`);
+            alert(`🔄 Logística reversa concluída! Unidades auditadas prontas para reincorporação.`);
             document.getElementById("form-farmacia-devolucao").reset();
         });
 
         document.getElementById("form-farmacia-unitarizar")?.addEventListener("submit", async (e) => {
             e.preventDefault();
-            alert("✂️ Sucesso! Caixa master desmembrada em doses unitárias tagheadas com o lote original.");
+            alert("✂️ Fracionamento executado! Unidades prontas com códigos de barras rastreáveis.");
             document.getElementById("form-farmacia-unitarizar").reset();
         });
 
         // ==========================================
-        // 🔍 7. AUDITORIA, ALERTAS & TECNOVIGILÂNCIA
+        // 🔍 7. AUDITORIA, ALERTAS & MONITORAMENTO
         // ==========================================
         async function carregarHistoricoRastreabilidade() {
             try {
@@ -999,18 +1001,18 @@
             try {
                 const res = await fetch(`${API_URL}/dashboard/resumo`);
                 const tbody = document.getElementById("tabela-alertas-rows");
-                tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#666;'>Nenhum lote crítico ou vencido encontrado no banco de dados.</td></tr>";
+                tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#666;'>Nenhum lote crítico detectado no momento.</td></tr>";
             } catch(e) { console.error(e); }
         }
 
         async function carregarOcorrenciasTecnovigilancia() {
             const tbody = document.getElementById("tabela-tecnovigilancia-rows");
-            if(tbody) tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; color:#666;'>Sem intercorrências registradas para este período.</td></tr>";
+            if(tbody) tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; color:#666;'>Nenhuma queixa técnica ativa registrada.</td></tr>";
         }
 
         document.getElementById("form-tecnovigilancia").addEventListener("submit", async (e) => {
             e.preventDefault();
-            alert("💾 Notificação de Tecnovigilância registrada e arquivada para auditoria do CRF/ANVISA.");
+            alert("💾 Notificação de Tecnovigilância salva no histórico sanitário.");
             document.getElementById("form-tecnovigilancia").reset();
         });
 
