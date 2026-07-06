@@ -3,14 +3,13 @@ from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, date
 import psycopg2
-from psycopg2.extras import RealDictCursor
-from pydantic import BaseModel, Field
-from typing import Optional, Any
+from pydantic import BaseModel
+from typing import Optional
 
 app = FastAPI(
     title="YANA API - Central de Abastecimento Farmacêutico (PostgreSQL)",
     description="Backend em nuvem para controle interno e rastreabilidade hospitalar",
-    version="1.1.2"
+    version="1.1.3"
 )
 
 app.add_middleware(
@@ -25,7 +24,8 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 def conectar_bd():
     try:
-        conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+        # Usamos o cursor clássico para retornar tuplas compatíveis com o seu index.html (med[0], med[1]...)
+        conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
 
         # 1. TABELA DE USUÁRIOS
@@ -126,9 +126,9 @@ def conectar_bd():
         cursor.close()
         return conn
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro de Infraestrutura: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro de Banco: {str(e)}")
 
-# SCHEMAS DE VALIDAÇÃO FLEXÍVEIS (EVITA O ERRO 422 POR PARAMETROS ADICIONAIS OU TIPAGEM ESTRITA)
+# SCHEMAS DE ENTRADA EXATOS
 class LoginSchema(BaseModel):
     usuario: str
     senha: str
@@ -192,96 +192,9 @@ class AtualizarUsuarioSchema(BaseModel):
     senha: str
     perfil: str
 
-# ENDPOINTS REESTRUTURADOS
-@app.get("/api/dashboard/resumo", tags=["Auditoria Sanitária"])
-def obter_resumo_dashboard_vencidos(usuario: str = "admin"):
-    db = conectar_bd()
-    try:
-        cursor = db.cursor()
-        data_atual = date.today()
-        cursor.execute("""
-            SELECT med.nome, l.numero_lote, l.validade, l.quantidade 
-            FROM lotes l 
-            JOIN medicamentos med ON l.medicamento_id = med.id 
-            WHERE l.quantidade > 0 AND l.validade <= %s AND l.usuario_dono = %s
-        """, (data_atual, usuario))
-        lotes_med = cursor.fetchall()
+# --- ENDPOINTS CONFIGURADOS ---
 
-        cursor.execute("""
-            SELECT i.nome, li.numero_lote, li.validade, li.quantidade 
-            FROM lotes_insumos li 
-            JOIN insumos i ON li.insumo_id = i.id 
-            WHERE li.quantidade > 0 AND li.validade <= %s AND li.usuario_dono = %s
-        """, (data_atual, usuario))
-        lotes_ins = cursor.fetchall()
-        
-        alertas = []
-        for r in lotes_med:
-            alertas.append({"tipo": "MEDICAMENTO VENCIDO", "detalhe": f"{r['nome']} (Lote: {r['numero_lote']})", "validade": str(r['validade']), "estoque": r['quantidade']})
-        for r in lotes_ins:
-            alertas.append({"tipo": "INSUMO VENCIDO", "detalhe": f"{r['nome']} (Lote: {r['numero_lote']})", "validade": str(r['validade']), "estoque": r['quantidade']})
-        return {"vencidos": alertas, "total_criticos": len(alertas)}
-    finally:
-        db.close()
-
-@app.delete("/api/auth/usuarios/{usuario_id}", tags=["Autenticação"])
-def deletar_usuario_unidade(usuario_id: int):
-    db = conectar_bd()
-    try:
-        cursor = db.cursor()
-        cursor.execute("DELETE FROM usuarios WHERE id = %s", (usuario_id,))
-        db.commit()
-        return {"status": "sucesso", "mensagem": "Unidade revogada."}
-    finally:
-        db.close()
-
-@app.put("/api/auth/usuarios/{usuario_id}", tags=["Autenticação"])
-def atualizar_usuario_unidade(usuario_id: int, dados: AtualizarUsuarioSchema):
-    db = conectar_bd()
-    try:
-        cursor = db.cursor()
-        cursor.execute("""
-            UPDATE usuarios SET usuario = %s, senha = %s, perfil = %s WHERE id = %s
-        """, (dados.usuario, dados.senha, dados.perfil, usuario_id))
-        db.commit()
-        return {"status": "sucesso", "mensagem": "Dados atualizados com sucesso."}
-    finally:
-        db.close()
-
-@app.post("/api/auth/verificar-admin", tags=["Autenticação"])
-def verificar_senha_master_admin(dados: VerificarAdminSchema):
-    senha_env = os.getenv("ADMIN_PASSWORD") or "Mudar@123_Seguro"
-    if dados.senha.strip() == senha_env.strip():
-        return {"status": "sucesso", "autorizado": True}
-    raise HTTPException(status_code=401, detail="Senha Master incorreta.")
-
-@app.post("/api/auth/registrar", tags=["Autenticação"])
-def registrar_novo_usuario_unidade(dados: AtualizarUsuarioSchema):
-    db = conectar_bd()
-    try:
-        cursor = db.cursor()
-        cursor.execute(
-            "INSERT INTO usuarios (usuario, senha, perfil) VALUES (%s, %s, %s)",
-            (dados.usuario, dados.senha, dados.perfil)
-        )
-        db.commit()
-        return {"status": "sucesso", "mensagem": "Unidade ativada com sucesso."}
-    except psycopg2.errors.UniqueViolation:
-        raise HTTPException(status_code=400, detail="Esta unidade já encontra-se registrada.")
-    finally:
-        db.close()
-
-@app.get("/api/auth/usuarios", tags=["Autenticação"])
-def listar_usuarios_unidades():
-    db = conectar_bd()
-    try:
-        cursor = db.cursor()
-        cursor.execute("SELECT id, usuario, perfil FROM usuarios ORDER BY id DESC")
-        return cursor.fetchall()
-    finally:
-        db.close()
-
-@app.post("/api/auth/login", tags=["Autenticação"])
+@app.post("/api/auth/login")
 def login(dados: LoginSchema):
     db = conectar_bd()
     try:
@@ -289,12 +202,12 @@ def login(dados: LoginSchema):
         cursor.execute("SELECT usuario, perfil FROM usuarios WHERE usuario=%s AND senha=%s", (dados.usuario, dados.senha))
         user = cursor.fetchone()
         if user:
-            return {"status": "sucesso", "usuario": user["usuario"], "perfil": user["perfil"]}
+            return {"status": "sucesso", "usuario": user[0], "perfil": user[1]}
         raise HTTPException(status_code=401, detail="Credenciais inválidas.")
     finally:
         db.close()
 
-@app.get("/api/medicamentos", tags=["Medicamentos"])
+@app.get("/api/medicamentos")
 def listar_medicamentos(usuario: str = "admin"):
     db = conectar_bd()
     try:
@@ -304,7 +217,7 @@ def listar_medicamentos(usuario: str = "admin"):
     finally:
         db.close()
 
-@app.post("/api/medicamentos", tags=["Medicamentos"])
+@app.post("/api/medicamentos")
 def cadastrar_medicamento(med: MedicamentoSchema):
     db = conectar_bd()
     try:
@@ -318,7 +231,7 @@ def cadastrar_medicamento(med: MedicamentoSchema):
     finally:
         db.close()
 
-@app.get("/api/lotes/medicamentos", tags=["Lotes & Estoque"])
+@app.get("/api/lotes/medicamentos")
 def listar_lotes_medicamentos(usuario: str = "admin"):
     db = conectar_bd()
     try:
@@ -329,14 +242,17 @@ def listar_lotes_medicamentos(usuario: str = "admin"):
             WHERE l.quantidade > 0 AND l.usuario_dono = %s
         """, (usuario,))
         res = cursor.fetchall()
+        # Formata datas para string evitando erros de JSON
+        resultado_formatado = []
         for r in res:
-            if 'validade' in r and r['validade']:
-                r['validade'] = str(r['validade'])
-        return res
+            item = list(r)
+            item[4] = str(item[4])
+            resultado_formatado.append(item)
+        return resultado_formatado
     finally:
         db.close()
 
-@app.post("/api/lotes/medicamentos", tags=["Lotes & Estoque"])
+@app.post("/api/lotes/medicamentos")
 def receber_lote_medicamento(lote: LoteMedicamentoSchema):
     try:
         data_validade = datetime.strptime(lote.validade, "%Y-%m-%d").date()
@@ -356,7 +272,7 @@ def receber_lote_medicamento(lote: LoteMedicamentoSchema):
     finally:
         db.close()
 
-@app.get("/api/insumos", tags=["Insumos"])
+@app.get("/api/insumos")
 def listar_insumos(usuario: str = "admin"):
     db = conectar_bd()
     try:
@@ -366,7 +282,7 @@ def listar_insumos(usuario: str = "admin"):
     finally:
         db.close()
 
-@app.post("/api/insumos", tags=["Insumos"])
+@app.post("/api/insumos")
 def cadastrar_insumo(ins: InsumoSchema):
     db = conectar_bd()
     try:
@@ -380,7 +296,7 @@ def cadastrar_insumo(ins: InsumoSchema):
     finally:
         db.close()
 
-@app.get("/api/lotes/insumos", tags=["Lotes & Estoque"])
+@app.get("/api/lotes/insumos")
 def listar_lotes_insumos(usuario: str = "admin"):
     db = conectar_bd()
     try:
@@ -391,14 +307,16 @@ def listar_lotes_insumos(usuario: str = "admin"):
             WHERE li.quantidade > 0 AND li.usuario_dono = %s
         """, (usuario,))
         res = cursor.fetchall()
+        resultado_formatado = []
         for r in res:
-            if 'validade' in r and r['validade']:
-                r['validade'] = str(r['validade'])
-        return res
+            item = list(r)
+            item[4] = str(item[4])
+            resultado_formatado.append(item)
+        return resultado_formatado
     finally:
         db.close()
 
-@app.post("/api/lotes/insumos", tags=["Lotes & Estoque"])
+@app.post("/api/lotes/insumos")
 def receber_lote_insumo(lote: LoteInsumoSchema):
     db = conectar_bd()
     try:
@@ -412,7 +330,7 @@ def receber_lote_insumo(lote: LoteInsumoSchema):
     finally:
         db.close()
 
-@app.post("/api/dispensacao", tags=["Dispensação unificada"])
+@app.post("/api/dispensacao")
 def processar_dispensacao(disp: DispensacaoSchema):
     db = conectar_bd()
     try:
@@ -420,8 +338,8 @@ def processar_dispensacao(disp: DispensacaoSchema):
         if disp.tipo_material == "MEDICAMENTO":
             cursor.execute("SELECT quantidade FROM lotes WHERE id = %s AND usuario_dono = %s", (disp.lote_id, disp.usuario_dono))
             lote = cursor.fetchone()
-            if not lote or lote["quantidade"] < disp.quantidade:
-                raise HTTPException(status_code=400, detail="Saldo insuficiente no lote de medicamento.")
+            if not lote or lote[0] < disp.quantidade:
+                raise HTTPException(status_code=400, detail="Saldo insuficiente no lote.")
 
             cursor.execute("UPDATE lotes SET quantidade = quantidade - %s WHERE id = %s AND usuario_dono = %s", (disp.quantidade, disp.lote_id, disp.usuario_dono))
             cursor.execute("""
@@ -432,8 +350,8 @@ def processar_dispensacao(disp: DispensacaoSchema):
         elif disp.tipo_material == "INSUMO":
             cursor.execute("SELECT quantidade FROM lotes_insumos WHERE id = %s AND usuario_dono = %s", (disp.lote_id, disp.usuario_dono))
             lote = cursor.fetchone()
-            if not lote or lote["quantidade"] < disp.quantidade:
-                raise HTTPException(status_code=400, detail="Saldo insuficiente no lote de insumo.")
+            if not lote or lote[0] < disp.quantidade:
+                raise HTTPException(status_code=400, detail="Saldo insuficiente.")
 
             cursor.execute("UPDATE lotes_insumos SET quantidade = quantidade - %s WHERE id = %s AND usuario_dono = %s", (disp.quantidade, disp.lote_id, disp.usuario_dono))
             cursor.execute("""
@@ -446,11 +364,11 @@ def processar_dispensacao(disp: DispensacaoSchema):
     except Exception as e:
         db.rollback()
         if isinstance(e, HTTPException): raise e
-        raise HTTPException(status_code=500, detail=f"Erro de transação: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
-@app.get("/api/auditoria/movimentacoes", tags=["Auditoria & Compliance"])
+@app.get("/api/auditoria/movimentacoes")
 def relatorio_rastreabilidade(usuario: str = "admin"):
     db = conectar_bd()
     try:
@@ -463,7 +381,7 @@ def relatorio_rastreabilidade(usuario: str = "admin"):
     finally:
         db.close()
 
-@app.post("/api/tecnovigilancia", tags=["Tecnovigilância (POP.FARM.019)"])
+@app.post("/api/tecnovigilancia")
 def registrar_ocorrencia(event: TecnovigilanciaSchema):
     db = conectar_bd()
     try:
@@ -477,18 +395,121 @@ def registrar_ocorrencia(event: TecnovigilanciaSchema):
     finally:
         db.close()
 
-@app.get("/api/tecnovigilancia", tags=["Tecnovigilância (POP.FARM.019)"])
+@app.get("/api/tecnovigilancia")
 def listar_ocorrencias_tecnovigilancia(usuario: str = "admin"):
     db = conectar_bd()
     try:
         cursor = db.cursor()
         cursor.execute("""
-            SELECT id, lote_texto AS lote_suspeito, tipo_ocorrencia, gravidade, data_registro, operador 
+            SELECT id, lote_texto, tipo_ocorrencia, gravidade, data_registro, operador 
             FROM tecnovigilancia WHERE usuario_dono = %s ORDER BY id DESC
         """, (usuario,))
-        return cursor.fetchall()
+        res = cursor.fetchall()
+        # Mapeia como chaves que o HTML precisa no forEach (o.id, o.lote_suspeito...)
+        resultado_objetos = []
+        for r in res:
+            resultado_objetos.append({
+                "id": r[0],
+                "lote_suspeito": r[1],
+                "tipo_ocorrencia": r[2],
+                "gravidade": r[3],
+                "data_registro": r[4],
+                "operador": r[5]
+            })
+        return resultado_objetos
     finally:
         db.close()
+
+@app.get("/api/dashboard/resumo")
+def obter_resumo_dashboard_vencidos(usuario: str = "admin"):
+    db = conectar_bd()
+    try:
+        cursor = db.cursor()
+        data_atual = date.today()
+        cursor.execute("""
+            SELECT med.nome, l.numero_lote, l.validade, l.quantidade 
+            FROM lotes l JOIN medicamentos med ON l.medicamento_id = med.id 
+            WHERE l.quantidade > 0 AND l.validade <= %s AND l.usuario_dono = %s
+        """, (data_atual, usuario))
+        lotes_med = cursor.fetchall()
+
+        cursor.execute("""
+            SELECT i.nome, li.numero_lote, li.validade, li.quantidade 
+            FROM lotes_insumos li JOIN insumos i ON li.insumo_id = i.id 
+            WHERE li.quantidade > 0 AND li.validade <= %s AND li.usuario_dono = %s
+        """, (data_atual, usuario))
+        lotes_ins = cursor.fetchall()
+        
+        alertas = []
+        for r in lotes_med:
+            alertas.append({"tipo": "MEDICAMENTO VENCIDO", "detalhe": f"{r[0]} (Lote: {r[1]})", "validade": str(r[2]), "estoque": r[3]})
+        for r in lotes_ins:
+            alertas.append({"tipo": "INSUMO VENCIDO", "detalhe": f"{r[0]} (Lote: {r[1]})", "validade": str(r[2]), "estoque": r[3]})
+        return {"vencidos": alertas, "total_criticos": len(alertas)}
+    finally:
+        db.close()
+
+# --- ENDPOINTS EXCLUSIVOS DO ADMIN.HTML ---
+@app.get("/api/auth/usuarios")
+def listar_usuarios_unidades():
+    db = conectar_bd()
+    try:
+        cursor = db.cursor()
+        cursor.execute("SELECT id, usuario, perfil FROM usuarios ORDER BY id DESC")
+        res = cursor.fetchall()
+        resultado_objetos = []
+        for r in res:
+            resultado_objetos.append({"id": r[0], "usuario": r[1], "perfil": r[2]})
+        return resultado_objetos
+    finally:
+        db.close()
+
+@app.post("/api/auth/registrar")
+def registrar_novo_usuario_unidade(dados: AtualizarUsuarioSchema):
+    db = conectar_bd()
+    try:
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO usuarios (usuario, senha, perfil) VALUES (%s, %s, %s)",
+            (dados.usuario, dados.senha, dados.perfil)
+        )
+        db.commit()
+        return {"status": "sucesso", "mensagem": "Unidade ativada com sucesso."}
+    except psycopg2.errors.UniqueViolation:
+        raise HTTPException(status_code=400, detail="Esta unidade já encontra-se registrada.")
+    finally:
+        db.close()
+
+@app.put("/api/auth/usuarios/{usuario_id}")
+def atualizar_usuario_unidade(usuario_id: int, dados: AtualizarUsuarioSchema):
+    db = conectar_bd()
+    try:
+        cursor = db.cursor()
+        cursor.execute("""
+            UPDATE usuarios SET usuario = %s, senha = %s, perfil = %s WHERE id = %s
+        """, (dados.usuario, dados.senha, dados.perfil, usuario_id))
+        db.commit()
+        return {"status": "sucesso", "mensagem": "Dados atualizados com sucesso."}
+    finally:
+        db.close()
+
+@app.delete("/api/auth/usuarios/{usuario_id}")
+def deletar_usuario_unidade(usuario_id: int):
+    db = conectar_bd()
+    try:
+        cursor = db.cursor()
+        cursor.execute("DELETE FROM usuarios WHERE id = %s", (usuario_id,))
+        db.commit()
+        return {"status": "sucesso", "mensagem": "Unidade revogada."}
+    finally:
+        db.close()
+
+@app.post("/api/auth/verificar-admin")
+def verificar_senha_master_admin(dados: VerificarAdminSchema):
+    senha_env = os.getenv("ADMIN_PASSWORD") or "Mudar@123_Seguro"
+    if dados.senha.strip() == senha_env.strip():
+        return {"status": "sucesso", "autorizado": True}
+    raise HTTPException(status_code=401, detail="Senha Master incorreta.")
 
 if __name__ == "__main__":
     import uvicorn
