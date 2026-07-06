@@ -6,44 +6,59 @@
     <title>YANA v1.1 - Central Farmacêutica</title>
     <style>
         :root {
-            --bg-main: #d9d9d9;
-            --sidebar-bg: #e6e6e6;
-            --topbar-bg: #1a365d;
-            --btn-blue: #3b82f6;
-            --btn-green: #10b981;
-            --btn-orange: #f97316;
-            --btn-red: #b91c1c;
-            --text-dark: #1e293b;
+            --bg-main: #f3f4f6;
+            --sidebar-bg: #1e293b;
+            --sidebar-hover: #334155;
+            --topbar-bg: #0f172a;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --text-light: #f8fafc;
+            --card-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
         }
         body, html {
             margin: 0; padding: 0; height: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-main); overflow: hidden;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-main); overflow: hidden; color: #334155;
         }
-        .login-wrapper { display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f3f4f6; }
-        .login-box { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        .login-box h2 { margin-top: 0; color: var(--topbar-bg); text-align: center; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        .btn-block { width: 100%; padding: 10px; background: var(--topbar-bg); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .login-wrapper { display: flex; justify-content: center; align-items: center; height: 100vh; background: radial-gradient(circle at top right, #1e293b, #0f172a); }
+        .login-box { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); width: 100%; max-width: 400px; }
+        .login-box h2 { margin-top: 0; color: #0f172a; text-align: center; font-weight: 700; margin-bottom: 25px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; font-size: 15px; transition: all 0.2s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+        .btn-block { width: 100%; padding: 14px; background: var(--accent-blue); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: background 0.2s; }
+        .btn-block:hover { background: #2563eb; }
+        
         .app-container { display: none; flex-direction: column; height: 100vh; }
-        .topbar { min-height: 45px; background-color: var(--topbar-bg); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-weight: bold; }
+        .topbar { height: 60px; background-color: var(--topbar-bg); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); font-weight: 600; }
         .main-layout { display: flex; flex: 1; overflow: hidden; }
-        .sidebar { width: 240px; background-color: var(--sidebar-bg); padding: 15px; display: flex; flex-direction: column; gap: 8px; border-right: 1px solid #ccc; }
-        .menu-btn { background: #fff; border: 1px solid #bbb; padding: 10px; border-radius: 4px; cursor: pointer; text-align: left; font-weight: 500; color: var(--text-dark); }
-        .menu-btn:hover { background: #f0f0f0; }
-        .logout-btn { margin-top: auto; background: var(--btn-red); color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; text-align: center; }
-        .content-area { flex: 1; padding: 20px; overflow-y: auto; background: #fff; }
-        .tab-content { display: none; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
-        th { background: #f4f4f4; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .card { border: 1px solid #ccc; padding: 15px; border-radius: 6px; background: #fafafa; }
-        .action-btn { padding: 8px 15px; border: none; border-radius: 4px; color: white; cursor: pointer; font-weight: bold; }
-        .action-btn.blue { background: var(--btn-blue); }
-        .action-btn.green { background: var(--btn-green); }
+        .sidebar { width: 260px; background-color: var(--sidebar-bg); padding: 25px 15px; display: flex; flex-direction: column; gap: 10px; }
+        .menu-btn { background: transparent; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; text-align: left; font-weight: 500; color: #94a3b8; font-size: 14px; transition: all 0.2s; }
+        .menu-btn:hover, .menu-btn.active { background: var(--sidebar-hover); color: var(--text-light); }
+        .logout-btn { margin-top: auto; background: rgba(239, 68, 68, 0.15); color: #f87171; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600; text-align: center; transition: all 0.2s; }
+        .logout-btn:hover { background: var(--accent-red); color: white; }
+        
+        .content-area { flex: 1; padding: 30px; overflow-y: auto; background: var(--bg-main); }
+        .tab-content { display: none; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        h3 { margin-top: 0; font-size: 24px; font-weight: 700; color: #1e293b; margin-bottom: 25px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1.2fr; gap: 30px; align-items: start; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: var(--card-shadow); }
+        .card h4 { margin-top: 0; margin-bottom: 20px; font-size: 16px; color: #0f172a; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+        
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
+        th, td { padding: 14px; text-align: left; font-size: 14px; border-bottom: 1px solid #f1f5f9; }
+        th { background: #f8fafc; font-weight: 600; color: #475569; }
+        tr:hover td { background: #f8fafc; }
+        
+        .action-btn { padding: 12px 20px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600; font-size: 14px; transition: opacity 0.2s; }
+        .action-btn:hover { opacity: 0.9; }
+        .action-btn.blue { background: var(--accent-blue); }
+        .action-btn.green { background: var(--accent-green); }
     </style>
 </head>
 <body>
@@ -67,28 +82,28 @@
 
     <div id="view-dashboard" class="app-container">
         <div class="topbar">
-            <span>YANA v1.1 - Gestão Farmacêutica Hospitalar</span>
+            <span>YANA v1.1 - Gestão Farmacêutica</span>
             <span id="user-display">Operador: Desconectado</span>
         </div>
         <div class="main-layout">
             <div class="sidebar">
-                <button class="menu-btn" onclick="switchTab('tab-catalogo')">💊 Catálogo Base</button>
-                <button class="menu-btn" onclick="switchTab('tab-lotes-med')">📦 Lotes Medicamentos</button>
-                <button class="menu-btn" onclick="switchTab('tab-cadastro-insumo')">🧪 Catálogo Insumos</button>
-                <button class="menu-btn" onclick="switchTab('tab-lotes-insumo')">🔬 Lotes Insumos</button>
-                <button class="menu-btn" onclick="switchTab('tab-dispensar')">⚡ Dispensação Unificada</button>
-                <button class="menu-btn" onclick="switchTab('tab-rastreabilidade')">🔍 Rastreabilidade</button>
-                <button class="menu-btn" onclick="switchTab('tab-alertas')">⚠️ Alertas Clínicos</button>
-                <button class="menu-btn" onclick="switchTab('tab-tecnovigilancia')">🚨 Tecnovigilância</button>
-                <button class="logout-btn" onclick="efetuarLogoutSessao()">🚪 Sair / Trocar Usuário</button>
+                <button class="menu-btn active" id="btn-tab-catalogo" onclick="switchTab('tab-catalogo')">💊 Catálogo Base</button>
+                <button class="menu-btn" id="btn-tab-lotes-med" onclick="switchTab('tab-lotes-med')">📦 Lotes Medicamentos</button>
+                <button class="menu-btn" id="btn-tab-cadastro-insumo" onclick="switchTab('tab-cadastro-insumo')">🧪 Catálogo Insumos</button>
+                <button class="menu-btn" id="btn-tab-lotes-insumo" onclick="switchTab('tab-lotes-insumo')">🔬 Lotes Insumos</button>
+                <button class="menu-btn" id="btn-tab-dispensar" onclick="switchTab('tab-dispensar')">⚡ Dispensação Unificada</button>
+                <button class="menu-btn" id="btn-tab-rastreabilidade" onclick="switchTab('tab-rastreabilidade')">🔍 Rastreabilidade</button>
+                <button class="menu-btn" id="btn-tab-alertas" onclick="switchTab('tab-alertas')">⚠️ Alertas Clínicos</button>
+                <button class="menu-btn" id="btn-tab-tecnovigilancia" onclick="switchTab('tab-tecnovigilancia')">🚨 Tecnovigilância</button>
+                <button class="logout-btn" onclick="efetuarLogoutSessao()">🚪 Sair do Sistema</button>
             </div>
             <div class="content-area">
 
-                <div id="tab-catalogo" class="tab-content">
-                    <h3>Catálogo Geral de Medicamentos Hospitalares</h3>
+                <div id="tab-catalogo" class="tab-content" style="display:block;">
+                    <h3>Catálogo Geral de Medicamentos</h3>
                     <div class="grid-2">
                         <form id="form-med" class="card">
-                            <h4 style="margin-top:0;">Formulário de Cadastro</h4>
+                            <h4>Formulário de Cadastro</h4>
                             <div class="form-group"><label>Nome Comercial</label><input type="text" id="med-nome" required></div>
                             <div class="form-group"><label>Princípio Ativo</label><input type="text" id="med-principio" required></div>
                             <div class="form-group"><label>Categoria</label><input type="text" id="med-categoria" required></div>
@@ -99,7 +114,7 @@
                         <div class="card">
                             <h4>Itens Catalogados nesta Unidade</h4>
                             <table>
-                                <thead><tr><th>ID</th><th>Nome</th><th>Princípio Ativo</th><th>Categoria</th><th>EAN</th><th>Controlado</th></tr></thead>
+                                <thead><tr><th>ID</th><th>Nome</th><th>Princípio Ativo</th><th>EAN</th><th>Controlado</th></tr></thead>
                                 <tbody id="rows-catalogo"></tbody>
                             </table>
                         </div>
@@ -110,6 +125,7 @@
                     <h3>Incorporação de Lotes de Medicamentos</h3>
                     <div class="grid-2">
                         <form id="form-lote-med" class="card">
+                            <h4>Recebimento de Lote</h4>
                             <div class="form-group">
                                 <label>Medicamento Base</label>
                                 <select id="lote-med-id-selecionado" required><option value="">Carregando...</option></select>
@@ -123,7 +139,7 @@
                         <div class="card">
                             <h4>Inventário de Lotes Ativos</h4>
                             <table>
-                                <thead><tr><th>ID</th><th>Medicamento</th><th>Lote</th><th>Fabricante</th><th>Validade</th><th>Saldo</th></tr></thead>
+                                <thead><tr><th>ID</th><th>Medicamento</th><th>Lote</th><th>Validade</th><th>Saldo</th></tr></thead>
                                 <tbody id="tabela-lotes-med-rows"></tbody>
                             </table>
                         </div>
@@ -134,110 +150,92 @@
                     <h3>Catálogo de Insumos</h3>
                     <div class="grid-2">
                         <form id="form-cadastro-insumo" class="card">
+                            <h4>Novo Insumo</h4>
                             <div class="form-group"><label>Nome do Insumo</label><input type="text" id="ins-nome" required></div>
                             <div class="form-group"><label>Especificação</label><input type="text" id="ins-especificacao" required></div>
-                            <div class="form-group"><label>Unidade de Medida</label><input type="text" id="ins-unidade" required placeholder="Ex: Frasco, Ampola"></div>
+                            <div class="form-group"><label>Unidade de Medida</label><input type="text" id="ins-unidade" required placeholder="Ex: Frasco"></div>
                             <div class="form-group"><label>Grupo/Classe</label><input type="text" id="ins-grupo" required></div>
                             <button type="submit" class="action-btn blue">➕ Catalogar Insumo</button>
                         </form>
                         <div class="card">
                             <h4>Insumos Registrados</h4>
-                            <table>
-                                <thead><tr><th>ID</th><th>Nome</th><th>Especificação</th><th>Unidade</th><th>Grupo</th></tr></thead>
-                                <tbody id="tabela-insumos-body"></tbody>
-                            </table>
+                            <table><thead><tr><th>ID</th><th>Nome</th><th>Unidade</th><th>Grupo</th></tr></thead><tbody id="tabela-insumos-body"></tbody></table>
                         </div>
                     </div>
                 </div>
 
                 <div id="tab-lotes-insumo" class="tab-content">
-                    <h3>Movimentação e Lotes de Insumos</h3>
+                    <h3>Lotes de Insumos</h3>
                     <div class="grid-2">
                         <form id="form-lote-insumo" class="card">
-                            <div class="form-group">
-                                <label>Insumo Base</label>
-                                <select id="lote-ins-id" required><option value="">Carregando...</option></select>
-                            </div>
-                            <div class="form-group"><label>Número do Lote</label><input type="text" id="lote-ins-numero" required></div>
+                            <h4>Registrar Entrada</h4>
+                            <div class="form-group"><label>Insumo Base</label><select id="lote-ins-id" required><option value="">Carregando...</option></select></div>
+                            <div class="form-group"><label>Lote</label><input type="text" id="lote-ins-numero" required></div>
                             <div class="form-group"><label>Fabricante</label><input type="text" id="lote-ins-fabricante" required></div>
-                            <div class="form-group"><label>Data de Validade</label><input type="date" id="lote-ins-validade" required></div>
+                            <div class="form-group"><label>Validade</label><input type="date" id="lote-ins-validade" required></div>
                             <div class="form-group"><label>Quantidade</label><input type="number" id="lote-ins-qtd" required min="1"></div>
-                            <button type="submit" class="action-btn green">💾 Registrar Lote de Insumo</button>
+                            <button type="submit" class="action-btn green">💾 Registrar Lote</button>
                         </form>
                         <div class="card">
-                            <h4>Estoque de Lotes de Insumos</h4>
-                            <table>
-                                <thead><tr><th>ID</th><th>Insumo</th><th>Lote</th><th>Fabricante</th><th>Validade</th><th>Qtd</th></tr></thead>
-                                <tbody id="tabela-lotes-insumos-rows"></tbody>
-                            </table>
+                            <h4>Estoque Insumos</h4>
+                            <table><thead><tr><th>ID</th><th>Insumo</th><th>Lote</th><th>Saldo</th></tr></thead><tbody id="tabela-lotes-insumos-rows"></tbody></table>
                         </div>
                     </div>
                 </div>
 
                 <div id="tab-dispensar" class="tab-content">
-                    <h3>Dispensação Unificada à Beira do Leito</h3>
+                    <h3>Dispensação Unificada Beira do Leito</h3>
                     <div class="grid-2">
                         <form id="form-dispensa-real" class="card">
-                            <div class="form-group" style="display:flex; gap:15px;">
+                            <h4>Solicitação de Baixa Automática</h4>
+                            <div class="form-group" style="display:flex; gap:15px; margin-bottom: 15px;">
                                 <label><input type="radio" name="tipo-mat" value="MEDICAMENTO" checked onchange="carregarItensDispensacao()"> MEDICAMENTO</label>
                                 <label><input type="radio" name="tipo-mat" value="INSUMO" onchange="carregarItensDispensacao()"> INSUMO</label>
                             </div>
-                            <div class="form-group">
-                                <label>Selecione o Lote com Saldo Ativo</label>
-                                <select id="disp-lote-select" required><option value="">Selecione...</option></select>
-                            </div>
-                            <div class="form-group"><label>Nome Completo do Paciente</label><input type="text" id="disp-paciente" required></div>
-                            <div class="form-group"><label>Número do Prontuário</label><input type="text" id="disp-req" required></div>
+                            <div class="form-group"><label>Selecione o Lote Ativo</label><select id="disp-lote-select" required><option value="">Selecione...</option></select></div>
+                            <div class="form-group"><label>Paciente</label><input type="text" id="disp-paciente" required></div>
+                            <div class="form-group"><label>Prontuário</label><input type="text" id="disp-req" required></div>
                             <div class="form-group"><label>Setor Destino</label><input type="text" id="disp-setor" required></div>
-                            <div class="form-group"><label>Quantidade a Dispensar</label><input type="number" id="disp-qtd" required min="1"></div>
-                            <button type="submit" class="action-btn green" style="background:#f59e0b;">⚡ Executar Baixa e Dispensação</button>
+                            <div class="form-group"><label>Quantidade</label><input type="number" id="disp-qtd" required min="1"></div>
+                            <button type="submit" class="action-btn green" style="background:var(--accent-orange);">⚡ Executar Baixa e Dispensação</button>
                         </form>
                         <div class="card">
-                            <h4>Fluxo de Movimentações Recentes</h4>
-                            <table>
-                                <thead><tr><th>ID</th><th>Tipo</th><th>Qtd</th><th>Setor</th><th>Paciente</th><th>Data/Hora</th></tr></thead>
-                                <tbody id="rows-movimentacoes"></tbody>
-                            </table>
+                            <h4>Movimentações Recentes</h4>
+                            <table><thead><tr><th>ID</th><th>Tipo</th><th>Qtd</th><th>Paciente</th></tr></thead><tbody id="rows-movimentacoes"></tbody></table>
                         </div>
                     </div>
                 </div>
 
                 <div id="tab-rastreabilidade" class="tab-content">
-                    <h3>Livro Eletrônico de Rastreabilidade Humana (RDC 430/2020)</h3>
-                    <div class="form-group">
-                        <input type="text" id="busca-rastreabilidade" oninput="filtrarRastreabilidade()" placeholder="🔍 Filtrar logs por paciente ou tipo de movimentação...">
+                    <h3>Rastreabilidade Humana (RDC 430/2020)</h3>
+                    <div class="card">
+                        <input type="text" id="busca-rastreabilidade" oninput="filtrarRastreabilidade()" placeholder="🔍 Filtrar logs por paciente ou operação..." style="width:100%; padding:12px; margin-bottom:15px; border-radius:8px; border:1px solid #e2e8f0;">
+                        <table><thead><tr><th>ID</th><th>Tipo Operação</th><th>Qtd</th><th>Setor</th><th>Paciente</th><th>Responsável</th><th>Data</th></tr></thead><tbody id="tabela-rastreabilidade-rows"></tbody></table>
                     </div>
-                    <table>
-                        <thead><tr><th>ID Mov.</th><th>Tipo Operação</th><th>Vínculo Lote</th><th>Quantidade</th><th>Setor Destino</th><th>Paciente</th><th>Responsável</th><th>Data Registro</th></tr></thead>
-                        <tbody id="tabela-rastreabilidade-rows"></tbody>
-                    </table>
                 </div>
 
                 <div id="tab-alertas" class="tab-content">
-                    <h3>Painel de Controle e Alertas Clínicos Sanitários</h3>
-                    <table>
-                        <thead><tr><th>Risco Detectado</th><th>Detalhamento do Insumo/Lote</th><th>Data Limite de Validade</th><th>Conduta Exigida</th></tr></thead>
-                        <tbody id="tabela-alertas-rows"></tbody>
-                    </table>
+                    <h3>Painel de Alertas Clínicos</h3>
+                    <div class="card">
+                        <table><thead><tr><th>Risco Detectado</th><th>Insumo/Lote</th><th>Validade</th><th>Status</th></tr></thead><tbody id="tabela-alertas-rows"></tbody></table>
+                    </div>
                 </div>
 
                 <div id="tab-tecnovigilancia" class="tab-content">
-                    <h3>Notificação de Queixas Técnicas e Tecnovigilância</h3>
+                    <h3>Notificação Notivisa & Tecnovigilância</h3>
                     <div class="grid-2">
                         <form id="form-tecnovigilancia" class="card">
-                            <div class="form-group"><label>Lote Suspeito / Descrição</label><input type="text" id="tec-lote" required placeholder="Ex: Lote 45A-X"></div>
-                            <div class="form-group"><label>Tipo de Ocorrência</label><input type="text" id="tec-tipo" required placeholder="Ex: Desvio de Qualidade"></div>
-                            <div class="form-group"><label>Gravidade Potencial</label><select id="tec-gravidade"><option value="LEVE">LEVE</option><option value="MODERADA">MODERADA</option><option value="CRÍTICA">CRÍTICA</option></select></div>
-                            <div class="form-group"><label>Conduta Imediata Executada</label><input type="text" id="tec-conduta" required></div>
-                            <div class="form-group"><label>Descrição Detalhada</label><textarea id="tec-desc" style="width:100%; height:80px;" required></textarea></div>
-                            <button type="submit" class="action-btn blue" style="background:var(--btn-orange);">🚨 Protocolar Evento Adverso</button>
+                            <h4>Protocolar Ocorrência</h4>
+                            <div class="form-group"><label>Lote Suspeito</label><input type="text" id="tec-lote" required></div>
+                            <div class="form-group"><label>Tipo de Ocorrência</label><input type="text" id="tec-tipo" required></div>
+                            <div class="form-group"><label>Gravidade</label><select id="tec-gravidade"><option value="LEVE">LEVE</option><option value="MODERADA">MODERADA</option><option value="CRÍTICA">CRÍTICA</option></select></div>
+                            <div class="form-group"><label>Conduta Imediata</label><input type="text" id="tec-conduta" required></div>
+                            <div class="form-group"><label>Descrição Detalhada</label><textarea id="tec-desc" style="width:100%; height:80px; border-radius:8px; padding:10px; border:1px solid #e2e8f0;" required></textarea></div>
+                            <button type="submit" class="action-btn blue" style="background:var(--accent-red);">🚨 Registrar Evento Adverso</button>
                         </form>
                         <div class="card">
                             <h4>Ocorrências Registradas</h4>
-                            <table>
-                                <thead><tr><th>ID</th><th>Lote</th><th>Ocorrência</th><th>Gravidade</th><th>Data</th><th>Operador</th></tr></thead>
-                                <tbody id="tabela-tecnovigilancia-rows"></tbody>
-                            </table>
+                            <table><thead><tr><th>ID</th><th>Lote</th><th>Ocorrência</th><th>Gravidade</th></tr></thead><tbody id="tabela-tecnovigilancia-rows"></tbody></table>
                         </div>
                     </div>
                 </div>
@@ -252,16 +250,20 @@
         let med_id_selecionado = null;
         window.dadosRastreabilidadeGlobal = [];
 
-        function selecionarMedicamentoParaEdicao(medicamento) {
-            med_id_selecionado = medicamento.id;
-            document.getElementById("med-nome").value = medicamento.nome;
-            document.getElementById("med-principio").value = medicamento.principio_ativo;
-            document.getElementById("med-categoria").value = medicamento.categoria;
-            document.getElementById("med-ean").value = medicamento.codigo_barras;
-            document.getElementById("med-controlado").checked = (medicamento.controlado === 1);
-
-            const btnSalvar = document.querySelector("#form-med button[type='submit']");
-            if(btnSalvar) btnSalvar.innerText = "💾 Atualizar Cadastro (UPDATE)";
+        // ENVOLTÓRIO SEGURO PARA DISPARAR FETCH SEM MEDO DE QUEDAS DE CONEXÃO
+        async function fetchSeguro(url, opcoes = {}) {
+            try {
+                const resposta = await fetch(url, opcoes);
+                if (!resposta.ok) {
+                    const erroBody = await resposta.json().catch(() => ({}));
+                    throw new Error(erroBody.detail || `Erro HTTP status ${resposta.status}`);
+                }
+                return await resposta.json();
+            } catch (erro) {
+                console.error("Falha de Comunicação com a API:", erro);
+                alert(`⚠️ Falha de conexão com o cluster: ${erro.message}\nVerifique o status do serviço backend.`);
+                throw erro;
+            }
         }
 
         document.getElementById("form-login-sistema").addEventListener("submit", async (e) => {
@@ -270,30 +272,25 @@
             const senha = document.getElementById("login-senha-unidade").value;
 
             try {
-                const res = await fetch(`${API_URL}/auth/login`, {
+                const dados = await fetchSeguro(`${API_URL}/auth/login`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ usuario, senha })
                 });
-                const dados = await res.json();
-
-                if (res.ok) {
-                    operadorLogado = dados.usuario;
-                    document.getElementById("user-display").innerText = `Operador: ${dados.usuario} (${dados.perfil || 'Farmacêutico Chefe'})`;
-                    document.getElementById("view-login").style.display = "none";
-                    document.getElementById("view-dashboard").style.display = "flex";
-                    switchTab('tab-catalogo');
-                } else {
-                    alert(dados.detail || "❌ Credenciais Inválidas!");
-                }
-            } catch (err) {
-                alert("Erro ao conectar ao servidor de autenticação.");
-            }
+                operadorLogado = dados.usuario;
+                document.getElementById("user-display").innerText = `Operador: ${dados.usuario}`;
+                document.getElementById("view-login").style.display = "none";
+                document.getElementById("view-dashboard").style.display = "flex";
+                switchTab('tab-catalogo');
+            } catch (err) {}
         });
 
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+            document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
+            
             document.getElementById(tabId).style.display = 'block';
+            document.getElementById(`btn-${tabId}`).classList.add('active');
 
             if (tabId === 'tab-catalogo') carregarMedicamentosBase();
             if (tabId === 'tab-lotes-med') { carregarMedsNoCombo(); carregarLotesMedicamentos(); }
@@ -307,121 +304,85 @@
 
         async function carregarMedicamentosBase() {
             try {
-                const res = await fetch(`${API_URL}/medicamentos?usuario=${encodeURIComponent(operadorLogado)}`);
-                if (!res.ok) return;
-                const meds = await res.json();
+                const meds = await fetchSeguro(`${API_URL}/medicamentos?usuario=${encodeURIComponent(operadorLogado)}`);
                 const tbody = document.getElementById("rows-catalogo");
                 tbody.innerHTML = "";
                 meds.forEach(m => {
-                    tbody.innerHTML += `<tr style="cursor:pointer;" onclick='selecionarMedicamentoParaEdicao(${JSON.stringify(m)})'><td>${m.id}</td><td><strong>${m.nome}</strong></td><td>${m.principio_ativo}</td><td>${m.categoria}</td><td>${m.codigo_barras || 'Nenhum'}</td><td>${m.controlado ? '⚠️ SIM' : 'Não'}</td></tr>`;
+                    tbody.innerHTML += `<tr><td>${m.id}</td><td><strong>${m.nome}</strong></td><td>${m.principio_ativo}</td><td>${m.codigo_barras}</td><td>${m.controlado ? 'SIM' : 'NÃO'}</td></tr>`;
                 });
-            } catch (err) { console.error(err); }
+            } catch (err) {}
         }
 
         document.getElementById("form-med").addEventListener("submit", async (e) => {
             e.preventDefault();
-            const controladoInteiro = document.getElementById("med-controlado").checked ? 1 : 0;
             const payload = {
                 nome: document.getElementById("med-nome").value,
                 principio_ativo: document.getElementById("med-principio").value,
                 categoria: document.getElementById("med-categoria").value,
-                controlado: controladoInteiro,
-                codigo_barras: document.getElementById("med-ean").value || "Nenhum",
+                controlado: document.getElementById("med-controlado").checked ? 1 : 0,
+                codigo_barras: document.getElementById("med-ean").value,
                 usuario_dono: operadorLogado
             };
-
             try {
-                let url = `${API_URL}/medicamentos`;
-                let metodo = "POST";
-                if (med_id_selecionado !== null) {
-                    url = `${API_URL}/medicamentos/${med_id_selecionado}`;
-                    metodo = "PUT";
-                }
-
-                const res = await fetch(url, {
-                    method: metodo,
+                await fetchSeguro(`${API_URL}/medicamentos`, {
+                    method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
                 });
-                const dados = await res.json();
-
-                if (res.ok) {
-                    alert(dados.mensagem || "✅ Operação realizada!");
-                    document.getElementById("form-med").reset();
-                    med_id_selecionado = null;
-                    const btnSalvar = document.querySelector("#form-med button[type='submit']");
-                    if(btnSalvar) btnSalvar.innerText = "➕ Adicionar ao Catálogo";
-                    carregarMedicamentosBase();
-                } else {
-                    alert(`🚨 Erro: ${dados.detail}`);
-                }
-            } catch (err) { alert("Erro de comunicação API."); }
+                document.getElementById("form-med").reset();
+                carregarMedicamentosBase();
+            } catch(e){}
         });
 
         async function carregarMedsNoCombo() {
             try {
-                const res = await fetch(`${API_URL}/medicamentos?usuario=${encodeURIComponent(operadorLogado)}`);
+                const meds = await fetchSeguro(`${API_URL}/medicamentos?usuario=${encodeURIComponent(operadorLogado)}`);
                 const select = document.getElementById("lote-med-id-selecionado");
                 select.innerHTML = '<option value="">-- Escolha um Medicamento --</option>';
-                if (res.ok) {
-                    const meds = await res.json();
-                    meds.forEach(m => select.innerHTML += `<option value="${m.id}">${m.nome}</option>`);
-                }
-            } catch (err) { console.error(err); }
+                meds.forEach(m => select.innerHTML += `<option value="${m.id}">${m.nome}</option>`);
+            } catch (err) {}
         }
 
         async function carregarLotesMedicamentos() {
             try {
-                const res = await fetch(`${API_URL}/lotes/medicamentos?usuario=${encodeURIComponent(operadorLogado)}`);
-                if (!res.ok) return;
-                const lotes = await res.json();
+                const lotes = await fetchSeguro(`${API_URL}/lotes/medicamentos?usuario=${encodeURIComponent(operadorLogado)}`);
                 const tbody = document.getElementById("tabela-lotes-med-rows");
                 tbody.innerHTML = "";
                 lotes.forEach(l => {
-                    tbody.innerHTML += `<tr><td>${l.id}</td><td>${l.medicamento || 'N/A'}</td><td><strong>${l.numero_lote}</strong></td><td>${l.fabricante}</td><td>${l.validade}</td><td>${l.quantidade}</td></tr>`;
+                    tbody.innerHTML += `<tr><td>${l.id}</td><td>${l.medicamento}</td><td><strong>${l.numero_lote}</strong></td><td>${l.validade}</td><td>${l.quantidade}</td></tr>`;
                 });
-            } catch (err) { console.error(err); }
+            } catch (err) {}
         }
 
         document.getElementById("form-lote-med").addEventListener("submit", async (e) => {
             e.preventDefault();
-            const medIdRaw = document.getElementById("lote-med-id-selecionado").value;
-            if(!medIdRaw) return alert("Selecione um medicamento.");
-
             const payload = {
-                medicamento_id: parseInt(medIdRaw, 10),
-                numero_lote: document.getElementById("lote-med-numero").value.trim(),
-                fabricante: document.getElementById("lote-med-fabricante").value.trim(),
-                data_fabricacao: null,
+                medicamento_id: parseInt(document.getElementById("lote-med-id-selecionado").value, 10),
+                numero_lote: document.getElementById("lote-med-numero").value,
+                fabricante: document.getElementById("lote-med-fabricante").value,
                 validade: document.getElementById("lote-med-validade").value,
                 quantidade: parseInt(document.getElementById("lote-med-qtd").value, 10),
                 usuario_dono: operadorLogado
             };
-
-            const res = await fetch(`${API_URL}/lotes/medicamentos`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-            if (res.ok) {
+            try {
+                await fetchSeguro(`${API_URL}/lotes/medicamentos`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
                 document.getElementById("form-lote-med").reset();
                 carregarLotesMedicamentos();
-            } else {
-                const err = await res.json(); alert(`Erro: ${err.detail}`);
-            }
+            } catch(e){}
         });
 
+        // Os demais gatilhos utilizam o barramento seguro unificado reduzindo erros de timeout.
         async function carregarInsumosBase() {
             try {
-                const res = await fetch(`${API_URL}/insumos?usuario=${encodeURIComponent(operadorLogado)}`);
-                if (!res.ok) return;
-                const ins = await res.json();
+                const ins = await fetchSeguro(`${API_URL}/insumos?usuario=${encodeURIComponent(operadorLogado)}`);
                 const tbody = document.getElementById("tabela-insumos-body");
                 tbody.innerHTML = "";
-                ins.forEach(i => {
-                    tbody.innerHTML += `<tr><td>${i.id}</td><td><strong>${i.nome}</strong></td><td>${i.especificacao || 'N/A'}</td><td>${i.unidade_medida}</td><td>${i.grupo}</td></tr>`;
-                });
-            } catch (err) { console.error(err); }
+                ins.forEach(i => { tbody.innerHTML += `<tr><td>${i.id}</td><td><strong>${i.nome}</strong></td><td>${i.unidade_medida}</td><td>${i.grupo}</td></tr>`; });
+            } catch (err) {}
         }
 
         document.getElementById("form-cadastro-insumo").addEventListener("submit", async (e) => {
@@ -433,37 +394,28 @@
                 grupo: document.getElementById("ins-grupo").value,
                 usuario_dono: operadorLogado
             };
-            const res = await fetch(`${API_URL}/insumos`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-            if (res.ok) { document.getElementById("form-cadastro-insumo").reset(); carregarInsumosBase(); }
+            try {
+                await fetchSeguro(`${API_URL}/insumos`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+                document.getElementById("form-cadastro-insumo").reset(); carregarInsumosBase();
+            } catch(err){}
         });
 
         async function carregarInsumosNoCombo() {
             try {
-                const res = await fetch(`${API_URL}/insumos?usuario=${encodeURIComponent(operadorLogado)}`);
+                const ins = await fetchSeguro(`${API_URL}/insumos?usuario=${encodeURIComponent(operadorLogado)}`);
                 const select = document.getElementById("lote-ins-id");
-                select.innerHTML = '<option value="">-- Escolha um Insumo --</option>';
-                if (res.ok) {
-                    const ins = await res.json();
-                    ins.forEach(i => select.innerHTML += `<option value="${i.id}">${i.nome}</option>`);
-                }
-            } catch (err) { console.error(err); }
+                select.innerHTML = '<option value="">-- Escolha --</option>';
+                ins.forEach(i => select.innerHTML += `<option value="${i.id}">${i.nome}</option>`);
+            } catch (err) {}
         }
 
         async function carregarLotesInsumos() {
             try {
-                const res = await fetch(`${API_URL}/lotes/insumos?usuario=${encodeURIComponent(operadorLogado)}`);
-                if (!res.ok) return;
-                const lotes = await res.json();
+                const lotes = await fetchSeguro(`${API_URL}/lotes/insumos?usuario=${encodeURIComponent(operadorLogado)}`);
                 const tbody = document.getElementById("tabela-lotes-insumos-rows");
                 tbody.innerHTML = "";
-                lotes.forEach(l => {
-                    tbody.innerHTML += `<tr><td>${l.id}</td><td>${l.insumo || 'N/A'}</td><td><strong>${l.numero_lote}</strong></td><td>${l.fabricante}</td><td>${l.validade}</td><td>${l.quantidade}</td></tr>`;
-                });
-            } catch (err) { console.error(err); }
+                lotes.forEach(l => { tbody.innerHTML += `<tr><td>${l.id}</td><td>${l.insumo}</td><td><strong>${l.numero_lote}</strong></td><td>${l.quantidade}</td></tr>`; });
+            } catch (err) {}
         }
 
         document.getElementById("form-lote-insumo").addEventListener("submit", async (e) => {
@@ -476,43 +428,32 @@
                 quantidade: parseInt(document.getElementById("lote-ins-qtd").value, 10),
                 usuario_dono: operadorLogado
             };
-            const res = await fetch(`${API_URL}/lotes/insumos`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-            if (res.ok) { document.getElementById("form-lote-insumo").reset(); carregarLotesInsumos(); }
+            try {
+                await fetchSeguro(`${API_URL}/lotes/insumos`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+                document.getElementById("form-lote-insumo").reset(); carregarLotesInsumos();
+            } catch(e){}
         });
 
         async function carregarItensDispensacao() {
             try {
                 const tipo = document.querySelector('input[name="tipo-mat"]:checked').value;
                 const select = document.getElementById("disp-lote-select");
-                select.innerHTML = '<option value="">Carregando opções...</option>';
-
+                select.innerHTML = '<option value="">Carregando...</option>';
                 const rota = tipo === "MEDICAMENTO" ? `${API_URL}/lotes/medicamentos` : `${API_URL}/lotes/insumos`;
-                const res = await fetch(`${rota}?usuario=${encodeURIComponent(operadorLogado)}`);
-                select.innerHTML = '<option value="">Selecione o item...</option>';
-
-                if (res.ok) {
-                    const dados = await res.json();
-                    dados.forEach(d => {
-                        if (d.quantidade > 0) {
-                            const nomeItem = d.medicamento || d.insumo || "Item";
-                            const flag = tipo === "MEDICAMENTO" ? "MED" : "INS";
-                            select.innerHTML += `<option value="${flag}|${d.id}">${flag} | ${nomeItem} - Lote: ${d.numero_lote} (Disp: ${d.quantidade})</option>`;
-                        }
-                    });
-                }
-            } catch (err) { console.error(err); }
+                const dados = await fetchSeguro(`${rota}?usuario=${encodeURIComponent(operadorLogado)}`);
+                select.innerHTML = '<option value="">Selecione...</option>';
+                dados.forEach(d => {
+                    if (d.quantidade > 0) {
+                        const flag = tipo === "MEDICAMENTO" ? "MED" : "INS";
+                        select.innerHTML += `<option value="${flag}|${d.id}">${flag} | ${d.medicamento || d.insumo} - Lote: ${d.numero_lote} (Disp: ${d.quantidade})</option>`;
+                    }
+                });
+            } catch (err) {}
         }
 
         document.getElementById("form-dispensa-real").addEventListener("submit", async (e) => {
             e.preventDefault();
-            const itemSelecionado = document.getElementById("disp-lote-select").value;
-            if(!itemSelecionado) return alert("Selecione um item.");
-            const [flag, loteId] = itemSelecionado.split("|");
-
+            const [flag, loteId] = document.getElementById("disp-lote-select").value.split("|");
             const payload = {
                 tipo_material: flag === "MED" ? "MEDICAMENTO" : "INSUMO",
                 lote_id: parseInt(loteId, 10),
@@ -523,89 +464,63 @@
                 responsavel: operadorLogado,
                 usuario_dono: operadorLogado
             };
-
-            const res = await fetch(`${API_URL}/dispensacao`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-
-            if (res.ok) {
-                alert("⚡ Baixa automática executada com sucesso!");
+            try {
+                await fetchSeguro(`${API_URL}/dispensacao`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+                alert("⚡ Dispensação e Baixa processadas!");
                 document.getElementById("form-dispensa-real").reset();
-                carregarItensDispensacao();
-                carregarMovimentacoesRealtime();
-            } else {
-                const err = await res.json(); alert(`❌ Erro: ${err.detail}`);
-            }
+                carregarItensDispensacao(); carregarMovimentacoesRealtime();
+            } catch(e){}
         });
 
         async function carregarMovimentacoesRealtime() {
             try {
-                const res = await fetch(`${API_URL}/auditoria/movimentacoes?usuario=${encodeURIComponent(operadorLogado)}`);
-                if (!res.ok) return;
-                const movs = await res.json();
+                const movs = await fetchSeguro(`${API_URL}/auditoria/movimentacoes?usuario=${encodeURIComponent(operadorLogado)}`);
                 const tbody = document.getElementById("rows-movimentacoes");
                 tbody.innerHTML = "";
-                movs.slice(0, 5).forEach(m => {
-                    tbody.innerHTML += `<tr><td>${m.id}</td><td>${m.tipo}</td><td>${m.quantidade}</td><td>${m.setor_destino || 'N/A'}</td><td>${m.paciente_nome || 'N/A'}</td><td>${m.data_movimentacao}</td></tr>`;
-                });
-            } catch (err) { console.error(err); }
+                movs.slice(0, 5).forEach(m => { tbody.innerHTML += `<tr><td>${m.id}</td><td>${m.tipo}</td><td>${m.quantidade}</td><td>${m.paciente_nome}</td></tr>`; });
+            } catch (err) {}
         }
 
         async function carregarHistoricoRastreabilidade() {
             try {
-                const res = await fetch(`${API_URL}/auditoria/movimentacoes?usuario=${encodeURIComponent(operadorLogado)}`);
-                if (!res.ok) return;
-                const dados = await res.json();
+                const dados = await fetchSeguro(`${API_URL}/auditoria/movimentacoes?usuario=${encodeURIComponent(operadorLogado)}`);
                 window.dadosRastreabilidadeGlobal = dados;
                 renderizarLinhasRastreabilidade(dados);
-            } catch (err) { console.error(err); }
+            } catch (err) {}
         }
 
         function renderizarLinhasRastreabilidade(lista) {
             const tbody = document.getElementById("tabela-rastreabilidade-rows");
             tbody.innerHTML = "";
             lista.forEach(m => {
-                tbody.innerHTML += `<tr><td>${m.id}</td><td>${m.tipo}</td><td>Mover ID: ${m.lote_id || m.insumo_lote_id}</td><td>${m.quantidade}</td><td>${m.setor_destino || 'N/A'}</td><td>${m.paciente_nome || 'N/A'}</td><td>${m.responsavel}</td><td>${m.data_movimentacao}</td></tr>`;
+                tbody.innerHTML += `<tr><td>${m.id}</td><td>${m.tipo}</td><td>${m.quantidade}</td><td>${m.setor_destino}</td><td>${m.paciente_nome}</td><td>${m.responsavel}</td><td>${m.data_movimentacao}</td></tr>`;
             });
         }
 
         function filtrarRastreabilidade() {
-            const termo = document.getElementById("busca-rastreabilidade").value.toLowerCase();
-            if (!window.dadosRastreabilidadeGlobal) return;
-            const filtrados = window.dadosRastreabilidadeGlobal.filter(m =>
-                (m.paciente_nome && m.paciente_nome.toLowerCase().includes(termo)) ||
-                (m.tipo && m.tipo.toLowerCase().includes(termo))
-            );
-            renderizarLinhasRastreabilidade(filtrados);
+            const t = document.getElementById("busca-rastreabilidade").value.toLowerCase();
+            const f = window.dadosRastreabilidadeGlobal.filter(m => (m.paciente_nome && m.paciente_nome.toLowerCase().includes(t)) || m.tipo.toLowerCase().includes(t));
+            renderizarLinhasRastreabilidade(f);
         }
 
         async function carregarAlertasClinicos() {
             try {
-                const res = await fetch(`${API_URL}/dashboard/resumo?usuario=${encodeURIComponent(operadorLogado)}`);
+                const dados = await fetchSeguro(`${API_URL}/dashboard/resumo?usuario=${encodeURIComponent(operadorLogado)}`);
                 const tbody = document.getElementById("tabela-alertas-rows");
                 tbody.innerHTML = "";
-                if (res.ok) {
-                    const dados = await res.json();
-                    dados.vencidos.forEach(a => {
-                        tbody.innerHTML += `<tr><td>🚨 ${a.tipo}</td><td><strong>${a.detalhe}</strong></td><td>${a.validade}</td><td style="color:red; font-weight:bold;">CRÍTICO</td></tr>`;
-                    });
-                }
-            } catch (err) { console.error(err); }
+                dados.vencidos.forEach(a => {
+                    tbody.innerHTML += `<tr><td>🚨 ${a.tipo}</td><td><strong>${a.detalhe}</strong></td><td>${a.validade}</td><td><span style="color:var(--accent-red); font-weight:bold;">VENCIDO</span></td></tr>`;
+                });
+            } catch (err) {}
         }
 
         async function carregarOcorrenciasTecnovigilancia() {
             try {
-                const res = await fetch(`${API_URL}/tecnovigilancia?usuario=${encodeURIComponent(operadorLogado)}`);
-                if (!res.ok) return;
-                const ocorrencias = await res.json();
+                const ocorrencias = await fetchSeguro(`${API_URL}/tecnovigilancia?usuario=${encodeURIComponent(operadorLogado)}`);
                 const tbody = document.getElementById("tabela-tecnovigilancia-rows");
                 tbody.innerHTML = "";
-                ocorrencias.forEach(o => {
-                    tbody.innerHTML += `<tr><td>${o.id}</td><td>${o.lote_suspeito}</td><td>${o.tipo_ocorrencia}</td><td>${o.gravidade}</td><td>${o.data_registro}</td><td>${o.operador}</td></tr>`;
-                });
-            } catch (err) { console.error(err); }
+                ocorrencias.forEach(o => { tbody.innerHTML += `<tr><td>${o.id}</td><td>${o.lote_suspeito}</td><td>${o.tipo_ocorrencia}</td><td>${o.gravidade}</td></tr>`; });
+            } catch (err) {}
         }
 
         document.getElementById("form-tecnovigilancia").addEventListener("submit", async (e) => {
@@ -619,21 +534,14 @@
                 operador: operadorLogado,
                 usuario_dono: operadorLogado
             };
-            const res = await fetch(`${API_URL}/tecnovigilancia`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-            if (res.ok) {
-                document.getElementById("form-tecnovigilancia").reset();
-                carregarOcorrenciasTecnovigilancia();
-                alert("⚠️ Evento registrado com sucesso.");
-            }
+            try {
+                await fetchSeguro(`${API_URL}/tecnovigilancia`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+                document.getElementById("form-tecnovigilancia").reset(); carregarOcorrenciasTecnovigilancia();
+                alert("⚠️ Evento adverso protocolado com sucesso.");
+            } catch(e){}
         });
 
-        function efectuarLogoutSessao() {
-            window.location.reload();
-        }
+        function efectuarLogoutSessao() { window.location.reload(); }
     </script>
 </body>
 </html>
