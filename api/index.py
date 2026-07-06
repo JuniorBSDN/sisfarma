@@ -172,4 +172,439 @@ class LoteInsumoSchema(BaseModel):
 class DispensacaoSchema(BaseModel):
     tipo_material: str  # "MEDICAMENTO" ou "INSUMO"
     lote_id: int
-    quantidade
+    quantidade: int = Field(..., gt=0)
+    setor_destino: str
+    paciente_nome: str
+    prescricao_num: str
+    responsavel: str
+
+
+class TecnovigilanciaSchema(BaseModel):
+    lote_suspeito: str
+    tipo_ocorrencia: str
+    descricao: str
+    gravidade: str
+    conduta_imediata: str
+    operador: str
+
+
+class VerificarAdminSchema(BaseModel):
+    senha: str
+
+
+class AktualizarUsuarioSchema(BaseModel):
+    usuario: str
+    senha: str
+    perfil: str
+
+
+class RegistrarUsuarioSchema(BaseModel):
+    usuario: str
+    senha: str
+    perfil: str
+
+
+# =====================================================================
+# 📊 ROTA DO DASHBOARD & AUDITORIA (INDICADORES EM TEMPO REAL)
+# =====================================================================
+@app.get("/api/dashboard/resumo", tags=["Auditoria Sanitária"])
+def obtener_resumo_dashboard_vencidos():
+    db = conectar_bd()
+    cursor = db.cursor()
+    data_atual = date.today()
+
+    # Coleta medicamentos vencidos na tabela 'lotes'
+    cursor.execute("""
+        SELECT med.nome, l.numero_lote, l.validade, l.quantidade 
+        FROM lotes l 
+        JOIN medicamentos med ON l.medicamento_id = med.id 
+        WHERE l.quantidade > 0 AND l.validade <= %s
+    """, (data_atual,))
+    lotes_med = cursor.fetchall()
+
+    # Coleta insumos vencidos na tabela 'lotes_insumos'
+    cursor.execute("""
+        SELECT i.nome, li.numero_lote, li.validade, li.quantidade 
+        FROM lotes_insumos li 
+        JOIN insumos i ON li.insumo_id = i.id 
+        WHERE li.quantidade > 0 AND li.validade <= %s
+    """, (data_atual,))
+    lotes_ins = cursor.fetchall()
+    db.close()
+
+    alertas = []
+    for r in lotes_med:
+        alertas.append({"tipo": "MEDICAMENTO VENCIDO", "detalhe": f"{r['nome']} (Lote: {r['numero_lote']})",
+                        "validade": str(r['validade']), "estoque": r['quantidade']})
+    for r in lotes_ins:
+        alertas.append({"tipo": "INSUMO VENCIDO", "detalhe": f"{r['nome']} (Lote: {r['numero_lote']})",
+                        "validade": str(r['validade']), "estoque": r['quantidade']})
+
+    return {"vencidos": alertas, "total_criticos": len(alertas)}
+
+
+# =====================================================================
+# GERENCIAMENTO DE ACESSOS E UNIDADES (ADMINISTRATIVO)
+# =====================================================================
+@app.delete("/api/auth/usuarios/{usuario_id}", tags=["Autenticação"])
+def deletar_usuario_unidade(usuario_id: int):
+    db = conectar_bd()
+    cursor = db.cursor()
+    cursor.execute("DELETE FROM usuarios WHERE id = %s", (usuario_id,))
+    db.commit()
+    db.close()
+    return {"status": "sucesso", "mensagem": "Unidade/Acesso revogado com sucesso."}
+
+
+@app.put("/api/auth/usuarios/{usuario_id}", tags=["Autenticação"])
+def atualizar_usuario_unidade(usuario_id: int, dados: AktualizarUsuarioSchema):
+    db = conectar_bd()
+    cursor = db.cursor()
+    cursor.execute("""
+        UPDATE usuarios 
+        SET usuario = %s, senha = %s, perfil = %s 
+        WHERE id = %s
+    """, (dados.usuario, dados.senha, dados.perfil, usuario_id))
+    db.commit()
+    db.close()
+    return {"status": "sucesso", "mensagem": "Dados da unidade atualizados."}
+
+
+@app.post("/api/auth/verificar-admin", tags=["Autenticação"])
+def verificar_senha_master_admin(dados: VerificarAdminSchema):
+    senha_env = os.getenv("admin_password") or os.getenv("ADMIN_PASSWORD") or os.getenv("ADMIN_MASTER_PASSWORD")
+    senha_master = senha_env.strip() if senha_env else "Mudar@123_Seguro"
+
+    if dados.senha.strip() == senha_master:
+        return {"status": "sucesso", "autorizado": True}
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Senha Master de Administrador incorreta."
+    )
+
+
+@app.post("/api/auth/registrar", tags=["Autenticação"])
+def registrar_novo_usuario_unidade(dados: RegistrarUsuarioSchema):
+    db = conectar_bd()
+    cursor = db.cursor()
+    try:
+        cursor.execute(
+            "INSERT INTO usuarios (usuario, senha, perfil) VALUES (%s, %s, %s)",
+            (dados.usuario, dados.senha, dados.perfil)
+        )
+        db.commit()
+    except psycopg2.errors.UniqueViolation:
+        db.close()
+        raise HTTPException(status_code=400, detail="Este nome de usuário já está associado a uma unidade ativa.")
+    db.close()
+    return {"status": "sucesso", "mensagem": "Unidade e credenciais ativadas na nuvem."}
+
+
+@app.get("/api/auth/usuarios", tags=["Autenticação"])
+def listar_usuarios_unidades():
+    db = conectar_bd()
+    cursor = db.cursor()
+    cursor.execute("SELECT id, usuario, perfil FROM usuarios ORDER BY id DESC")
+    rows = cursor.fetchall()
+    db.close()
+    return rows
+
+
+@app.post("/api/auth/login", tags=["Autenticação"])
+def login(dados: LoginSchema):
+    db = conectar_bd()
+    cursor = db.cursor()
+    cursor.execute("SELECT usuario, perfil FROM usuarios WHERE usuario=%s AND senha=%s", (dados.usuario, dados.senha))
+    user = cursor.fetchone()
+    db.close()
+
+    if user:
+        return {"status": "sucesso", "usuario": user["usuario"], "perfil": user["perfil"]}
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas.")
+
+
+# =========================================================================
+# ENDPOINTS OPERACIONAIS (MEDICAMENTOS, INSUMOS E LOTES)
+# =========================================================================
+@app.get("/api/medicamentos", tags=["Medicamentos"])
+def listar_medicamentos():
+    db = conectar_bd()
+    cursor = db.cursor()
+    cursor.execute("SELECT id, nome, principio_ativo, categoria, codigo_barras, controlado FROM medicamentos")
+    rows = cursor.fetchall()
+    db.close()
+    
+    # Converte os dicionários de volta para formato de listas indexadas exigidas pelo frontend (med[0], med[1]...)
+    return [[r["id"], r["nome"], r["principio_ativo"], r["categoria"], r["codigo_barras"], r["controlado"]] for r in rows]
+
+
+@app.post("/api/medicamentos", tags=["Medicamentos"])
+def cadastrar_medicamento(med: MedicamentoSchema):
+    db = conectar_bd()
+    cursor = db.cursor()
+    try:
+        cursor.execute(
+            "INSERT INTO medicamentos (nome, principio_ativo, categoria, controlado, codigo_barras) VALUES (%s,%s,%s,%s,%s)",
+            (med.nome, med.principio_ativo, med.categoria, med.controlado, med.codigo_barras)
+        )
+        db.commit()
+    except psycopg2.errors.UniqueViolation:
+        db.close()
+        raise HTTPException(status_code=400, detail="Este Código de Barras já existe.")
+    db.close()
+    return {"status": "sucesso", "mensagem": f"Medicamento '{med.nome}' catalogado."}
+
+
+@app.put("/api/medicamentos/{med_id}", tags=["Medicamentos"])
+def atualizar_medicamento(med_id: int, med: MedicamentoSchema):
+    db = conectar_bd()
+    cursor = db.cursor()
+    try:
+        cursor.execute("""
+            UPDATE medicamentos 
+            SET nome = %s, principio_ativo = %s, categoria = %s, controlado = %s, codigo_barras = %s
+            WHERE id = %s
+        """, (med.nome, med.principio_ativo, med.categoria, med.controlado, med.codigo_barras, med_id))
+        db.commit()
+    except psycopg2.errors.UniqueViolation:
+        db.close()
+        raise HTTPException(status_code=400, detail="Este Código de Barras já está associado a outro medicamento.")
+    db.close()
+    return {"status": "sucesso", "mensagem": f"Cadastro do medicamento '{med.nome}' atualizado com sucesso."}
+
+
+@app.get("/api/lotes/medicamentos", tags=["Lotes & Estoque"])
+def listar_lotes_medicamentos():
+    db = conectar_bd()
+    cursor = db.cursor()
+    cursor.execute("""
+        SELECT l.id, med.nome as medicamento, l.numero_lote, l.fabricante, l.validade, l.quantidade 
+        FROM lotes l JOIN medicamentos med ON l.medicamento_id = med.id
+        WHERE l.quantidade > 0
+    """)
+    rows = cursor.fetchall()
+    db.close()
+    
+    # Converte explicitamente para listas indexadas para preenchimento de tabelas no frontend (lote[0], lote[1]...)
+    return [[r["id"], r["medicamento"], r["numero_lote"], r["fabricante"], str(r["validade"]), r["quantidade"]] for r in rows]
+
+
+@app.post("/api/lotes/medicamentos", tags=["Lotes & Estoque"])
+def receber_lote_medicamento(lote: LoteMedicamentoSchema):
+    try:
+        data_validade = datetime.strptime(lote.validade, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Formato de data de validade inválido. Use AAAA-MM-DD.")
+
+    db = conectar_bd()
+    cursor = db.cursor()
+    fabricacao = lote.data_fabricacao if lote.data_fabricacao else None
+
+    cursor.execute(
+        "INSERT INTO lotes (medicamento_id, numero_lote, fabricante, data_fabricacao, validade, quantidade) VALUES (%s,%s,%s,%s,%s,%s)",
+        (lote.medicamento_id, lote.numero_lote, lote.fabricante, fabricacao, data_validade, lote.quantidade)
+    )
+    db.commit()
+    db.close()
+    return {"status": "sucesso", "mensagem": "Lote de medicamento incorporado."}
+
+
+@app.get("/api/insumos", tags=["Insumos"])
+def listar_insumos():
+    db = conectar_bd()
+    cursor = db.cursor()
+    cursor.execute("SELECT id, nome, especificacao, unidade_medida, grupo FROM insumos")
+    rows = cursor.fetchall()
+    db.close()
+    
+    # Converte para listas indexadas compatíveis com o frontend (ins[0], ins[1]...)
+    return [[r["id"], r["nome"], r["especificacao"], r["unidade_medida"], r["grupo"]] for r in rows]
+
+
+@app.post("/api/insumos", tags=["Insumos"])
+def cadastrar_insumo(ins: InsumoSchema):
+    db = conectar_bd()
+    cursor = db.cursor()
+    cursor.execute(
+        "INSERT INTO insumos (nome, especificacao, unidade_medida, grupo) VALUES (%s, %s, %s, %s)",
+        (ins.nome, ins.especificacao, ins.unidade_medida, ins.grupo)
+    )
+    db.commit()
+    db.close()
+    return {"status": "sucesso", "mensagem": f"Insumo '{ins.nome}' catalogado."}
+
+
+@app.get("/api/lotes/insumos", tags=["Lotes & Estoque"])
+def listar_lotes_insumos():
+    db = conectar_bd()
+    cursor = db.cursor()
+    cursor.execute("""
+        SELECT li.id, i.nome as insumo, li.numero_lote, li.fabricante, li.validade, li.quantidade 
+        FROM lotes_insumos li JOIN insumos i ON li.insumo_id = i.id
+    """)
+    rows = cursor.fetchall()
+    db.close()
+    
+    # Converte para listas indexadas compatíveis com o frontend (lote[0], lote[1]...)
+    return [[r["id"], r["insumo"], r["numero_lote"], r["fabricante"], str(r["validade"]), r["quantidade"]] for r in rows]
+
+
+@app.post("/api/lotes/insumos", tags=["Lotes & Estoque"])
+def receber_lote_insumo(lote: LoteInsumoSchema):
+    db = conectar_bd()
+    cursor = db.cursor()
+    cursor.execute(
+        "INSERT INTO lotes_insumos (insumo_id, numero_lote, fabricante, validade, quantidade) VALUES (%s, %s, %s, %s, %s)",
+        (lote.insumo_id, lote.numero_lote, lote.fabricante, lote.validade, lote.quantidade)
+    )
+    db.commit()
+    db.close()
+    return {"status": "sucesso", "mensagem": "Lote de insumo incorporado ao inventário."}
+
+
+# =====================================================================
+# ⚡ DISPENSAÇÃO UNIFICADA E RASTREABILIDADE SANITÁRIA
+# =====================================================================
+@app.post("/api/dispensacao", tags=["Dispensação unificada"])
+def processar_dispensacao(disp: DispensacaoSchema):
+    db = conectar_bd()
+    cursor = db.cursor()
+
+    try:
+        if disp.tipo_material == "MEDICAMENTO":
+            # 1. Busca e validação imediata
+            cursor.execute("SELECT quantidade FROM lotes WHERE id = %s", (disp.lote_id,))
+            lote = cursor.fetchone()
+            if not lote:
+                raise HTTPException(status_code=404, detail="Lote não encontrado.")
+            if lote["quantidade"] < disp.quantidade:
+                raise HTTPException(status_code=400, detail="Saldo insuficiente no lote de medicamento.")
+
+            # 2. Dedução do estoque
+            cursor.execute("UPDATE lotes SET quantidade = quantidade - %s WHERE id = %s",
+                           (disp.quantidade, disp.lote_id))
+
+            # 3. Registro Histórico Imutável (CORRIGIDO: sector_destino -> setor_destino)
+            cursor.execute("""
+                INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
+                VALUES (%s, NULL, 'SAÍDA MEDICAMENTO', %s, %s, %s, %s, %s, %s)
+            """, (disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num,
+                  disp.responsavel, datetime.now().strftime("%Y-%m-%d %H:%M")))
+
+        elif disp.tipo_material == "INSUMO":
+            cursor.execute("SELECT quantidade FROM lotes_insumos WHERE id = %s", (disp.lote_id,))
+            lote = cursor.fetchone()
+            if not lote or lote["quantidade"] < disp.quantidade:
+                raise HTTPException(status_code=400, detail="Saldo insuficiente no lote de insumo.")
+
+            cursor.execute("UPDATE lotes_insumos SET quantidade = quantidade - %s WHERE id = %s",
+                           (disp.quantidade, disp.lote_id))
+            
+            # CORRIGIDO: sector_destino -> setor_destino
+            cursor.execute("""
+                INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
+                VALUES (NULL, %s, 'SAÍDA INSUMO', %s, %s, %s, %s, %s, %s)
+            """, (disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num,
+                  disp.responsavel, datetime.now().strftime("%Y-%m-%d %H:%M")))
+
+        db.commit()  # Operação Atômica garantida aqui
+    except Exception as e:
+        db.rollback()  # Se qualquer instrução falhar, desfaz tudo
+        if isinstance(e, HTTPException): raise e
+        raise HTTPException(status_code=500, detail=f"Erro interno na transação: {str(e)}")
+    finally:
+        db.close()
+
+    return {"status": "sucesso", "mensagem": "Dispensação processada com sucesso!"}
+
+
+@app.get("/api/auditoria/movimentacoes", tags=["Auditoria & Compliance"])
+def relatorio_rastreabilidade():
+    db = conectar_bd()
+    cursor = db.cursor()
+    cursor.execute("""
+        SELECT id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao 
+        FROM movimentacoes 
+        ORDER BY id DESC
+    """)
+    rows = cursor.fetchall()
+    db.close()
+    
+    # Converte para listas indexadas para compatibilidade com o frontend (m[0], m[1]...)
+    return [[r["id"], r["tipo"], r["quantidade"], r["setor_destino"], r["paciente_nome"], r["prescricao_num"], r["responsavel"], r["data_movimentacao"]] for r in rows]
+
+
+@app.get("/api/auditoria/alertas", tags=["Auditoria & Compliance"])
+def verificar_alertas_sanitarios():
+    data_atual = datetime.now().date()
+    db = conectar_bd()
+    cursor = db.cursor()
+
+    cursor.execute("""
+        SELECT m.nome, l.numero_lote, l.validade, l.quantidade 
+        FROM lotes l 
+        JOIN medicamentos m ON l.medicamento_id = m.id 
+        WHERE l.quantidade > 0 AND l.validade <= %s
+    """, (data_atual,))
+    lotes_med = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT i.nome, li.numero_lote, li.validade, li.quantidade 
+        FROM lotes_insumos li 
+        JOIN insumos i ON li.insumo_id = i.id 
+        WHERE li.quantidade > 0 AND li.validade <= %s
+    """, (data_atual,))
+    lotes_ins = cursor.fetchall()
+    db.close()
+
+    alertas = []
+    for r in lotes_med:
+        alertas.append({"tipo": "MEDICAMENTO VENCIDO", "detalhe": f"{r['nome']} (Lote: {r['numero_lote']})",
+                        "validade": str(r['validade']), "estoque": r['quantidade']})
+    for r in lotes_ins:
+        alertas.append({"tipo": "INSUMO VENCIDO", "detalhe": f"{r['nome']} (Lote: {r['numero_lote']})",
+                        "validade": str(r['validade']), "estoque": r['quantidade']})
+
+    return {"vencidos": alertas, "total_criticos": len(alertas)}
+
+
+@app.post("/api/tecnovigilancia", tags=["Tecnovigilância (POP.FARM.019)"])
+def registrar_ocorrencia(event: TecnovigilanciaSchema):
+    db = conectar_bd()
+    cursor = db.cursor()
+    cursor.execute("""
+        INSERT INTO tecnovigilancia (lote_texto, tipo_ocorrencia, descricao, gravidade, conduta, data_registro, operador)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """, (
+        event.lote_suspeito,
+        event.tipo_ocorrencia,
+        event.descricao,
+        event.gravidade,
+        event.conduta_imediata,
+        datetime.now().strftime("%Y-%m-%d %H:%M"),
+        event.operador
+    ))
+    db.commit()
+    db.close()
+    return {"status": "sucesso", "mensagem": "Ocorrência sanitária protocolada."}
+
+
+@app.get("/api/tecnovigilancia", tags=["Tecnovigilância (POP.FARM.019)"])
+def listar_ocorrencias_tecnovigilancia():
+    db = conectar_bd()
+    cursor = db.cursor()
+    cursor.execute("""
+        SELECT id, lote_texto AS lote_suspeito, tipo_ocorrencia, gravidade, data_registro, operador 
+        FROM tecnovigilancia 
+        ORDER BY id DESC
+    """)
+    rows = cursor.fetchall()
+    db.close()
+    return rows
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)
