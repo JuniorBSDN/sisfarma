@@ -739,19 +739,40 @@ document.getElementById("form-med").addEventListener("submit", async (e) => {
    // Procure por esta linha no seu index.html:
 document.getElementById("form-lote-med").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const payload = {
-        medicamento_id: parseInt(document.getElementById("lote-med-id-selecionado").value),
-        numero_lote: document.getElementById("lote-med-numero").value,
-        fabricante: document.getElementById("lote-med-fabricante").value,
-        validade: document.getElementById("lote-med-validade").value,
-        quantidade: parseInt(document.getElementById("lote-med-qtd").value)
-    };
-    if (isNaN(payload.medicamento_id)) {
-        alert("Por favor, selecione um medicamento válido.");
+
+    // Captura os valores mantendo rigorosamente os IDs originais do seu HTML
+    const medId = parseInt(document.getElementById("lote-med-id-selecionado").value, 10);
+    const numLote = document.getElementById("lote-med-numero").value.trim();
+    const fabricanteLote = document.getElementById("lote-med-fabricante").value.trim();
+    const dataValidade = document.getElementById("lote-med-validade").value; // Formato padrão YYYY-MM-DD do input date
+    const qtdRecebida = parseInt(document.getElementById("lote-med-qtd").value, 10);
+
+    // Validação preventiva no Frontend baseada nas regras do seu LoteMedicamentoSchema
+    if (!medId || isNaN(medId)) {
+        alert("🚨 Por favor, selecione um medicamento base no catálogo.");
         return;
     }
+    if (!numLote || !fabricanteLote || !dataValidade) {
+        alert("🚨 Por favor, preencha todos os campos obrigatórios (Lote, Fabricante e Validade).");
+        return;
+    }
+    if (isNaN(qtdRecebida) || qtdRecebida <= 0) {
+        alert("🚨 A quantidade recebida deve ser um número inteiro maior que zero.");
+        return;
+    }
+
+    // Montagem do objeto idêntico às propriedades da classe LoteMedicamentoSchema do seu Python
+    const payload = {
+        medicamento_id: medId,
+        numero_lote: numLote,
+        fabricante: fabricanteLote,
+        data_fabricacao: null, // Definido como null por padrão já que não há input de fabricação na tela
+        validade: dataValidade,
+        quantidade: qtdRecebida
+    };
+
     try {
-        // CORREÇÃO AQUI: Mudado de ${API_URL}/lotes para ${API_URL}/lotes/medicamentos
+        // Rota corrigida apontando para o endpoint exato do seu index.py
         const res = await fetch(`${API_URL}/lotes/medicamentos`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -759,15 +780,19 @@ document.getElementById("form-lote-med").addEventListener("submit", async (e) =>
         });
 
         if (res.ok) {
-            alert("✅ Lote registrado!");
+            alert("✅ Lote registrado com sucesso!");
             document.getElementById("form-lote-med").reset();
-            carregarLotesMedicamentos();
+
+            // Verifica se a função existe no escopo antes de chamar para atualizar a tabela
+            if (typeof carregarLotesMedicamentos === "function") {
+                carregarLotesMedicamentos();
+            }
         } else {
             const erroServidor = await res.json().catch(() => ({}));
-            alert(`Erro ao salvar o lote: ${erroServidor.detail || 'Verifique os dados enviados.'}`);
+            alert(`Erro ao salvar o lote: ${erroServidor.detail || 'Verifique a estrutura dos dados.'}`);
         }
     } catch (err) {
-        alert("Erro de rede ao tentar conectar com o servidor.");
+        alert("❌ Erro de rede ao tentar conectar com o servidor.");
     }
 });
 
