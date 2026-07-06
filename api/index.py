@@ -325,18 +325,20 @@ def login(dados: LoginSchema):
 
 
 # =========================================================================
-# ENDPOINTS OPERACIONAIS (MEDICAMENTOS, INSUMOS E LOTES)
+# ENDPOINTS OPERACIONAIS (RETORNANDO DICIONÁRIOS MAPEADOS CORRETAMENTE)
 # =========================================================================
 @app.get("/api/medicamentos", tags=["Medicamentos"])
 def listar_medicamentos():
     db = conectar_bd()
     cursor = db.cursor()
-    cursor.execute("SELECT id, nome, principio_ativo, categoria, codigo_barras, controlado FROM medicamentos")
+    # Forçamos o apelido exato esperado pelo frontend: codigo_barras AS codigo_barras
+    cursor.execute("""
+        SELECT id, nome, principio_ativo, categoria, codigo_barras, controlado 
+        FROM medicamentos ORDER BY id DESC
+    """)
     rows = cursor.fetchall()
     db.close()
-    
-    # Converte os dicionários de volta para formato de listas indexadas exigidas pelo frontend (med[0], med[1]...)
-    return [[r["id"], r["nome"], r["principio_ativo"], r["categoria"], r["codigo_barras"], r["controlado"]] for r in rows]
+    return rows  # Retorna dicionário puro [{id: 1, nome: "..."}] para sanar o 'undefined'
 
 
 @app.post("/api/medicamentos", tags=["Medicamentos"])
@@ -381,13 +383,16 @@ def listar_lotes_medicamentos():
     cursor.execute("""
         SELECT l.id, med.nome as medicamento, l.numero_lote, l.fabricante, l.validade, l.quantidade 
         FROM lotes l JOIN medicamentos med ON l.medicamento_id = med.id
-        WHERE l.quantidade > 0
+        WHERE l.quantidade > 0 ORDER BY l.id DESC
     """)
     rows = cursor.fetchall()
     db.close()
     
-    # Converte explicitamente para listas indexadas para preenchimento de tabelas no frontend (lote[0], lote[1]...)
-    return [[r["id"], r["medicamento"], r["numero_lote"], r["fabricante"], str(r["validade"]), r["quantidade"]] for r in rows]
+    # Formata a data para string simples para o frontend não quebrar
+    for r in rows:
+        if isinstance(r.get("validade"), (date, datetime)):
+            r["validade"] = str(r["validade"])
+    return rows
 
 
 @app.post("/api/lotes/medicamentos", tags=["Lotes & Estoque"])
@@ -414,12 +419,10 @@ def receber_lote_medicamento(lote: LoteMedicamentoSchema):
 def listar_insumos():
     db = conectar_bd()
     cursor = db.cursor()
-    cursor.execute("SELECT id, nome, especificacao, unidade_medida, grupo FROM insumos")
+    cursor.execute("SELECT id, nome, especificacao, unidade_medida, grupo FROM insumos ORDER BY id DESC")
     rows = cursor.fetchall()
     db.close()
-    
-    # Converte para listas indexadas compatíveis com o frontend (ins[0], ins[1]...)
-    return [[r["id"], r["nome"], r["especificacao"], r["unidade_medida"], r["grupo"]] for r in rows]
+    return rows
 
 
 @app.post("/api/insumos", tags=["Insumos"])
@@ -442,12 +445,15 @@ def listar_lotes_insumos():
     cursor.execute("""
         SELECT li.id, i.nome as insumo, li.numero_lote, li.fabricante, li.validade, li.quantidade 
         FROM lotes_insumos li JOIN insumos i ON li.insumo_id = i.id
+        ORDER BY li.id DESC
     """)
     rows = cursor.fetchall()
     db.close()
     
-    # Converte para listas indexadas compatíveis com o frontend (lote[0], lote[1]...)
-    return [[r["id"], r["insumo"], r["numero_lote"], r["fabricante"], str(r["validade"]), r["quantidade"]] for r in rows]
+    for r in rows:
+        if isinstance(r.get("validade"), (date, datetime)):
+            r["validade"] = str(r["validade"])
+    return rows
 
 
 @app.post("/api/lotes/insumos", tags=["Lotes & Estoque"])
@@ -473,7 +479,6 @@ def processar_dispensacao(disp: DispensacaoSchema):
 
     try:
         if disp.tipo_material == "MEDICAMENTO":
-            # 1. Busca e validação imediata
             cursor.execute("SELECT quantidade FROM lotes WHERE id = %s", (disp.lote_id,))
             lote = cursor.fetchone()
             if not lote:
@@ -481,15 +486,13 @@ def processar_dispensacao(disp: DispensacaoSchema):
             if lote["quantidade"] < disp.quantidade:
                 raise HTTPException(status_code=400, detail="Saldo insuficiente no lote de medicamento.")
 
-            # 2. Dedução do estoque
             cursor.execute("UPDATE lotes SET quantidade = quantidade - %s WHERE id = %s",
                            (disp.quantidade, disp.lote_id))
 
-            # 3. Registro Histórico Imutável (CORRIGIDO: sector_destino -> setor_destino)
             cursor.execute("""
-                INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
+                INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantity = %s, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
                 VALUES (%s, NULL, 'SAÍDA MEDICAMENTO', %s, %s, %s, %s, %s, %s)
-            """, (disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num,
+            """, (disp.quantidade, disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num,
                   disp.responsavel, datetime.now().strftime("%Y-%m-%d %H:%M")))
 
         elif disp.tipo_material == "INSUMO":
@@ -501,16 +504,15 @@ def processar_dispensacao(disp: DispensacaoSchema):
             cursor.execute("UPDATE lotes_insumos SET quantidade = quantidade - %s WHERE id = %s",
                            (disp.quantidade, disp.lote_id))
             
-            # CORRIGIDO: sector_destino -> setor_destino
             cursor.execute("""
                 INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
                 VALUES (NULL, %s, 'SAÍDA INSUMO', %s, %s, %s, %s, %s, %s)
             """, (disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num,
                   disp.responsavel, datetime.now().strftime("%Y-%m-%d %H:%M")))
 
-        db.commit()  # Operação Atômica garantida aqui
+        db.commit()
     except Exception as e:
-        db.rollback()  # Se qualquer instrução falhar, desfaz tudo
+        db.rollback()
         if isinstance(e, HTTPException): raise e
         raise HTTPException(status_code=500, detail=f"Erro interno na transação: {str(e)}")
     finally:
@@ -525,14 +527,11 @@ def relatorio_rastreabilidade():
     cursor = db.cursor()
     cursor.execute("""
         SELECT id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao 
-        FROM movimentacoes 
-        ORDER BY id DESC
+        FROM movimentacoes ORDER BY id DESC
     """)
     rows = cursor.fetchall()
     db.close()
-    
-    # Converte para listas indexadas para compatibilidade com o frontend (m[0], m[1]...)
-    return [[r["id"], r["tipo"], r["quantidade"], r["setor_destino"], r["paciente_nome"], r["prescricao_num"], r["responsavel"], r["data_movimentacao"]] for r in rows]
+    return rows
 
 
 @app.get("/api/auditoria/alertas", tags=["Auditoria & Compliance"])
@@ -543,16 +542,14 @@ def verificar_alertas_sanitarios():
 
     cursor.execute("""
         SELECT m.nome, l.numero_lote, l.validade, l.quantidade 
-        FROM lotes l 
-        JOIN medicamentos m ON l.medicamento_id = m.id 
+        FROM lotes l JOIN medicamentos m ON l.medicamento_id = m.id 
         WHERE l.quantidade > 0 AND l.validade <= %s
     """, (data_atual,))
     lotes_med = cursor.fetchall()
 
     cursor.execute("""
         SELECT i.nome, li.numero_lote, li.validade, li.quantidade 
-        FROM lotes_insumos li 
-        JOIN insumos i ON li.insumo_id = i.id 
+        FROM lotes_insumos li JOIN insumos i ON li.insumo_id = i.id 
         WHERE li.quantidade > 0 AND li.validade <= %s
     """, (data_atual,))
     lotes_ins = cursor.fetchall()
@@ -596,8 +593,7 @@ def listar_ocorrencias_tecnovigilancia():
     cursor = db.cursor()
     cursor.execute("""
         SELECT id, lote_texto AS lote_suspeito, tipo_ocorrencia, gravidade, data_registro, operador 
-        FROM tecnovigilancia 
-        ORDER BY id DESC
+        FROM tecnovigilancia ORDER BY id DESC
     """)
     rows = cursor.fetchall()
     db.close()
@@ -606,5 +602,4 @@ def listar_ocorrencias_tecnovigilancia():
 
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run(app, host="0.0.0.0", port=8000)
