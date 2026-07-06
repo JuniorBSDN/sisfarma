@@ -335,7 +335,7 @@
                                 <div class="form-group">
                                     <label>Medicamento Base:</label>
                                     <select id="lote-med-id-selecionado" required>
-                                        <option value="">Carregando medicamentos...</option> 
+                                        <option value="">Carregando medicamentos...</option>
                                     </select>
                                 </div>
                                 <div class="form-group"><label>Número do Lote:</label><input type="text" id="lote-med-numero" required></div>
@@ -560,11 +560,74 @@
     <script>
         const API_URL = "/api";
         let operadorLogado = "admin";
+        // Variável de estado dinâmica exigida pelo item 1 do Dicionário de Dados
+let med_id_selecionado = null;
 
-        document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById("view-login").style.display = "flex";
-            document.getElementById("view-dashboard").style.display = "none";
+// Função que você deve associar ao evento de clique da linha da tabela de medicamentos:
+function selecionarMedicamentoParaEdicao(medicamento) {
+    med_id_selecionado = medicamento.id;
+    document.getElementById("med-nome").value = medicamento.nome;
+    document.getElementById("med-principio").value = medicamento.principio_ativo;
+    document.getElementById("med-categoria").value = medicamento.categoria;
+    document.getElementById("med-ean").value = medicamento.codigo_barras;
+    document.getElementById("med-controlado").checked = (medicamento.controlado === 1);
+
+    // Altera dinamicamente o texto do botão do formulário
+    const btnSalvar = document.querySelector("#form-med button[type='submit']");
+    if(btnSalvar) btnSalvar.innerText = "💾 Atualizar Cadastro (UPDATE)";
+}
+
+// Evento de submit do formulário form-med original corrigido
+document.getElementById("form-med").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    // Converte obrigatoriamente para inteiro 1 ou 0 para satisfazer o Pydantic
+    const controladoInteiro = document.getElementById("med-controlado").checked ? 1 : 0;
+
+    const payload = {
+        nome: document.getElementById("med-nome").value,
+        principio_ativo: document.getElementById("med-principio").value,
+        categoria: document.getElementById("med-categoria").value,
+        controlado: controladoInteiro,
+        codigo_barras: document.getElementById("med-ean").value
+    };
+
+    try {
+        // Double-Behavior: Define a rota e método dinamicamente baseado no estado da variável
+        let url = `${API_URL}/api/medicamentos`;
+        let metodo = "POST";
+
+        if (med_id_selecionado !== null) {
+            url = `${API_URL}/api/medicamentos/${med_id_selecionado}`;
+            metodo = "PUT";
+        }
+
+        const res = await fetch(url, {
+            method: metodo,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
         });
+
+        const dados = await res.json();
+
+        if (res.ok) {
+            alert(dados.mensagem || "✅ Operação realizada com sucesso!");
+            document.getElementById("form-med").reset();
+
+            // Retorna o formulário para o estado padrão de inserção
+            med_id_selecionado = null;
+            const btnSalvar = document.querySelector("#form-med button[type='submit']");
+            if(btnSalvar) btnSalvar.innerText = "➕ Adicionar ao Catálogo";
+
+            carregarMedicamentosBase(); // Recarrega sua tabela nativa
+        } else {
+            // Tratamento de Exceção de Negócio para o campo UNIQUE codigo_barras
+            alert(`🚨 Alerta de Negócio: ${dados.detail}`);
+        }
+    } catch (err) {
+        alert("❌ Erro técnico ao tentar comunicar com a API.");
+    }
+});
 
         // ==========================================
         // 🔒 1. AUTENTICAÇÃO DO USUÁRIO
@@ -671,49 +734,32 @@
             } catch (err) { console.error(err); }
         }
 
-       document.getElementById("form-lote-med").addEventListener("submit", async (e) => {
+//=================================================================================
+    document.getElementById("form-lote-med").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const selectMed = document.getElementById("lote-med-id-selecionado");
-    
-    // 1. Captura o valor digitado (ex: "05/07/2026")
-    const dataDigitada = document.getElementById("lote-med-validade").value.trim();
-    let dataFormatada = dataDigitada;
-
-    // 2. Converte de DD/MM/AAAA para AAAA-MM-DD se o usuário usou barras
-    if (dataDigitada.includes("/")) {
-        const partes = dataDigitada.split("/"); // ["05", "07", "2026"]
-        if (partes.length === 3) {
-            dataFormatada = `${partes[2]}-${partes[1]}-${partes[0]}`; // "2026-07-05"
-        }
-    }
-
     const payload = {
-        medicamento_id: parseInt(selectMed.value),
-        numero_lote: document.getElementById("lote-med-numero").value.trim(),
-        fabricante: document.getElementById("lote-med-fabricante").value.trim(),
-        validade: dataFormatada, // <--- Agora envia no formato correto (AAAA-MM-DD)
-        quantidade: parseInt(document.getElementById("lote-med-qtd").value)
+        medicamento_id: parseInt(document.getElementById("lote-med-id-selecionado").value), // ID no Front: lote-med-id-selecionado
+        numero_lote: document.getElementById("lote-med-numero").value,                     // ID no Front: lote-med-numero
+        fabricante: document.getElementById("lote-med-fabricante").value,                 // ID no Front: lote-med-fabricante
+        validade: document.getElementById("lote-med-validade").value,                     // ID no Front: lote-med-validade
+        quantidade: parseInt(document.getElementById("lote-med-qtd").value)               // ID no Front: lote-med-qtd
     };
-
-    // Validação simples antes de enviar
     if (isNaN(payload.medicamento_id)) {
         alert("Por favor, selecione um medicamento válido.");
         return;
     }
-
     try {
         const res = await fetch(`${API_URL}/lotes`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
         });
-        
+
         if (res.ok) {
             alert("✅ Lote registrado!");
             document.getElementById("form-lote-med").reset();
             carregarLotesMedicamentos();
         } else {
-            // Dica extra: Tente capturar a mensagem de erro real vinda do servidor para ajudar no debug
             const erroServidor = await res.json().catch(() => ({}));
             alert(`Erro ao salvar o lote: ${erroServidor.detail || 'Verifique os dados enviados.'}`);
         }
@@ -800,54 +846,63 @@
         // ⚡ 5. DISPENSAÇÃO UNIFICADA
         // ==========================================
         async function carregarItensDispensacao() {
-            try {
-                const tipo = document.querySelector('input[name="tipo-mat"]:checked').value;
-                const select = document.getElementById("disp-lote-select");
-                select.innerHTML = '<option value="">Carregando opções...</option>';
-                
-                const rota = tipo === "MEDICAMENTO" ? `${API_URL}/lotes` : `${API_URL}/insumos/lotes`;
-                const res = await fetch(rota);
-                select.innerHTML = '<option value="">Selecione o item...</option>';
-                
-                if (res.ok) {
-                    const dados = await res.json();
-                    dados.forEach(d => {
-                        const nomeItem = d.medicamento_nome || d.insumo_nome || "Item";
-                        select.innerHTML += `<option value="${d.id}">${nomeItem} - Lote: ${d.numero_lote} (Estoque: ${d.quantidade})</option>`;
-                    });
+    try {
+        const tipo = document.querySelector('input[name="tipo-mat"]:checked').value;
+        const select = document.getElementById("disp-lote-select");
+        select.innerHTML = '<option value="">Carregando opções...</option>';
+
+        // O backend precisa filtrar apenas lotes com quantidade > 0 nesta rota
+        const rota = tipo === "MEDICAMENTO" ? `${API_URL}/lotes` : `${API_URL}/insumos/lotes`;
+        const res = await fetch(rota);
+        select.innerHTML = '<option value="">Selecione o item...</option>';
+
+        if (res.ok) {
+            const dados = await res.json();
+            dados.forEach(d => {
+                if (d.quantidade > 0) { // Garantia visual: ignora zerados
+                    const nomeItem = d.medicamento_nome || d.insumo_nome || "Item";
+                    const flag = tipo === "MEDICAMENTO" ? "MED" : "INS";
+                    // Concatena a flag de identificação interna no valor
+                    select.innerHTML += `<option value="${flag}|${d.id}">${flag} | ${nomeItem} - Lote: ${d.numero_lote} (Disponível: ${d.quantidade})</option>`;
                 }
-            } catch (err) { console.error(err); }
-        }
-
-        document.getElementById("form-dispensa-real").addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const tipo = document.querySelector('input[name="tipo-mat"]:checked').value;
-            const payload = {
-                tipo_material: tipo,
-                lote_id: parseInt(document.getElementById("disp-lote-select").value),
-                paciente: document.getElementById("disp-paciente").value,
-                requisicao: document.getElementById("disp-req").value,
-                setor: document.getElementById("disp-setor").value,
-                quantidade: parseInt(document.getElementById("disp-qtd").value),
-                responsavel: operadorLogado
-            };
-
-            const res = await fetch(`${API_URL}/movimentacoes/dispensar`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
             });
+        }
+    } catch (err) { console.error(err); }
+}
 
-            if (res.ok) {
-                alert("⚡ Dispensação processada com sucesso!");
-                document.getElementById("form-dispensa-real").reset();
-                carregarItensDispensacao();
-                carregarMovimentacoesRealtime();
-            } else {
-                const err = await res.json().catch(() => ({}));
-                alert(`Erro: ${err.detail || 'Estoque insuficiente ou falha na requisição'}`);
-            }
-        });
+// No processamento do envio da dispensação:
+document.getElementById("form-dispensa-real").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const itemSelecionado = document.getElementById("disp-lote-select").value;
+    const [flag, loteId] = itemSelecionado.split("|"); // Descobre o tipo de item baseado na flag concatenada
+
+    const payload = {
+        tipo_material: flag === "MED" ? "MEDICAMENTO" : "INSUMO",
+        lote_id: parseInt(loteId),
+        paciente_nome: document.getElementById("disp-paciente").value,
+        prescricao_num: document.getElementById("disp-req").value,
+        setor_destino: document.getElementById("disp-setor").value,
+        quantidade: parseInt(document.getElementById("disp-qtd").value),
+        responsavel: operadorLogado
+    };
+
+    const res = await fetch(`${API_URL}/dispensacao`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+        alert("⚡ Baixa automática executada com sucesso!");
+        document.getElementById("form-dispensa-real").reset();
+        carregarItensDispensacao();
+        carregarMovimentacoesRealtime();
+    } else {
+        const err = await res.json();
+        alert(`❌ Erro na Operação: ${err.detail}`);
+    }
+});
+
 
         async function carregarMovimentacoesRealtime() {
             try {
@@ -886,8 +941,8 @@
         function filtrarRastreabilidade() {
             const termo = document.getElementById("busca-rastreabilidade").value.toLowerCase();
             if (!window.dadosRastreabilidadeGlobal) return;
-            const filtrados = window.dadosRastreabilidadeGlobal.filter(m => 
-                (m.paciente && m.paciente.toLowerCase().includes(termo)) || 
+            const filtrados = window.dadosRastreabilidadeGlobal.filter(m =>
+                (m.paciente && m.paciente.toLowerCase().includes(termo)) ||
                 (m.item_descricao && m.item_descricao.toLowerCase().includes(termo))
             );
             renderizarLinhasRastreabilidade(filtrados);
@@ -897,29 +952,29 @@
         // ⚠️ 7. ALERTAS CLÍNICOS & TECNOVIGILÂNCIA
         // ==========================================
         async function carregarAlertasClinicos() {
-            try {
-                const res = await fetch(`${API_URL}/alertas/sanitarios`);
-                const box = document.getElementById("box-status-alertas");
-                const tbody = document.getElementById("tabela-alertas-rows");
-                tbody.innerHTML = "";
+    try {
+        const res = await fetch(`${API_URL}/api/dashboard/resumo`); // Rota do painel de vencidos
+        const tbody = document.getElementById("tabela-alertas-rows");
+        tbody.innerHTML = "";
 
-                if (res.ok) {
-                    const alertas = await res.json();
-                    if (alertas.length === 0) {
-                        box.className = "alert-box-success";
-                        box.innerText = "✔ Nenhum lote vencido ou crítico encontrado no inventário atual.";
-                        return;
-                    }
-                    box.className = "alert-box-clean";
-                    box.innerText = `⚠️ Atenção: Foram encontrados ${alertas.length} lotes que exigem atenção sanitária imediata!`;
-                    
-                    alertas.forEach(a => {
-                        tbody.innerHTML += `<tr><td>${a.tipo}</td><td><strong>${a.nome}</strong></td><td>${a.lote}</td><td>${a.validade}</td><td style="color:red; font-weight:bold;">${a.situacao}</td></tr>`;
-                    });
-                }
-            } catch (err) { console.error(err); }
+        if (res.ok) {
+            const dados = await res.json();
+            const alertas = dados.vencidos;
+
+            if(alertas.length === 0) return;
+
+            alertas.forEach(a => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>🚨 ${a.tipo}</td>
+                        <td><strong>${a.detalhe}</strong></td>
+                        <td>${a.validade}</td>
+                        <td style="color:red; font-weight:bold;">CRÍTICO (Bloqueado)</td>
+                    </tr>`;
+            });
         }
-
+    } catch (err) { console.error(err); }
+}
         async function carregarOcorrenciasTecnovigilancia() {
             try {
                 const res = await fetch(`${API_URL}/tecnovigilancia`);
