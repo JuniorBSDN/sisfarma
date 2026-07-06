@@ -584,13 +584,14 @@ document.getElementById("form-med").addEventListener("submit", async (e) => {
     // Converte obrigatoriamente para inteiro 1 ou 0 para satisfazer o Pydantic
     const controladoInteiro = document.getElementById("med-controlado").checked ? 1 : 0;
 
-    const payload = {
-        nome: document.getElementById("med-nome").value,
-        principio_ativo: document.getElementById("med-principio").value,
-        categoria: document.getElementById("med-categoria").value,
-        controlado: controladoInteiro,
-        codigo_barras: document.getElementById("med-ean").value
-    };
+    // No evento de submit do seu 'form-med':
+const payload = {
+    nome: document.getElementById("med-nome").value,
+    principio_ativo: document.getElementById("med-principio").value,
+    categoria: document.getElementById("med-categoria").value,
+    controlado: document.getElementById("med-controlado").checked ? 1 : 0, 
+    codigo_barras: document.getElementById("med-ean").value
+};
 
     try {
         // Double-Behavior: Define a rota e método dinamicamente baseado no estado da variável
@@ -694,13 +695,15 @@ document.getElementById("form-med").addEventListener("submit", async (e) => {
 
         document.getElementById("form-med").addEventListener("submit", async (e) => {
             e.preventDefault();
-            const payload = {
-                nome: document.getElementById("med-nome").value,
-                principio_ativo: document.getElementById("med-principio").value,
-                categoria: document.getElementById("med-categoria").value,
-                codigo_barras: document.getElementById("med-ean").value || "Nenhum",
-                controlado: document.getElementById("med-controlado").checked ? 1 : 0
-            };
+            // No evento de submit do seu 'form-med':
+        const payload = {
+            nome: document.getElementById("med-nome").value,
+            principio_ativo: document.getElementById("med-principio").value,
+            categoria: document.getElementById("med-categoria").value,
+    // Alinhamento crucial: converte o checkbox em 1 ou 0 para não dar 422
+            controlado: document.getElementById("med-controlado").checked ? 1 : 0, 
+            codigo_barras: document.getElementById("med-ean").value
+};
             const res = await fetch(`${API_URL}/medicamentos`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
