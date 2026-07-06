@@ -10,7 +10,7 @@ from typing import Optional
 app = FastAPI(
     title="YANA API - Central de Abastecimento Farmacêutico (PostgreSQL)",
     description="Backend em nuvem para controle interno e rastreabilidade hospitalar",
-    version="1.1.0"
+    version="1.1.1"
 )
 
 app.add_middleware(
@@ -126,7 +126,7 @@ def conectar_bd():
         cursor.close()
         return conn
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro crítico de infraestrutura: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro crítico de infraestrutura do Banco: {str(e)}")
 
 # SCHEMAS DE VALIDAÇÃO
 class LoginSchema(BaseModel):
@@ -134,8 +134,8 @@ class LoginSchema(BaseModel):
     senha: str
 
 class MedicamentoSchema(BaseModel):
-    nome: str = Field(..., min_length=1)
-    principio_ativo: str = Field(..., min_length=1)
+    nome: str
+    principio_ativo: str
     categoria: str
     controlado: int
     codigo_barras: str
@@ -147,11 +147,11 @@ class LoteMedicamentoSchema(BaseModel):
     fabricante: str
     data_fabricacao: Optional[str] = None
     validade: str
-    quantidade: int = Field(..., gt=0)
+    quantidade: int
     usuario_dono: str
 
 class InsumoSchema(BaseModel):
-    nome: str = Field(..., min_length=1)
+    nome: str
     especificacao: str
     unidade_medida: str
     grupo: str
@@ -162,13 +162,13 @@ class LoteInsumoSchema(BaseModel):
     numero_lote: str
     fabricante: str
     validade: str
-    quantidade: int = Field(..., gt=0)
+    quantidade: int
     usuario_dono: str
 
 class DispensacaoSchema(BaseModel):
     tipo_material: str
     lote_id: int
-    quantidade: int = Field(..., gt=0)
+    quantidade: int
     setor_destino: str
     paciente_nome: str
     prescricao_num: str
@@ -192,7 +192,7 @@ class AtualizarUsuarioSchema(BaseModel):
     senha: str
     perfil: str
 
-# ENDPOINTS
+# ENDPOINTS CORRIGIDOS E CONSOLIDADOS
 @app.get("/api/dashboard/resumo", tags=["Auditoria Sanitária"])
 def obter_resumo_dashboard_vencidos(usuario: str = "admin"):
     db = conectar_bd()
@@ -221,6 +221,8 @@ def obter_resumo_dashboard_vencidos(usuario: str = "admin"):
         for r in lotes_ins:
             alertas.append({"tipo": "INSUMO VENCIDO", "detalhe": f"{r['nome']} (Lote: {r['numero_lote']})", "validade": str(r['validade']), "estoque": r['quantidade']})
         return {"vencidos": alertas, "total_criticos": len(alertas)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
@@ -232,6 +234,8 @@ def deletar_usuario_unidade(usuario_id: int):
         cursor.execute("DELETE FROM usuarios WHERE id = %s", (usuario_id,))
         db.commit()
         return {"status": "sucesso", "mensagem": "Unidade revogada."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
@@ -245,6 +249,8 @@ def atualizar_usuario_unidade(usuario_id: int, dados: AtualizarUsuarioSchema):
         """, (dados.usuario, dados.senha, dados.perfil, usuario_id))
         db.commit()
         return {"status": "sucesso", "mensagem": "Dados atualizados com sucesso."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
@@ -268,6 +274,8 @@ def registrar_novo_usuario_unidade(dados: AtualizarUsuarioSchema):
         return {"status": "sucesso", "mensagem": "Unidade ativada com sucesso."}
     except psycopg2.errors.UniqueViolation:
         raise HTTPException(status_code=400, detail="Esta unidade já encontra-se registrada.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
@@ -278,6 +286,8 @@ def listar_usuarios_unidades():
         cursor = db.cursor()
         cursor.execute("SELECT id, usuario, perfil FROM usuarios ORDER BY id DESC")
         return cursor.fetchall()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
@@ -290,7 +300,9 @@ def login(dados: LoginSchema):
         user = cursor.fetchone()
         if user:
             return {"status": "sucesso", "usuario": user["usuario"], "perfil": user["perfil"]}
-        raise HTTPException(status_code=401, detail="Credenciais inválidas ou unidade não autorizada.")
+        raise HTTPException(status_code=401, detail="Credenciais inválidas.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
@@ -300,7 +312,10 @@ def listar_medicamentos(usuario: str = "admin"):
     try:
         cursor = db.cursor()
         cursor.execute("SELECT id, nome, principio_ativo, categoria, codigo_barras, controlado FROM medicamentos WHERE usuario_dono = %s ORDER BY id DESC", (usuario,))
-        return cursor.fetchall()
+        resultado = cursor.fetchall()
+        return resultado
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
@@ -315,22 +330,8 @@ def cadastrar_medicamento(med: MedicamentoSchema):
         )
         db.commit()
         return {"status": "sucesso", "mensagem": "Medicamento catalogado."}
-    except psycopg2.errors.UniqueViolation:
-        raise HTTPException(status_code=400, detail="Código de Barras já existente.")
-    finally:
-        db.close()
-
-@app.put("/api/medicamentos/{med_id}", tags=["Medicamentos"])
-def atualizar_medicamento(med_id: int, med: MedicamentoSchema):
-    db = conectar_bd()
-    try:
-        cursor = db.cursor()
-        cursor.execute("""
-            UPDATE medicamentos SET nome = %s, principio_ativo = %s, categoria = %s, controlado = %s, codigo_barras = %s
-            WHERE id = %s AND usuario_dono = %s
-        """, (med.nome, med.principio_ativo, med.categoria, med.controlado, med.codigo_barras, med_id, med.usuario_dono))
-        db.commit()
-        return {"status": "sucesso", "mensagem": "Cadastro atualizado."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
@@ -344,7 +345,14 @@ def listar_lotes_medicamentos(usuario: str = "admin"):
             FROM lotes l JOIN medicamentos med ON l.medicamento_id = med.id
             WHERE l.quantidade > 0 AND l.usuario_dono = %s
         """, (usuario,))
-        return cursor.fetchall()
+        res = cursor.fetchall()
+        # Converte as datas em string para o JSON do FastAPI não dar erro
+        for r in res:
+            if 'validade' in r and r['validade']:
+                r['validade'] = str(r['validade'])
+        return res
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
@@ -364,7 +372,9 @@ def receber_lote_medicamento(lote: LoteMedicamentoSchema):
             (lote.medicamento_id, lote.numero_lote, lote.fabricante, fabricacao, data_validade, lote.quantidade, lote.usuario_dono)
         )
         db.commit()
-        return {"status": "sucesso", "mensagem": "Lote de medicamento incorporado com sucesso."}
+        return {"status": "sucesso", "mensagem": "Lote incorporado."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
@@ -375,6 +385,8 @@ def listar_insumos(usuario: str = "admin"):
         cursor = db.cursor()
         cursor.execute("SELECT id, nome, especificacao, unidade_medida, grupo FROM insumos WHERE usuario_dono = %s ORDER BY id DESC", (usuario,))
         return cursor.fetchall()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
@@ -389,6 +401,8 @@ def cadastrar_insumo(ins: InsumoSchema):
         )
         db.commit()
         return {"status": "sucesso", "mensagem": "Insumo catalogado."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
@@ -402,7 +416,13 @@ def listar_lotes_insumos(usuario: str = "admin"):
             FROM lotes_insumos li JOIN insumos i ON li.insumo_id = i.id
             WHERE li.quantidade > 0 AND li.usuario_dono = %s
         """, (usuario,))
-        return cursor.fetchall()
+        res = cursor.fetchall()
+        for r in res:
+            if 'validade' in r and r['validade']:
+                r['validade'] = str(r['validade'])
+        return res
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
@@ -417,6 +437,8 @@ def receber_lote_insumo(lote: LoteInsumoSchema):
         )
         db.commit()
         return {"status": "sucesso", "mensagem": "Lote de insumo incorporado."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
@@ -468,6 +490,8 @@ def relatorio_rastreabilidade(usuario: str = "admin"):
             FROM movimentacoes WHERE usuario_dono = %s ORDER BY id DESC
         """, (usuario,))
         return cursor.fetchall()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
@@ -482,6 +506,8 @@ def registrar_ocorrencia(event: TecnovigilanciaSchema):
         """, (event.lote_suspeito, event.tipo_ocorrencia, event.descricao, event.gravidade, event.conduta_imediata, datetime.now().strftime("%Y-%m-%d %H:%M"), event.operador, event.usuario_dono))
         db.commit()
         return {"status": "sucesso", "mensagem": "Ocorrência protocolada."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
@@ -495,6 +521,8 @@ def listar_ocorrencias_tecnovigilancia(usuario: str = "admin"):
             FROM tecnovigilancia WHERE usuario_dono = %s ORDER BY id DESC
         """, (usuario,))
         return cursor.fetchall()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
