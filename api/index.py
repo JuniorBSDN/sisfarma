@@ -8,8 +8,8 @@ from typing import Optional
 
 app = FastAPI(
     title="YANA API - Central de Abastecimento Farmacêutico (PostgreSQL)",
-    description="Backend em nuvem para controle interno e rastreabilidade hospitalar",
-    version="1.1.3"
+    description="Backend estruturado para tabelas indexadas e dicionários de auditoria",
+    version="1.1.4"
 )
 
 app.add_middleware(
@@ -24,7 +24,6 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 def conectar_bd():
     try:
-        # Usamos o cursor clássico para retornar tuplas compatíveis com o seu index.html (med[0], med[1]...)
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
 
@@ -126,9 +125,9 @@ def conectar_bd():
         cursor.close()
         return conn
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro de Banco: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro no banco: {str(e)}")
 
-# SCHEMAS DE ENTRADA EXATOS
+# SCHEMAS DE VALIDAÇÃO (Recebimento flexível do Frontend)
 class LoginSchema(BaseModel):
     usuario: str
     senha: str
@@ -192,7 +191,7 @@ class AtualizarUsuarioSchema(BaseModel):
     senha: str
     perfil: str
 
-# --- ENDPOINTS CONFIGURADOS ---
+# --- ENDPOINTS REPARADOS ---
 
 @app.post("/api/auth/login")
 def login(dados: LoginSchema):
@@ -213,7 +212,8 @@ def listar_medicamentos(usuario: str = "admin"):
     try:
         cursor = db.cursor()
         cursor.execute("SELECT id, nome, principio_ativo, categoria, codigo_barras, controlado FROM medicamentos WHERE usuario_dono = %s ORDER BY id DESC", (usuario,))
-        return cursor.fetchall()
+        # Retorna lista pura de listas (exatamente o que med[0], med[1] esperam no index.html)
+        return [list(row) for row in cursor.fetchall()]
     finally:
         db.close()
 
@@ -242,13 +242,12 @@ def listar_lotes_medicamentos(usuario: str = "admin"):
             WHERE l.quantidade > 0 AND l.usuario_dono = %s
         """, (usuario,))
         res = cursor.fetchall()
-        # Formata datas para string evitando erros de JSON
-        resultado_formatado = []
+        resultado = []
         for r in res:
             item = list(r)
-            item[4] = str(item[4])
-            resultado_formatado.append(item)
-        return resultado_formatado
+            item[4] = str(item[4])  # Converte data para string
+            resultado.append(item)
+        return resultado
     finally:
         db.close()
 
@@ -278,7 +277,7 @@ def listar_insumos(usuario: str = "admin"):
     try:
         cursor = db.cursor()
         cursor.execute("SELECT id, nome, especificacao, unidade_medida, grupo FROM insumos WHERE usuario_dono = %s ORDER BY id DESC", (usuario,))
-        return cursor.fetchall()
+        return [list(row) for row in cursor.fetchall()]
     finally:
         db.close()
 
@@ -307,12 +306,12 @@ def listar_lotes_insumos(usuario: str = "admin"):
             WHERE li.quantidade > 0 AND li.usuario_dono = %s
         """, (usuario,))
         res = cursor.fetchall()
-        resultado_formatado = []
+        resultado = []
         for r in res:
             item = list(r)
             item[4] = str(item[4])
-            resultado_formatado.append(item)
-        return resultado_formatado
+            resultado.append(item)
+        return resultado
     finally:
         db.close()
 
@@ -339,11 +338,11 @@ def processar_dispensacao(disp: DispensacaoSchema):
             cursor.execute("SELECT quantidade FROM lotes WHERE id = %s AND usuario_dono = %s", (disp.lote_id, disp.usuario_dono))
             lote = cursor.fetchone()
             if not lote or lote[0] < disp.quantidade:
-                raise HTTPException(status_code=400, detail="Saldo insuficiente no lote.")
+                raise HTTPException(status_code=400, detail="Saldo insuficiente.")
 
             cursor.execute("UPDATE lotes SET quantidade = quantidade - %s WHERE id = %s AND usuario_dono = %s", (disp.quantidade, disp.lote_id, disp.usuario_dono))
             cursor.execute("""
-                INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao, usuario_dono)
+                INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, sector_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao, usuario_dono)
                 VALUES (%s, NULL, 'SAÍDA MEDICAMENTO', %s, %s, %s, %s, %s, %s, %s)
             """, (disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num, disp.responsavel, datetime.now().strftime("%Y-%m-%d %H:%M"), disp.usuario_dono))
 
@@ -377,7 +376,7 @@ def relatorio_rastreabilidade(usuario: str = "admin"):
             SELECT id, lote_id, insumo_lote_id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao 
             FROM movimentacoes WHERE usuario_dono = %s ORDER BY id DESC
         """, (usuario,))
-        return cursor.fetchall()
+        return [list(row) for row in cursor.fetchall()]
     finally:
         db.close()
 
@@ -405,7 +404,7 @@ def listar_ocorrencias_tecnovigilancia(usuario: str = "admin"):
             FROM tecnovigilancia WHERE usuario_dono = %s ORDER BY id DESC
         """, (usuario,))
         res = cursor.fetchall()
-        # Mapeia como chaves que o HTML precisa no forEach (o.id, o.lote_suspeito...)
+        # Mapeia estritamente como OBJETOS dicionários exigidos pelo seu .forEach(o => o.lote_suspeito)
         resultado_objetos = []
         for r in res:
             resultado_objetos.append({
