@@ -277,12 +277,6 @@
                 <button class="menu-btn btn-med" onclick="switchTab('tab-lotes-med')">📦 Entrada de Lotes</button>
                 <button class="menu-btn btn-med" onclick="switchTab('tab-dispensar')">⚡ Dispensar Itens</button>
 
-                <!-- 🆕 MÓDULO FARMÁCIA DE ALA (CLÍNICA INTEGRADA) -->
-                <div class="menu-group">Farmácia de Ala</div>
-                <button class="menu-btn" style="background-color: #0f766e;" onclick="switchTab('tab-farmacia-prescricao')">📋 Prescrições/Leito</button>
-                <button class="menu-btn" style="background-color: #0369a1;" onclick="switchTab('tab-farmacia-unitarizar')">✂️ Unitarização</button>
-                <button class="menu-btn" style="background-color: #b45309;" onclick="switchTab('tab-farmacia-devolucoes')">🔄 Devoluções Ala</button>
-
                 <div class="menu-group">Insumos / Materiais</div>
                 <button class="menu-btn btn-ins" onclick="switchTab('tab-cadastro-insumo')">📝 Cadastro de Insumos</button>
                 <button class="menu-btn btn-ins" onclick="switchTab('tab-lotes-insumo')">📥 Receber Insumos</button>
@@ -341,7 +335,7 @@
                                 <div class="form-group">
                                     <label>Medicamento Base:</label>
                                     <select id="lote-med-id-selecionado" required>
-                                        <option value="">Carregando medicamentos...</option>
+                                        <option value="">Carregando medicamentos...</option> 
                                     </select>
                                 </div>
                                 <div class="form-group"><label>Número do Lote:</label><input type="text" id="lote-med-numero" required></div>
@@ -406,75 +400,6 @@
                                 <tbody id="rows-movimentacoes"></tbody>
                             </table>
                         </div>
-                    </div>
-                </div>
-
-                <!-- 🆕 TELA: FARMÁCIA DE ALA - PRESCRIÇÕES/LEITO -->
-                <div id="tab-farmacia-prescricao" class="tab-content" style="display:none;">
-                    <div class="panel-card">
-                        <h2>📋 Validação Clínico-Farmacêutica & Baixa por Leito</h2>
-                        <form id="form-farmacia-leito">
-                            <div class="form-inline-row">
-                                <div class="form-group"><label>Paciente / Leito:</label><input type="text" id="farm-paciente" placeholder="Ex: Leito 302 - Maria Souza" required></div>
-                                <div class="form-group"><label>Nº Prescrição (PEP):</label><input type="text" id="farm-req" placeholder="Ex: PRE-2026-88" required></div>
-                            </div>
-                            <div class="form-inline-row">
-                                <div class="form-group">
-                                    <label>Lote Medicamento:</label>
-                                    <select id="farm-lote-select" required><option value="">Selecione o lote ativo...</option></select>
-                                </div>
-                                <div class="form-group"><label>Dose Separada:</label><input type="number" id="farm-qtd" required></div>
-                            </div>
-                            <button type="submit" class="action-btn green" style="background-color: #0f766e;">🚀 Validar e Dispensar Dose Hospitalar</button>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- 🆕 TELA: FARMÁCIA DE ALA - UNITARIZAÇÃO -->
-                <div id="tab-farmacia-unitarizar" class="tab-content" style="display:none;">
-                    <div class="panel-card">
-                        <h2>✂️ Central de Unitarização e Fracionamento de Doses</h2>
-                        <form id="form-farmacia-unitarizar">
-                            <div class="form-inline-row">
-                                <div class="form-group">
-                                    <label>Lote Origem:</label>
-                                    <select id="unit-lote-origem" required><option value="">Selecione...</option></select>
-                                </div>
-                                <div class="form-group"><label>Fator Divisão:</label><input type="number" id="unit-fator" value="10" required></div>
-                            </div>
-                            <div class="form-inline-row">
-                                <div class="form-group"><label>Quantidade Caixas:</label><input type="number" id="unit-qtd" required></div>
-                            </div>
-                            <button type="submit" class="action-btn blue" style="background-color: #0369a1;">🖨️ Fracionar e Gerar Sub-Lotes</button>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- 🆕 TELA: FARMÁCIA DE ALA - DEVOLUÇÕES -->
-                <div id="tab-farmacia-devolucoes" class="tab-content" style="display:none;">
-                    <div class="panel-card">
-                        <h2>🔄 Estorno e Logística Reversa de Medicamentos (Devolução)</h2>
-                        <form id="form-farmacia-devolucao">
-                            <div class="form-inline-row">
-                                <div class="form-group">
-                                    <label>Lote de Retorno:</label>
-                                    <select id="dev-lote-select" required><option value="">Selecione...</option></select>
-                                </div>
-                                <div class="form-group"><label>Qtd Devolvida:</label><input type="number" id="dev-qtd" required></div>
-                            </div>
-                            <div class="form-inline-row">
-                                <div class="form-group">
-                                    <label>Ala Requisitante:</label>
-                                    <select id="dev-setor">
-                                        <option value="UTI">UTI</option>
-                                        <option value="Centro Cirúrgico">Centro Cirúrgico</option>
-                                        <option value="Pronto Socorro">Pronto Socorro</option>
-                                    </select>
-                                </div>
-                                <div class="form-group"><label>Motivo Estorno:</label><input type="text" id="dev-motivo" placeholder="Ex: Suspensão médica" required></div>
-                            </div>
-                            <button type="submit" class="action-btn orange" style="background-color: #b45309;">✔ Reincorporar Itens ao Estoque Ativo</button>
-                        </form>
                     </div>
                 </div>
 
@@ -653,7 +578,7 @@
                 const res = await fetch(`${API_URL}/auth/login`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ usuario, senate: senha })
+                    body: JSON.stringify({ usuario, senha })
                 });
                 const dados = await res.json();
 
@@ -686,11 +611,6 @@
             if (tabId === 'tab-rastreabilidade') carregarHistoricoRastreabilidade();
             if (tabId === 'tab-alertas') carregarAlertasClinicos();
             if (tabId === 'tab-tecnovigilancia') carregarOcorrenciasTecnovigilancia();
-
-            // Ativa os combos dinâmicos para as abas da Farmácia de Ala
-            if (['tab-farmacia-prescricao', 'tab-farmacia-unitarizar', 'tab-farmacia-devolucoes'].includes(tabId)) {
-                carregarCombosExclusivosFarmacia();
-            }
         }
 
         // ==========================================
@@ -730,16 +650,12 @@
             try {
                 const res = await fetch(`${API_URL}/medicamentos`);
                 const select = document.getElementById("lote-med-id-selecionado");
-                if(!select) return;
-                select.innerHTML = '<option value="">Carregando medicamentos...</option>';
+                select.innerHTML = '<option value="">-- Escolha um Medicamento --</option>';
                 if (res.ok) {
                     const meds = await res.json();
-                    select.innerHTML = '<option value="">-- Escolha o Item --</option>';
-                    meds.forEach(m => {
-                        select.innerHTML += `<option value="${m.id}">${m.nome}</option>`;
-                    });
+                    meds.forEach(m => select.innerHTML += `<option value="${m.id}">${m.nome} (${m.principio_ativo})</option>`);
                 }
-            } catch(e) { console.error(e); }
+            } catch (err) { console.error(err); }
         }
 
         async function carregarLotesMedicamentos() {
@@ -750,42 +666,76 @@
                 const tbody = document.getElementById("tabela-lotes-med-rows");
                 tbody.innerHTML = "";
                 lotes.forEach(l => {
-                    tbody.innerHTML += `<tr><td>${l.id}</td><td><strong>${l.medicamento_nome || 'Medicamento'}</strong></td><td>${l.numero_lote}</td><td>${l.fabricante}</td><td>${new Date(l.data_validade).toLocaleDateString('pt-BR')}</td><td>${l.quantidade}</td></tr>`;
+                    tbody.innerHTML += `<tr><td>${l.id}</td><td>${l.medicamento_nome || 'N/A'}</td><td><strong>${l.numero_lote}</strong></td><td>${l.fabricante}</td><td>${l.validade}</td><td>${l.quantidade}</td></tr>`;
                 });
             } catch (err) { console.error(err); }
         }
 
-        document.getElementById("form-lote-med").addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const payload = {
-                medicamento_id: parseInt(document.getElementById("lote-med-id-selecionado").value),
-                numero_lote: document.getElementById("lote-med-numero").value.trim(),
-                fabricante: document.getElementById("lote-med-fabricante").value.trim(),
-                data_validade: document.getElementById("lote-med-validade").value,
-                quantidade: parseInt(document.getElementById("lote-med-qtd").value)
-            };
-            const res = await fetch(`${API_URL}/lotes`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-            if (res.ok) { document.getElementById("form-lote-med").reset(); carregarLotesMedicamentos(); }
+       document.getElementById("form-lote-med").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const selectMed = document.getElementById("lote-med-id-selecionado");
+    
+    // 1. Captura o valor digitado (ex: "05/07/2026")
+    const dataDigitada = document.getElementById("lote-med-validade").value.trim();
+    let dataFormatada = dataDigitada;
+
+    // 2. Converte de DD/MM/AAAA para AAAA-MM-DD se o usuário usou barras
+    if (dataDigitada.includes("/")) {
+        const partes = dataDigitada.split("/"); // ["05", "07", "2026"]
+        if (partes.length === 3) {
+            dataFormatada = `${partes[2]}-${partes[1]}-${partes[0]}`; // "2026-07-05"
+        }
+    }
+
+    const payload = {
+        medicamento_id: parseInt(selectMed.value),
+        numero_lote: document.getElementById("lote-med-numero").value.trim(),
+        fabricante: document.getElementById("lote-med-fabricante").value.trim(),
+        validade: dataFormatada, // <--- Agora envia no formato correto (AAAA-MM-DD)
+        quantidade: parseInt(document.getElementById("lote-med-qtd").value)
+    };
+
+    // Validação simples antes de enviar
+    if (isNaN(payload.medicamento_id)) {
+        alert("Por favor, selecione um medicamento válido.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/lotes`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
         });
+        
+        if (res.ok) {
+            alert("✅ Lote registrado!");
+            document.getElementById("form-lote-med").reset();
+            carregarLotesMedicamentos();
+        } else {
+            // Dica extra: Tente capturar a mensagem de erro real vinda do servidor para ajudar no debug
+            const erroServidor = await res.json().catch(() => ({}));
+            alert(`Erro ao salvar o lote: ${erroServidor.detail || 'Verifique os dados enviados.'}`);
+        }
+    } catch (err) {
+        alert("Erro de rede ao tentar conectar com o servidor.");
+    }
+});
 
         // ==========================================
-        // 📥 4. MÓDULO INSUMOS
+        // 📝 4. MÓDULO INSUMOS
         // ==========================================
         async function carregarInsumosBase() {
             try {
                 const res = await fetch(`${API_URL}/insumos`);
                 if (!res.ok) return;
-                const insumos = await res.json();
+                const ins = await res.json();
                 const tbody = document.getElementById("tabela-insumos-body");
                 tbody.innerHTML = "";
-                insumos.forEach(i => {
-                    tbody.innerHTML += `<tr><td>${i.id}</td><td><strong>${i.nome}</strong></td><td>${i.especificacao || '-'}</td><td>${i.unidade_medida}</td><td>${i.grupo}</td></tr>`;
+                ins.forEach(i => {
+                    tbody.innerHTML += `<tr><td>${i.id}</td><td><strong>${i.nome}</strong></td><td>${i.especificacao || 'N/A'}</td><td>${i.unidade_medida}</td><td>${i.grupo_classe}</td></tr>`;
                 });
-            } catch(e) { console.error(e); }
+            } catch (err) { console.error(err); }
         }
 
         document.getElementById("form-cadastro-insumo").addEventListener("submit", async (e) => {
@@ -794,112 +744,89 @@
                 nome: document.getElementById("ins-nome").value,
                 especificacao: document.getElementById("ins-especificacao").value,
                 unidade_medida: document.getElementById("ins-unidade").value,
-                grupo: document.getElementById("ins-grupo").value
+                grupo_classe: document.getElementById("ins-grupo").value
             };
             const res = await fetch(`${API_URL}/insumos`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             });
-            if(res.ok) { document.getElementById("form-cadastro-insumo").reset(); carregarInsumosBase(); }
+            if (res.ok) { document.getElementById("form-cadastro-insumo").reset(); carregarInsumosBase(); }
         });
 
         async function carregarInsumosNoCombo() {
             try {
                 const res = await fetch(`${API_URL}/insumos`);
                 const select = document.getElementById("lote-ins-id");
-                if(!select) return;
-                select.innerHTML = '<option value="">Carregando...</option>';
-                if(res.ok) {
-                    const data = await res.json();
-                    select.innerHTML = '<option value="">-- Escolha o Insumo --</option>';
-                    data.forEach(i => { select.innerHTML += `<option value="${i.id}">${i.nome}</option>`; });
+                select.innerHTML = '<option value="">-- Escolha um Insumo --</option>';
+                if (res.ok) {
+                    const ins = await res.json();
+                    ins.forEach(i => select.innerHTML += `<option value="${i.id}">${i.nome}</option>`);
                 }
-            } catch(e) { console.error(e); }
+            } catch (err) { console.error(err); }
         }
 
         async function carregarLotesInsumos() {
             try {
-                const res = await fetch(`${API_URL}/lotes-insumos`);
-                if(!res.ok) return;
-                const data = await res.json();
+                const res = await fetch(`${API_URL}/insumos/lotes`);
+                if (!res.ok) return;
+                const lotes = await res.json();
                 const tbody = document.getElementById("tabela-lotes-insumos-rows");
                 tbody.innerHTML = "";
-                data.forEach(l => {
-                    tbody.innerHTML += `<tr><td>${l.id}</td><td><strong>${l.insumo_nome || 'Insumo'}</strong></td><td>${l.numero_lote}</td><td>${l.fabricante}</td><td>${new Date(l.data_validade).toLocaleDateString('pt-BR')}</td><td>${l.quantidade}</td></tr>`;
+                lotes.forEach(l => {
+                    tbody.innerHTML += `<tr><td>${l.id}</td><td>${l.insumo_nome || 'N/A'}</td><td><strong>${l.numero_lote}</strong></td><td>${l.fabricante}</td><td>${l.validade}</td><td>${l.quantidade}</td></tr>`;
                 });
-            } catch(e) { console.error(e); }
+            } catch (err) { console.error(err); }
         }
 
         document.getElementById("form-lote-insumo").addEventListener("submit", async (e) => {
             e.preventDefault();
             const payload = {
                 insumo_id: parseInt(document.getElementById("lote-ins-id").value),
-                numero_lote: document.getElementById("lote-ins-numero").value.trim(),
-                fabricante: document.getElementById("lote-ins-fabricante").value.trim(),
-                data_validade: document.getElementById("lote-ins-validade").value,
+                numero_lote: document.getElementById("lote-ins-numero").value,
+                fabricante: document.getElementById("lote-ins-fabricante").value,
+                validade: document.getElementById("lote-ins-validade").value,
                 quantidade: parseInt(document.getElementById("lote-ins-qtd").value)
             };
-            const res = await fetch(`${API_URL}/lotes-insumos`, {
+            const res = await fetch(`${API_URL}/insumos/lotes`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             });
-            if(res.ok) { document.getElementById("form-lote-insumo").reset(); carregarLotesInsumos(); }
+            if (res.ok) { document.getElementById("form-lote-insumo").reset(); carregarLotesInsumos(); }
         });
 
         // ==========================================
-        // ⚡ 5. DISPENSAÇÃO & MOVIMENTAÇÕES
+        // ⚡ 5. DISPENSAÇÃO UNIFICADA
         // ==========================================
         async function carregarItensDispensacao() {
-            const rados = document.getElementsByName("tipo-mat");
-            let tipo = "MEDICAMENTO";
-            for(let r of rados) { if(r.checked) tipo = r.value; }
-
-            const select = document.getElementById("disp-lote-select");
-            select.innerHTML = '<option value="">Selecione o item...</option>';
-
             try {
-                if (tipo === "MEDICAMENTO") {
-                    const res = await fetch(`${API_URL}/lotes`);
-                    if(res.ok) {
-                        const data = await res.json();
-                        data.forEach(l => { select.innerHTML += `<option value="${l.id}">💊 Lote: ${l.numero_lote} - ${l.medicamento_nome} (Saldo: ${l.quantidade})</option>`; });
-                    }
-                } else {
-                    const res = await fetch(`${API_URL}/lotes-insumos`);
-                    if(res.ok) {
-                        const data = await res.json();
-                        data.forEach(l => { select.innerHTML += `<option value="${l.id}">📦 Lote: ${l.numero_lote} - ${l.insumo_nome} (Saldo: ${l.quantidade})</option>`; });
-                    }
+                const tipo = document.querySelector('input[name="tipo-mat"]:checked').value;
+                const select = document.getElementById("disp-lote-select");
+                select.innerHTML = '<option value="">Carregando opções...</option>';
+                
+                const rota = tipo === "MEDICAMENTO" ? `${API_URL}/lotes` : `${API_URL}/insumos/lotes`;
+                const res = await fetch(rota);
+                select.innerHTML = '<option value="">Selecione o item...</option>';
+                
+                if (res.ok) {
+                    const dados = await res.json();
+                    dados.forEach(d => {
+                        const nomeItem = d.medicamento_nome || d.insumo_nome || "Item";
+                        select.innerHTML += `<option value="${d.id}">${nomeItem} - Lote: ${d.numero_lote} (Estoque: ${d.quantidade})</option>`;
+                    });
                 }
-            } catch(e) { console.error(e); }
-        }
-
-        async function carregarMovimentacoesRealtime() {
-            try {
-                const res = await fetch(`${API_URL}/movimentacoes`);
-                if(!res.ok) return;
-                const logs = await res.json();
-                const tbody = document.getElementById("rows-movimentacoes");
-                tbody.innerHTML = "";
-                logs.slice(0, 10).forEach(log => {
-                    tbody.innerHTML += `<tr><td>${log.id}</td><td>${log.tipo_material}</td><td>${log.quantidade}</td><td>${log.setor_destino || log.setor}</td><td>${log.paciente || 'Uso Geral'}</td><td>${new Date(log.data_hora).toLocaleString('pt-BR')}</td></tr>`;
-                });
-            } catch(e) { console.error(e); }
+            } catch (err) { console.error(err); }
         }
 
         document.getElementById("form-dispensa-real").addEventListener("submit", async (e) => {
             e.preventDefault();
-            const rados = document.getElementsByName("tipo-mat");
-            let tipo = "MEDICAMENTO";
-            for(let r of rados) { if(r.checked) tipo = r.value; }
-
+            const tipo = document.querySelector('input[name="tipo-mat"]:checked').value;
             const payload = {
                 tipo_material: tipo,
                 lote_id: parseInt(document.getElementById("disp-lote-select").value),
-                paciente: document.getElementById("disp-paciente").value.trim(),
-                requisicao: document.getElementById("disp-req").value.trim(),
+                paciente: document.getElementById("disp-paciente").value,
+                requisicao: document.getElementById("disp-req").value,
                 setor: document.getElementById("disp-setor").value,
                 quantidade: parseInt(document.getElementById("disp-qtd").value),
                 responsavel: operadorLogado
@@ -916,113 +843,117 @@
                 document.getElementById("form-dispensa-real").reset();
                 carregarItensDispensacao();
                 carregarMovimentacoesRealtime();
-            } else { alert("Erro ao processar baixa. Verifique o saldo disponível."); }
+            } else {
+                const err = await res.json().catch(() => ({}));
+                alert(`Erro: ${err.detail || 'Estoque insuficiente ou falha na requisição'}`);
+            }
         });
 
-        // ==========================================
-        // 📋 6. INTELIGÊNCIA EXCLUSIVA: FARMÁCIA DE ALA
-        // ==========================================
-        async function carregarCombosExclusivosFarmacia() {
+        async function carregarMovimentacoesRealtime() {
             try {
-                const res = await fetch(`${API_URL}/lotes`);
-                const comboPrescricao = document.getElementById("farm-lote-select");
-                const comboUnit = document.getElementById("unit-lote-origem");
-                const comboDev = document.getElementById("dev-lote-select");
-
-                let htmlOptions = '<option value="">-- Selecione o Lote Ativo --</option>';
-
-                if (res.ok) {
-                    const lotes = await res.json();
-                    lotes.forEach(l => {
-                        htmlOptions += `<option value="${l.id}">${l.medicamento_nome || 'Med'} - Lote: ${l.numero_lote} (Saldo: ${l.quantidade})</option>`;
-                    });
-                }
-
-                if(comboPrescricao) comboPrescricao.innerHTML = htmlOptions;
-                if(comboUnit) comboUnit.innerHTML = htmlOptions;
-                if(comboDev) comboDev.innerHTML = htmlOptions;
-            } catch(e) { console.error(e); }
+                const res = await fetch(`${API_URL}/movimentacoes/recentes`);
+                if (!res.ok) return;
+                const movs = await res.json();
+                const tbody = document.getElementById("rows-movimentacoes");
+                tbody.innerHTML = "";
+                movs.forEach(m => {
+                    tbody.innerHTML += `<tr><td>${m.id}</td><td>${m.tipo_material}</td><td>${m.quantidade}</td><td>${m.setor}</td><td>${m.paciente}</td><td>${m.data_hora}</td></tr>`;
+                });
+            } catch (err) { console.error(err); }
         }
 
-        document.getElementById("form-farmacia-leito")?.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const payload = {
-                tipo_material: "MEDICAMENTO",
-                lote_id: parseInt(document.getElementById("farm-lote-select").value),
-                paciente: document.getElementById("farm-paciente").value.trim(),
-                requisicao: document.getElementById("farm-req").value.trim(),
-                setor: "FARMÁCIA HOSPITALAR / LEITO",
-                quantidade: parseInt(document.getElementById("farm-qtd").value),
-                responsavel: operadorLogado
-            };
-
-            const res = await fetch(`${API_URL}/movimentacoes/dispensar`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-
-            if(res.ok) {
-                alert("🚀 Sucesso! Dose individualizada validada e deduzida do inventário.");
-                document.getElementById("form-farmacia-leito").reset();
-                carregarCombosExclusivosFarmacia();
-            } else { alert("Falha ao registrar baixa. Verifique o saldo disponível do lote."); }
-        });
-
-        document.getElementById("form-farmacia-devolucao")?.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            alert(`🔄 Logística reversa concluída! Unidades auditadas prontas para reincorporação.`);
-            document.getElementById("form-farmacia-devolucao").reset();
-        });
-
-        document.getElementById("form-farmacia-unitarizar")?.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            alert("✂️ Fracionamento executado! Unidades prontas com códigos de barras rastreáveis.");
-            document.getElementById("form-farmacia-unitarizar").reset();
-        });
-
         // ==========================================
-        // 🔍 7. AUDITORIA, ALERTAS & MONITORAMENTO
+        // 🔍 6. AUDITORIA & RASTREABILIDADE
         // ==========================================
         async function carregarHistoricoRastreabilidade() {
             try {
-                const res = await fetch(`${API_URL}/movimentacoes`);
-                if(!res.ok) return;
-                const data = await res.json();
-                const tbody = document.getElementById("tabela-rastreabilidade-rows");
-                tbody.innerHTML = "";
-                data.forEach(log => {
-                    tbody.innerHTML += `<tr><td>${log.id}</td><td>${log.tipo_material}</td><td>${log.lote_id}</td><td>${log.quantidade}</td><td>${log.setor || '-'}</td><td>${log.paciente || 'Uso Geral'}</td><td>${log.responsavel || 'Sistema'}</td><td>${new Date(log.data_hora).toLocaleString('pt-BR')}</td></tr>`;
-                });
-            } catch(e) { console.error(e); }
+                const res = await fetch(`${API_URL}/movimentacoes/global`);
+                if (!res.ok) return;
+                const dados = await res.json();
+                window.dadosRastreabilidadeGlobal = dados; // Guarda em cache local para filtros rápidos
+                renderizarLinhasRastreabilidade(dados);
+            } catch (err) { console.error(err); }
         }
 
+        function renderizarLinhasRastreabilidade(lista) {
+            const tbody = document.getElementById("tabela-rastreabilidade-rows");
+            tbody.innerHTML = "";
+            lista.forEach(m => {
+                tbody.innerHTML += `<tr><td>${m.id}</td><td>${m.tipo_movimentacao || m.tipo_material}</td><td>${m.item_descricao || 'N/A'}</td><td>${m.quantidade}</td><td>${m.setor}</td><td>${m.paciente}</td><td>${m.responsavel || 'admin'}</td><td>${m.data_hora}</td></tr>`;
+            });
+        }
+
+        function filtrarRastreabilidade() {
+            const termo = document.getElementById("busca-rastreabilidade").value.toLowerCase();
+            if (!window.dadosRastreabilidadeGlobal) return;
+            const filtrados = window.dadosRastreabilidadeGlobal.filter(m => 
+                (m.paciente && m.paciente.toLowerCase().includes(termo)) || 
+                (m.item_descricao && m.item_descricao.toLowerCase().includes(termo))
+            );
+            renderizarLinhasRastreabilidade(filtrados);
+        }
+
+        // ==========================================
+        // ⚠️ 7. ALERTAS CLÍNICOS & TECNOVIGILÂNCIA
+        // ==========================================
         async function carregarAlertasClinicos() {
             try {
-                const res = await fetch(`${API_URL}/dashboard/resumo`);
+                const res = await fetch(`${API_URL}/alertas/sanitarios`);
+                const box = document.getElementById("box-status-alertas");
                 const tbody = document.getElementById("tabela-alertas-rows");
-                tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#666;'>Nenhum lote crítico detectado no momento.</td></tr>";
-            } catch(e) { console.error(e); }
+                tbody.innerHTML = "";
+
+                if (res.ok) {
+                    const alertas = await res.json();
+                    if (alertas.length === 0) {
+                        box.className = "alert-box-success";
+                        box.innerText = "✔ Nenhum lote vencido ou crítico encontrado no inventário atual.";
+                        return;
+                    }
+                    box.className = "alert-box-clean";
+                    box.innerText = `⚠️ Atenção: Foram encontrados ${alertas.length} lotes que exigem atenção sanitária imediata!`;
+                    
+                    alertas.forEach(a => {
+                        tbody.innerHTML += `<tr><td>${a.tipo}</td><td><strong>${a.nome}</strong></td><td>${a.lote}</td><td>${a.validade}</td><td style="color:red; font-weight:bold;">${a.situacao}</td></tr>`;
+                    });
+                }
+            } catch (err) { console.error(err); }
         }
 
         async function carregarOcorrenciasTecnovigilancia() {
-            const tbody = document.getElementById("tabela-tecnovigilancia-rows");
-            if(tbody) tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; color:#666;'>Nenhuma queixa técnica ativa registrada.</td></tr>";
+            try {
+                const res = await fetch(`${API_URL}/tecnovigilancia`);
+                if (!res.ok) return;
+                const ocorrencias = await res.json();
+                const tbody = document.getElementById("tabela-tecnovigilancia-rows");
+                tbody.innerHTML = "";
+                ocorrencias.forEach(o => {
+                    tbody.innerHTML += `<tr><td>${o.id}</td><td>${o.lote_suspeito}</td><td>${o.tipo_ocorrencia}</td><td>${o.gravidade}</td><td>${o.data_registro}</td><td>${o.operador}</td></tr>`;
+                });
+            } catch (err) { console.error(err); }
         }
 
         document.getElementById("form-tecnovigilancia").addEventListener("submit", async (e) => {
             e.preventDefault();
-            alert("💾 Notificação de Tecnovigilância salva no histórico sanitário.");
-            document.getElementById("form-tecnovigilancia").reset();
-        });
-
-        function filtrarRastreabilidade() {
-            let input = document.getElementById("busca-rastreabilidade").value.toLowerCase();
-            let rows = document.querySelectorAll("#tabela-rastreabilidade-rows tr");
-            rows.forEach(row => {
-                row.style.display = row.innerText.toLowerCase().includes(input) ? "" : "none";
+            const payload = {
+                lote_suspeito: document.getElementById("tec-lote").value,
+                tipo_ocorrencia: document.getElementById("tec-tipo").value,
+                gravidade: document.getElementById("tec-gravidade").value,
+                conduta_imediata: document.getElementById("tec-conduta").value,
+                descricao: document.getElementById("tec-desc").value,
+                operador: operadorLogado
+            };
+            const res = await fetch(`${API_URL}/tecnovigilancia`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
             });
-        }
+            if (res.ok) {
+                document.getElementById("form-tecnovigilancia").reset();
+                carregarOcorrenciasTecnovigilancia();
+                alert("⚠️ Evento registrado e notificado ao Núcleo de Segurança do Paciente.");
+            }
+        });
     </script>
 </body>
 </html>
