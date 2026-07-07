@@ -12,7 +12,7 @@ from typing import Optional
 app = FastAPI(
     title="YANA API - Central de Abastecimento Farmacêutico (PostgreSQL)",
     description="Backend em nuvem para controle interno e rastreabilidade hospitalar",
-    version="1.1.2"
+    version="1.1.0"
 )
 
 app.add_middleware(
@@ -180,7 +180,6 @@ class DispensacaoSchema(BaseModel):
 
 
 class TecnovigilanciaSchema(BaseModel):
-    lote_suspeue_id: Optional[str] = None
     lote_suspeito: str
     tipo_ocorrencia: str
     descricao: str
@@ -209,7 +208,7 @@ class RegistrarUsuarioSchema(BaseModel):
 # 📊 ROTA DO DASHBOARD & AUDITORIA (INDICADORES EM TEMPO REAL)
 # =====================================================================
 @app.get("/api/dashboard/resumo", tags=["Auditoria Sanitária"])
-def obtener_resumo_dashboard_vencidos():
+def obter_resumo_dashboard_vencidos():
     db = conectar_bd()
     cursor = db.cursor()
     data_atual = date.today()
@@ -326,25 +325,16 @@ def login(dados: LoginSchema):
 
 
 # =========================================================================
-# ENDPOINTS OPERACIONAIS (ORDEM COMPATÍVEL COM O SEU SCRIPT FRONTEND)
+# ENDPOINTS OPERACIONAIS (MEDICAMENTOS, INSUMOS E LOTES)
 # =========================================================================
 @app.get("/api/medicamentos", tags=["Medicamentos"])
 def listar_medicamentos():
     db = conectar_bd()
     cursor = db.cursor()
-    cursor.execute("SELECT id, nome, principio_ativo, categoria, codigo_barras, controlado FROM medicamentos ORDER BY id DESC")
+    cursor.execute("SELECT id, nome, principio_ativo, categoria, codigo_barras, controlado FROM medicamentos")
     rows = cursor.fetchall()
     db.close()
-
-    # Mapeia na ordem exata de chaves esperadas pelo seu index.html
-    return [{
-        "id": r["id"],
-        "nome": r["nome"],
-        "principio_ativo": r["principio_ativo"],
-        "categoria": r["categoria"],
-        "codigo_barras": r["codigo_barras"],
-        "controlado": r["controlado"]
-    } for r in rows]
+    return rows
 
 
 @app.post("/api/medicamentos", tags=["Medicamentos"])
@@ -362,7 +352,6 @@ def cadastrar_medicamento(med: MedicamentoSchema):
         raise HTTPException(status_code=400, detail="Este Código de Barras já existe.")
     db.close()
     return {"status": "sucesso", "mensagem": f"Medicamento '{med.nome}' catalogado."}
-
 
 @app.put("/api/medicamentos/{med_id}", tags=["Medicamentos"])
 def atualizar_medicamento(med_id: int, med: MedicamentoSchema):
@@ -386,26 +375,20 @@ def atualizar_medicamento(med_id: int, med: MedicamentoSchema):
 def listar_lotes_medicamentos():
     db = conectar_bd()
     cursor = db.cursor()
+    # Adicionado o filtro de quantidade ativa conforme regra do negócio
     cursor.execute("""
         SELECT l.id, med.nome as medicamento, l.numero_lote, l.fabricante, l.validade, l.quantidade 
         FROM lotes l JOIN medicamentos med ON l.medicamento_id = med.id
-        WHERE l.quantidade > 0 ORDER BY l.id DESC
+        WHERE l.quantidade > 0
     """)
     rows = cursor.fetchall()
     db.close()
-
-    return [{
-        "id": r["id"],
-        "medicamento": r["medicamento"],
-        "numero_lote": r["numero_lote"],
-        "fabricante": r["fabricante"],
-        "validade": str(r["validade"]),
-        "quantidade": r["quantidade"]
-    } for r in rows]
+    return rows
 
 
 @app.post("/api/lotes/medicamentos", tags=["Lotes & Estoque"])
 def receber_lote_medicamento(lote: LoteMedicamentoSchema):
+    # Validação Restritiva de Datas (Garante o formato ISO AAAA-MM-DD)
     try:
         data_validade = datetime.strptime(lote.validade, "%Y-%m-%d").date()
     except ValueError:
@@ -428,17 +411,10 @@ def receber_lote_medicamento(lote: LoteMedicamentoSchema):
 def listar_insumos():
     db = conectar_bd()
     cursor = db.cursor()
-    cursor.execute("SELECT id, nome, especificacao, unidade_medida, grupo FROM insumos ORDER BY id DESC")
+    cursor.execute("SELECT id, nome, especificacao, unidade_medida, grupo FROM insumos")
     rows = cursor.fetchall()
     db.close()
-
-    return [{
-        "id": r["id"],
-        "nome": r["nome"],
-        "especificacao": r["especificacao"],
-        "unidade_medida": r["unidade_medida"],
-        "grupo": r["grupo"]
-    } for r in rows]
+    return rows
 
 
 @app.post("/api/insumos", tags=["Insumos"])
@@ -461,19 +437,10 @@ def listar_lotes_insumos():
     cursor.execute("""
         SELECT li.id, i.nome as insumo, li.numero_lote, li.fabricante, li.validade, li.quantidade 
         FROM lotes_insumos li JOIN insumos i ON li.insumo_id = i.id
-        ORDER BY li.id DESC
     """)
     rows = cursor.fetchall()
     db.close()
-
-    return [{
-        "id": r["id"],
-        "insumo": r["insumo"],
-        "numero_lote": r["numero_lote"],
-        "fabricante": r["fabricante"],
-        "validade": str(r["validade"]),
-        "quantidade": r["quantidade"]
-    } for r in rows]
+    return rows
 
 
 @app.post("/api/lotes/insumos", tags=["Lotes & Estoque"])
@@ -499,6 +466,7 @@ def processar_dispensacao(disp: DispensacaoSchema):
 
     try:
         if disp.tipo_material == "MEDICAMENTO":
+            # 1. Busca e validação imediata (Antifuro)
             cursor.execute("SELECT quantidade FROM lotes WHERE id = %s", (disp.lote_id,))
             lote = cursor.fetchone()
             if not lote:
@@ -506,11 +474,13 @@ def processar_dispensacao(disp: DispensacaoSchema):
             if lote["quantidade"] < disp.quantidade:
                 raise HTTPException(status_code=400, detail="Saldo insuficiente no lote de medicamento.")
 
+            # 2. Dedução do estoque
             cursor.execute("UPDATE lotes SET quantidade = quantidade - %s WHERE id = %s",
                            (disp.quantidade, disp.lote_id))
 
+            # 3. Registro Histórico Imutável
             cursor.execute("""
-                INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
+                INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, sector_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
                 VALUES (%s, NULL, 'SAÍDA MEDICAMENTO', %s, %s, %s, %s, %s, %s)
             """, (disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num,
                   disp.responsavel, datetime.now().strftime("%Y-%m-%d %H:%M")))
@@ -523,16 +493,15 @@ def processar_dispensacao(disp: DispensacaoSchema):
 
             cursor.execute("UPDATE lotes_insumos SET quantidade = quantidade - %s WHERE id = %s",
                            (disp.quantidade, disp.lote_id))
-            
             cursor.execute("""
-                INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
+                INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, sector_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
                 VALUES (NULL, %s, 'SAÍDA INSUMO', %s, %s, %s, %s, %s, %s)
             """, (disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num,
                   disp.responsavel, datetime.now().strftime("%Y-%m-%d %H:%M")))
 
-        db.commit()
+        db.commit()  # Operação Atômica garantida aqui
     except Exception as e:
-        db.rollback()
+        db.rollback()  # Se qualquer instrução falhar, desfaz tudo
         if isinstance(e, HTTPException): raise e
         raise HTTPException(status_code=500, detail=f"Erro interno na transação: {str(e)}")
     finally:
@@ -547,21 +516,12 @@ def relatorio_rastreabilidade():
     cursor = db.cursor()
     cursor.execute("""
         SELECT id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao 
-        FROM movimentacoes ORDER BY id DESC
+        FROM movimentacoes 
+        ORDER BY id DESC
     """)
     rows = cursor.fetchall()
     db.close()
-
-    return [{
-        "id": r["id"],
-        "tipo": r["tipo"],
-        "quantidade": r["quantidade"],
-        "setor_destino": r["setor_destino"],
-        "paciente_nome": r["paciente_nome"],
-        "prescricao_num": r["prescricao_num"],
-        "responsavel": r["responsavel"],
-        "data_movimentacao": r["data_movimentacao"]
-    } for r in rows]
+    return rows
 
 
 @app.get("/api/auditoria/alertas", tags=["Auditoria & Compliance"])
@@ -572,14 +532,16 @@ def verificar_alertas_sanitarios():
 
     cursor.execute("""
         SELECT m.nome, l.numero_lote, l.validade, l.quantidade 
-        FROM lotes l JOIN medicamentos m ON l.medicamento_id = m.id 
+        FROM lotes l 
+        JOIN medicamentos m ON l.medicamento_id = m.id 
         WHERE l.quantidade > 0 AND l.validade <= %s
     """, (data_atual,))
     lotes_med = cursor.fetchall()
 
     cursor.execute("""
         SELECT i.nome, li.numero_lote, li.validade, li.quantidade 
-        FROM lotes_insumos li JOIN insumos i ON li.insumo_id = i.id 
+        FROM lotes_insumos li 
+        JOIN insumos i ON li.insumo_id = i.id 
         WHERE li.quantidade > 0 AND li.validade <= %s
     """, (data_atual,))
     lotes_ins = cursor.fetchall()
@@ -604,40 +566,32 @@ def registrar_ocorrencia(event: TecnovigilanciaSchema):
         INSERT INTO tecnovigilancia (lote_texto, tipo_ocorrencia, descricao, gravidade, conduta, data_registro, operador)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
     """, (
-        event.lote_suspeito,
+        event.lote_suspeito,      # <-- Mapeado perfeitamente do frontend
         event.tipo_ocorrencia,
         event.descricao,
         event.gravidade,
-        event.conduta_imediata,
+        event.conduta_imediata,   # <-- Mapeado perfeitamente do frontend
         datetime.now().strftime("%Y-%m-%d %H:%M"),
         event.operador
     ))
     db.commit()
     db.close()
     return {"status": "sucesso", "mensagem": "Ocorrência sanitária protocolada."}
-
-
 @app.get("/api/tecnovigilancia", tags=["Tecnovigilância (POP.FARM.019)"])
 def listar_ocorrencias_tecnovigilancia():
     db = conectar_bd()
     cursor = db.cursor()
+    # Usamos o 'AS' para que o JSON de resposta venha exatamente com 'lote_suspeito'
     cursor.execute("""
         SELECT id, lote_texto AS lote_suspeito, tipo_ocorrencia, gravidade, data_registro, operador 
-        FROM tecnovigilancia ORDER BY id DESC
+        FROM tecnovigilancia 
+        ORDER BY id DESC
     """)
     rows = cursor.fetchall()
     db.close()
-
-    return [{
-        "id": r["id"],
-        "lote_suspeito": r["lote_suspeito"],
-        "tipo_ocorrencia": r["tipo_ocorrencia"],
-        "gravidade": r["gravidade"],
-        "data_registro": r["data_registro"],
-        "operador": r["operador"]
-    } for r in rows]
-
+    return rows
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
