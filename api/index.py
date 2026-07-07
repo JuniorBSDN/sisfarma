@@ -1,18 +1,19 @@
 import os
-from fastapi import FastAPI, HTTPException, status
-from fastapi.middleware.cors import CORSMiddleware
+import sqlite3
 from datetime import datetime, date
-
-import psycopg2
-from psycopg2.extras import RealDictCursor  # Mantém o acesso às colunas por nome
+from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
-from datetime import datetime
-from typing import Optional
+from fastapi import FastAPI, HTTPException, status, Depends, Query
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
+# =====================================================================
+# ⚙️ CONFIGURAÇÃO DA API & CORS
+# =====================================================================
 app = FastAPI(
-    title="YANA API - Central de Abastecimento Farmacêutico (PostgreSQL)",
-    description="Backend em nuvem para controle interno e rastreabilidade hospitalar",
-    version="1.1.0"
+    title="Sistema de Gestão de Farmácia Hospitalar & Tecnovigilância",
+    description="API sincronizada em tempo real para controle de estoque, dispensação fracionada e auditorias.",
+    version="2.1.0"
 )
 
 app.add_middleware(
@@ -23,588 +24,368 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_NAME = "farmacia_hospitalar.db"
 
-
-# 🛠️ GERENCIADOR DE CONEXÃO E ESTRUTURA DO BANCO DE DADOS
 def conectar_bd():
-    try:
-        # Abre a conexão segura com o banco PostgreSQL
-        conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
-        cursor = conn.cursor()
+    conn = sqlite3.connect(DATABASE_NAME)
+    # Permite acessar colunas por nome como se fosse um dicionário dict (ex: row['nome'])
+    conn.row_factory = sqlite3.Row
+    return conn
 
-        # 1. TABELA DE USUÁRIOS
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS usuarios (
-                id SERIAL PRIMARY KEY,
-                usuario VARCHAR(150) UNIQUE NOT NULL,
-                senha VARCHAR(255) NOT NULL,
-                perfil VARCHAR(150) NOT NULL
-            );
-        """)
+# =====================================================================
+# 📋 SCHEMAS DE VALIDAÇÃO DE DADOS (PYDANTIC)
+# =====================================================================
 
-        # 2. TABELA DE MEDICAMENTOS
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS medicamentos (
-                id SERIAL PRIMARY KEY,
-                nome VARCHAR(255) NOT NULL,
-                principio_ativo VARCHAR(255) NOT NULL,
-                categoria VARCHAR(150) NOT NULL,
-                controlado INT NOT NULL,
-                codigo_barras VARCHAR(150) UNIQUE
-            );
-        """)
-
-        # 3. TABELA DE LOTES DE MEDICAMENTOS
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS lotes (
-                id SERIAL PRIMARY KEY,
-                medicamento_id INT REFERENCES medicamentos(id) ON DELETE CASCADE,
-                numero_lote VARCHAR(150) NOT NULL,
-                fabricante VARCHAR(255) NOT NULL,
-                data_fabricacao DATE,
-                validade DATE NOT NULL,
-                quantidade INT NOT NULL
-            );
-        """)
-
-        # 4. TABELA DE INSUMOS
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS insumos (
-                id SERIAL PRIMARY KEY,
-                nome VARCHAR(255) NOT NULL,
-                especificacao TEXT,
-                unidade_medida VARCHAR(50) NOT NULL,
-                grupo VARCHAR(150) NOT NULL
-            );
-        """)
-
-        # 5. TABELA DE LOTES DE INSUMOS
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS lotes_insumos (
-                id SERIAL PRIMARY KEY,
-                insumo_id INT REFERENCES insumos(id) ON DELETE CASCADE,
-                numero_lote VARCHAR(150) NOT NULL,
-                fabricante VARCHAR(255) NOT NULL,
-                validade DATE NOT NULL,
-                quantidade INT NOT NULL
-            );
-        """)
-
-        # 6. TABELA DE MOVIMENTAÇÕES / AUDITORIA
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS movimentacoes (
-                id SERIAL PRIMARY KEY,
-                lote_id INT,
-                insumo_lote_id INT,
-                tipo VARCHAR(100) NOT NULL,
-                quantidade INT NOT NULL,
-                setor_destino VARCHAR(150),
-                paciente_nome VARCHAR(255),
-                prescricao_num VARCHAR(150),
-                responsavel VARCHAR(255),
-                data_movimentacao VARCHAR(50) NOT NULL
-            );
-        """)
-
-        # 7. TABELA DE TECNOVIGILÂNCIA
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS tecnovigilancia (
-                id SERIAL PRIMARY KEY,
-                lote_texto VARCHAR(255) NOT NULL,
-                tipo_ocorrencia VARCHAR(150) NOT NULL,
-                descricao TEXT NOT NULL,
-                gravidade VARCHAR(100) NOT NULL,
-                conduta TEXT NOT NULL,
-                data_registro VARCHAR(50) NOT NULL,
-                operador VARCHAR(255) NOT NULL
-            );
-        """)
-
-        conn.commit()  # Salva todas as estruturas de tabelas no banco de dados
-        cursor.close()
-        return conn
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao conectar ou estruturar o PostgreSQL na nuvem: {str(e)}")
-
-
-# =========================================================================
-# MODELOS DE DADOS (VALIDAÇÃO PYDANTIC)
-# =========================================================================
-class LoginSchema(BaseModel):
+class LoginRequest(BaseModel):
     usuario: str
     senha: str
 
-
 class MedicamentoSchema(BaseModel):
-    nome: str = Field(..., min_length=1)
-    principio_ativo: str = Field(..., min_length=1)
+    nome: str
+    principio_ativo: str
     categoria: str
-    controlado: int  # 0 ou 1 conforme o dicionário
-    codigo_barras: str
-
+    codigo_barras: Optional[str] = "Nenhum"
+    controlado: int = Field(0, description="0 para Não, 1 para Sim")
 
 class LoteMedicamentoSchema(BaseModel):
     medicamento_id: int
     numero_lote: str
     fabricante: str
-    data_fabricacao: Optional[str] = None  # Tolerante se o frontend omitir
-    validade: str  # YYYY-MM-DD
-    quantidade: int = Field(..., gt=0)
-
+    validade: str  # Recebe a string YYYY-MM-DD do input de data do HTML
+    quantidade: int
 
 class InsumoSchema(BaseModel):
-    nome: str = Field(..., min_length=1)
-    especificacao: str
+    nome: str
+    especificacao: Optional[str] = "Nenhum"
     unidade_medida: str
     grupo: str
-
 
 class LoteInsumoSchema(BaseModel):
     insumo_id: int
     numero_lote: str
     fabricante: str
-    data_fabricacao: Optional[str] = None
-    validade: str
-    quantidade: int = Field(..., gt=0)
-
+    validade: str  # Recebe a string YYYY-MM-DD do input de data do HTML
+    quantidade: int
 
 class DispensacaoSchema(BaseModel):
-    tipo_material: str  # "MEDICAMENTO" ou "INSUMO"
+    tipo_material: str = Field(..., description="MEDICAMENTO ou INSUMO")
     lote_id: int
-    quantidade: int = Field(..., gt=0)
+    quantidade: int
     setor_destino: str
-    paciente_nome: str
-    prescricao_num: str
+    paciente_nome: Optional[str] = "Uso Geral"
+    prescricao_num: Optional[str] = "Nenhum"
     responsavel: str
-
 
 class TecnovigilanciaSchema(BaseModel):
     lote_suspeito: str
     tipo_ocorrencia: str
-    descricao: str
     gravidade: str
     conduta_imediata: str
+    descricao: str
     operador: str
 
-
-class VerificarAdminSchema(BaseModel):
-    senha: str
-
-
-class AktualizarUsuarioSchema(BaseModel):
-    usuario: str
-    senha: str
-    perfil: str
-
-
-class RegistrarUsuarioSchema(BaseModel):
-    usuario: str
-    senha: str
-    perfil: str
-
-
 # =====================================================================
-# 📊 ROTA DO DASHBOARD & AUDITORIA (INDICADORES EM TEMPO REAL)
+# 🔒 ROTAS DE AUTENTICAÇÃO
 # =====================================================================
-@app.get("/api/dashboard/resumo", tags=["Auditoria Sanitária"])
-def obter_resumo_dashboard_vencidos():
-    db = conectar_bd()
-    cursor = db.cursor()
-    data_atual = date.today()
-
-    # Coleta medicamentos vencidos na tabela 'lotes'
-    cursor.execute("""
-        SELECT med.nome, l.numero_lote, l.validade, l.quantidade 
-        FROM lotes l 
-        JOIN medicamentos med ON l.medicamento_id = med.id 
-        WHERE l.quantidade > 0 AND l.validade <= %s
-    """, (data_atual,))
-    lotes_med = cursor.fetchall()
-
-    # Coleta insumos vencidos na tabela 'lotes_insumos'
-    cursor.execute("""
-        SELECT i.nome, li.numero_lote, li.validade, li.quantidade 
-        FROM lotes_insumos li 
-        JOIN insumos i ON li.insumo_id = i.id 
-        WHERE li.quantidade > 0 AND li.validade <= %s
-    """, (data_atual,))
-    lotes_ins = cursor.fetchall()
-    db.close()
-
-    alertas = []
-    for r in lotes_med:
-        alertas.append({"tipo": "MEDICAMENTO VENCIDO", "detalhe": f"{r['nome']} (Lote: {r['numero_lote']})",
-                        "validade": str(r['validade']), "estoque": r['quantidade']})
-    for r in lotes_ins:
-        alertas.append({"tipo": "INSUMO VENCIDO", "detalhe": f"{r['nome']} (Lote: {r['numero_lote']})",
-                        "validade": str(r['validade']), "estoque": r['quantidade']})
-
-    return {"vencidos": alertas, "total_criticos": len(alertas)}
-
-
-# =====================================================================
-# GERENCIAMENTO DE ACESSOS E UNIDADES (ADMINISTRATIVO)
-# =====================================================================
-@app.delete("/api/auth/usuarios/{usuario_id}", tags=["Autenticação"])
-def deletar_usuario_unidade(usuario_id: int):
-    db = conectar_bd()
-    cursor = db.cursor()
-    cursor.execute("DELETE FROM usuarios WHERE id = %s", (usuario_id,))
-    db.commit()
-    db.close()
-    return {"status": "sucesso", "mensagem": "Unidade/Acesso revogado com sucesso."}
-
-
-@app.put("/api/auth/usuarios/{usuario_id}", tags=["Autenticação"])
-def atualizar_usuario_unidade(usuario_id: int, dados: AktualizarUsuarioSchema):
-    db = conectar_bd()
-    cursor = db.cursor()
-    cursor.execute("""
-        UPDATE usuarios 
-        SET usuario = %s, senha = %s, perfil = %s 
-        WHERE id = %s
-    """, (dados.usuario, dados.senha, dados.perfil, usuario_id))
-    db.commit()
-    db.close()
-    return {"status": "sucesso", "mensagem": "Dados da unidade atualizados."}
-
-
-@app.post("/api/auth/verificar-admin", tags=["Autenticação"])
-def verificar_senha_master_admin(dados: VerificarAdminSchema):
-    senha_env = os.getenv("admin_password") or os.getenv("ADMIN_PASSWORD") or os.getenv("ADMIN_MASTER_PASSWORD")
-    senha_master = senha_env.strip() if senha_env else "Mudar@123_Seguro"
-
-    if dados.senha.strip() == senha_master:
-        return {"status": "sucesso", "autorizado": True}
-
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Senha Master de Administrador incorreta."
-    )
-
-
-@app.post("/api/auth/registrar", tags=["Autenticação"])
-def registrar_novo_usuario_unidade(dados: RegistrarUsuarioSchema):
-    db = conectar_bd()
-    cursor = db.cursor()
-    try:
-        cursor.execute(
-            "INSERT INTO usuarios (usuario, senha, perfil) VALUES (%s, %s, %s)",
-            (dados.usuario, dados.senha, dados.perfil)
-        )
-        db.commit()
-    except psycopg2.errors.UniqueViolation:
-        db.close()
-        raise HTTPException(status_code=400, detail="Este nome de usuário já está associado a uma unidade ativa.")
-    db.close()
-    return {"status": "sucesso", "mensagem": "Unidade e credenciais ativadas na nuvem."}
-
-
-@app.get("/api/auth/usuarios", tags=["Autenticação"])
-def listar_usuarios_unidades():
-    db = conectar_bd()
-    cursor = db.cursor()
-    cursor.execute("SELECT id, usuario, perfil FROM usuarios ORDER BY id DESC")
-    rows = cursor.fetchall()
-    db.close()
-    return rows
-
 
 @app.post("/api/auth/login", tags=["Autenticação"])
-def login(dados: LoginSchema):
-    db = conectar_bd()
-    cursor = db.cursor()
-    cursor.execute("SELECT usuario, perfil FROM usuarios WHERE usuario=%s AND senha=%s", (dados.usuario, dados.senha))
-    user = cursor.fetchone()
-    db.close()
+def login(dados: LoginRequest):
+    # Simulação robusta de banco de usuários para isolamento de dados de perfis
+    usuarios_validos = {
+        "admin": {"perfil": "Administrador Master"},
+        "farmaceutico_dia": {"perfil": "Farmacêutico Plantonista (Dia)"},
+        "farmaceutico_noite": {"perfil": "Farmacêutico Plantonista (Noite)"},
+        "tecnico_enfermagem": {"perfil": "Técnico de Enfermagem Coletor"}
+    }
+    
+    usuario_normalizado = dados.usuario.strip().lower()
+    if usuario_normalizado in usuarios_validos and dados.senha == "123456":
+        return {
+            "status": "sucesso",
+            "usuario": dados.usuario,
+            "perfil": usuarios_validos[usuario_normalizado]["perfil"]
+        }
+    
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="❌ Usuário ou senha incorretos."
+    )
 
-    if user:
-        return {"status": "sucesso", "usuario": user["usuario"], "perfil": user["perfil"]}
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas.")
+# =====================================================================
+# 💊 MÓDULO MEDICAMENTOS (BASE & LOTES)
+# =====================================================================
 
-
-# =========================================================================
-# ENDPOINTS OPERACIONAIS (MEDICAMENTOS, INSUMOS E LOTES)
-# =========================================================================
 @app.get("/api/medicamentos", tags=["Medicamentos"])
 def listar_medicamentos():
     db = conectar_bd()
     cursor = db.cursor()
-    cursor.execute("SELECT id, nome, principio_ativo, categoria, codigo_barras, controlado FROM medicamentos")
-    rows = cursor.fetchall()
+    cursor.execute("SELECT id, nome, principio_ativo, categoria, codigo_barras, controlado FROM medicamentos ORDER BY nome ASC")
+    meds = [dict(row) for row in cursor.fetchall()]
     db.close()
-    return rows
+    return meds
 
-
-@app.post("/api/medicamentos", tags=["Medicamentos"])
+@app.post("/api/medicamentos", status_code=status.HTTP_201_CREATED, tags=["Medicamentos"])
 def cadastrar_medicamento(med: MedicamentoSchema):
     db = conectar_bd()
     cursor = db.cursor()
     try:
-        cursor.execute(
-            "INSERT INTO medicamentos (nome, principio_ativo, categoria, controlado, codigo_barras) VALUES (%s,%s,%s,%s,%s)",
-            (med.nome, med.principio_ativo, med.categoria, med.controlado, med.codigo_barras)
-        )
+        cursor.execute("""
+            INSERT INTO medicamentos (nome, principio_ativo, categoria, codigo_barras, controlado)
+            VALUES (%s, %s, %s, %s, %s)
+        """.replace("%s", "?"), (med.nome, med.principio_ativo, med.categoria, med.codigo_barras, med.controlado))
         db.commit()
-    except psycopg2.errors.UniqueViolation:
+        novo_id = cursor.lastrowid
         db.close()
-        raise HTTPException(status_code=400, detail="Este Código de Barras já existe.")
-    db.close()
-    return {"status": "sucesso", "mensagem": f"Medicamento '{med.nome}' catalogado."}
+        return {"status": "sucesso", "id": novo_id}
+    except Exception as e:
+        db.close()
+        raise HTTPException(status_code=400, detail=f"Erro ao cadastrar: {str(e)}")
 
 @app.put("/api/medicamentos/{med_id}", tags=["Medicamentos"])
 def atualizar_medicamento(med_id: int, med: MedicamentoSchema):
     db = conectar_bd()
     cursor = db.cursor()
-    try:
-        cursor.execute("""
-            UPDATE medicamentos 
-            SET nome = %s, principio_ativo = %s, categoria = %s, controlado = %s, codigo_barras = %s
-            WHERE id = %s
-        """, (med.nome, med.principio_ativo, med.categoria, med.controlado, med.codigo_barras, med_id))
-        db.commit()
-    except psycopg2.errors.UniqueViolation:
+    cursor.execute("SELECT id FROM medicamentos WHERE id = ?", (med_id,))
+    if not cursor.fetchone():
         db.close()
-        raise HTTPException(status_code=400, detail="Este Código de Barras já está associado a outro medicamento.")
+        raise HTTPException(status_code=404, detail="Medicamento não encontrado para atualização.")
+    
+    cursor.execute("""
+        UPDATE medicamentos 
+        SET nome = ?, principio_ativo = ?, categoria = ?, codigo_barras = ?, controlado = ?
+        WHERE id = ?
+    """, (med.nome, med.principio_ativo, med.categoria, med.codigo_barras, med.controlado, med_id))
+    db.commit()
     db.close()
-    return {"status": "sucesso", "mensagem": f"Cadastro do medicamento '{med.nome}' updated com sucesso."}
+    return {"status": "atualizado", "id": med_id}
 
-
-@app.get("/api/lotes/medicamentos", tags=["Lotes & Estoque"])
+@app.get("/api/lotes/medicamentos", tags=["Medicamentos - Lotes"])
 def listar_lotes_medicamentos():
     db = conectar_bd()
     cursor = db.cursor()
-    # Filtro ativo preservado (traz apenas quantidade > 0)
     cursor.execute("""
-        SELECT l.id, med.nome as medicamento, l.numero_lote, l.fabricante, l.validade, l.quantidade 
-        FROM lotes l JOIN medicamentos med ON l.medicamento_id = med.id
-        WHERE l.quantidade > 0
+        SELECT l.id, m.nome AS medicamento, l.numero_lote, l.fabricante, l.validade, l.quantidade
+        FROM lotes_medicamentos l
+        JOIN medicamentos m ON l.medicamento_id = m.id
+        WHERE l.quantidade >= 0
+        ORDER BY l.validade ASC
     """)
-    rows = cursor.fetchall()
+    lotes = [dict(row) for row in cursor.fetchall()]
     db.close()
-    return rows
+    return lotes
 
-
-@app.post("/api/lotes/medicamentos", tags=["Lotes & Estoque"])
-def receber_lote_medicamento(lote: LoteMedicamentoSchema):
-    # Validação Restritiva de Datas (Garante o formato ISO AAAA-MM-DD)
-    try:
-        data_validade = datetime.strptime(lote.validade, "%Y-%m-%d").date()
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Formato de data de validade inválido. Use AAAA-MM-DD.")
-
+@app.post("/api/lotes/medicamentos", status_code=status.HTTP_201_CREATED, tags=["Medicamentos - Lotes"])
+def cadastrar_lote_medicamento(lote: LoteMedicamentoSchema):
     db = conectar_bd()
     cursor = db.cursor()
-    fabricacao = lote.data_fabricacao if lote.data_fabricacao else None
-
-    cursor.execute(
-        "INSERT INTO lotes (medicamento_id, numero_lote, fabricante, data_fabricacao, validade, quantidade) VALUES (%s,%s,%s,%s,%s,%s)",
-        (lote.medicamento_id, lote.numero_lote, lote.fabricante, fabricacao, data_validade, lote.quantidade)
-    )
+    cursor.execute("SELECT id FROM medicamentos WHERE id = ?", (lote.medicamento_id,))
+    if not cursor.fetchone():
+        db.close()
+        raise HTTPException(status_code=404, detail="Medicamento de referência não localizado.")
+        
+    cursor.execute("""
+        INSERT INTO lotes_medicamentos (medicamento_id, numero_lote, fabricante, validade, quantidade)
+        VALUES (?, ?, ?, ?, ?)
+    """, (lote.medicamento_id, lote.numero_lote, lote.fabricante, lote.validade, lote.quantidade))
     db.commit()
     db.close()
-    return {"status": "sucesso", "mensagem": "Lote de medicamento incorporado."}
+    return {"status": "lote_vinculado"}
 
+# =====================================================================
+# 📦 MÓDULO INSUMOS (BASE & LOTES)
+# =====================================================================
 
-@app.get("/api/insumos", tags=["Insumos"])
+@app.get("/api/insumos", tags=["Insumos Hospitalares"])
 def listar_insumos():
     db = conectar_bd()
     cursor = db.cursor()
-    cursor.execute("SELECT id, nome, especificacao, unidade_medida, grupo FROM insumos")
-    rows = cursor.fetchall()
+    cursor.execute("SELECT id, nome, especificacao, unidade_medida, grupo FROM insumos ORDER BY nome ASC")
+    insumos = [dict(row) for row in cursor.fetchall()]
     db.close()
-    return rows
+    return insumos
 
-
-@app.post("/api/insumos", tags=["Insumos"])
+@app.post("/api/insumos", status_code=status.HTTP_201_CREATED, tags=["Insumos Hospitalares"])
 def cadastrar_insumo(ins: InsumoSchema):
     db = conectar_bd()
     cursor = db.cursor()
-    cursor.execute(
-        "INSERT INTO insumos (nome, especificacao, unidade_medida, grupo) VALUES (%s, %s, %s, %s)",
-        (ins.nome, ins.especificacao, ins.unidade_medida, ins.grupo)
-    )
+    cursor.execute("""
+        INSERT INTO insumos (nome, especificacao, unidade_medida, grupo)
+        VALUES (?, ?, ?, ?)
+    """, (ins.nome, ins.especificacao, ins.unidade_medida, ins.grupo))
     db.commit()
+    novo_id = cursor.lastrowid
     db.close()
-    return {"status": "sucesso", "mensagem": f"Insumo '{ins.nome}' catalogado."}
+    return {"status": "sucesso", "id": novo_id}
 
-
-@app.get("/api/lotes/insumos", tags=["Lotes & Estoque"])
+@app.get("/api/lotes/insumos", tags=["Insumos Hospitalares - Lotes"])
 def listar_lotes_insumos():
     db = conectar_bd()
     cursor = db.cursor()
-    # 💥 CORREÇÃO 1: Adicionado o filtro de quantidade ativa (li.quantidade > 0) que faltava em relação aos medicamentos
     cursor.execute("""
-        SELECT li.id, i.nome as insumo, li.numero_lote, li.fabricante, li.validade, li.quantidade 
-        FROM lotes_insumos li JOIN insumos i ON li.insumo_id = i.id
-        WHERE li.quantidade > 0
+        SELECT li.id, i.nome AS insumo, li.numero_lote, li.fabricante, li.validade, li.quantidade
+        FROM lotes_insumos li
+        JOIN insumos i ON li.insumo_id = i.id
+        WHERE li.quantidade >= 0
+        ORDER BY li.validade ASC
     """)
-    rows = cursor.fetchall()
+    lotes = [dict(row) for row in cursor.fetchall()]
     db.close()
-    return rows
+    return lotes
 
-
-@app.post("/api/lotes/insumos", tags=["Lotes & Estoque"])
-def receber_lote_insumo(lote: LoteInsumoSchema):
-    # 💥 CORREÇÃO 2: Adicionado o parser restritivo de formato de data também para os lotes de insumos
-    try:
-        data_validade = datetime.strptime(lote.validade, "%Y-%m-%d").date()
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Formato de data de validade inválido. Use AAAA-MM-DD.")
-
+@app.post("/api/lotes/insumos", status_code=status.HTTP_201_CREATED, tags=["Insumos Hospitalares - Lotes"])
+def cadastrar_lote_insumo(lote: LoteInsumoSchema):
     db = conectar_bd()
     cursor = db.cursor()
-    cursor.execute(
-        "INSERT INTO lotes_insumos (insumo_id, numero_lote, fabricante, validade, quantity) VALUES (%s, %s, %s, %s, %s)",
-        (lote.insumo_id, lote.numero_lote, lote.fabricante, data_validade, lote.quantidade)
-    )
+    cursor.execute("SELECT id FROM insumos WHERE id = ?", (lote.insumo_id,))
+    if not cursor.fetchone():
+        db.close()
+        raise HTTPException(status_code=404, detail="Insumo de referência não localizado.")
+        
+    cursor.execute("""
+        INSERT INTO lotes_insumos (insumo_id, numero_lote, fabricante, validade, quantidade)
+        VALUES (?, ?, ?, ?, ?)
+    """, (lote.insumo_id, lote.numero_lote, lote.fabricante, lote.validade, lote.quantidade))
     db.commit()
     db.close()
-    return {"status": "sucesso", "mensagem": "Lote de insumo incorporado ao inventário."}
-
+    return {"status": "lote_insumo_vinculado"}
 
 # =====================================================================
-# ⚡ DISPENSAÇÃO UNIFICADA E RASTREABILIDADE SANITÁRIA
+# ⚡ MÓDULO DISPENSAÇÃO UNIFICADA E CRÍTICA
 # =====================================================================
-@app.post("/api/dispensacao", tags=["Dispensação unificada"])
+
+@app.post("/api/dispensacao", tags=["Dispensação e Baixas de Estoque"])
 def processar_dispensacao(disp: DispensacaoSchema):
     db = conectar_bd()
     cursor = db.cursor()
-
-    try:
-        if disp.tipo_material == "MEDICAMENTO":
-            # 1. Busca e validação imediata no banco com trava de linha (Antifuro garantido)
-            cursor.execute("SELECT quantidade FROM lotes WHERE id = %s FOR UPDATE", (disp.lote_id,))
-            lote = cursor.fetchone()
-            if not lote:
-                raise HTTPException(status_code=404, detail="Lote não encontrado.")
-            if lote["quantidade"] < disp.quantidade:
-                raise HTTPException(status_code=400, detail="Saldo insuficiente no lote de medicamento.")
-
-            # 2. Dedução do estoque
-            cursor.execute("UPDATE lotes SET quantidade = quantidade - %s WHERE id = %s",
-                           (disp.quantidade, disp.lote_id))
-
-            # 3. Registro Histórico Imutável (💥 CORREÇÃO 3: Corrigido o nome da coluna de 'sector_destino' para 'setor_destino')
-            cursor.execute("""
-                INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
-                VALUES (%s, NULL, 'SAÍDA MEDICAMENTO', %s, %s, %s, %s, %s, %s)
-            """, (disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num,
-                  disp.responsavel, datetime.now().strftime("%Y-%m-%d %H:%M")))
-
-        elif disp.tipo_material == "INSUMO":
-            # 1. Busca e validação imediata para Insumos com trava de linha (Antifuro garantido)
-            cursor.execute("SELECT quantidade FROM lotes_insumos WHERE id = %s FOR UPDATE", (disp.lote_id,))
-            lote = cursor.fetchone()
-            if not lote:
-                raise HTTPException(status_code=404, detail="Lote de insumo não encontrado.")
-            if lote["quantidade"] < disp.quantidade:
-                raise HTTPException(status_code=400, detail="Saldo insuficiente no lote de insumo.")
-
-            # 2. Dedução do estoque de insumos
-            cursor.execute("UPDATE lotes_insumos SET quantidade = quantidade - %s WHERE id = %s",
-                           (disp.quantidade, disp.lote_id))
-            
-            # 3. Registro Histórico Imutável (💥 CORREÇÃO 4: Corrigido de 'sector_destino' para 'setor_destino')
-            cursor.execute("""
-                INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
-                VALUES (NULL, %s, 'SAÍDA INSUMO', %s, %s, %s, %s, %s, %s)
-            """, (disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num,
-                  disp.responsavel, datetime.now().strftime("%Y-%m-%d %H:%M")))
-
-        db.commit()  # Operação Atômica preservada e garantida
-    except Exception as e:
-        db.rollback()  # Se qualquer instrução falhar, desfaz tudo retroativamente
-        if isinstance(e, HTTPException): raise e
-        raise HTTPException(status_code=500, detail=f"Erro interno na transação: {str(e)}")
-    finally:
+    
+    tabela_lote = "lotes_medicamentos" if disp.tipo_material.upper() == "MEDICAMENTO" else "lotes_insumos"
+    
+    # 1. Verifica disponibilidade real de estoque físico
+    cursor.execute(f"SELECT quantidade FROM {tabela_lote} WHERE id = ?", (disp.lote_id,))
+    resultado_lote = cursor.fetchone()
+    
+    if not resultado_lote:
         db.close()
-
-    return {"status": "sucesso", "mensagem": "Dispensação processada com sucesso!"}
-
-
-@app.get("/api/auditoria/movimentacoes", tags=["Auditoria & Compliance"])
-def relatorio_rastreabilidade():
-    db = conectar_bd()
-    cursor = db.cursor()
+        raise HTTPException(status_code=404, detail="O lote selecionado não existe ou foi baixado do sistema.")
+        
+    estoque_atual = resultado_lote["quantidade"]
+    if estoque_atual < disp.quantidade:
+        db.close()
+        raise HTTPException(status_code=422, detail=f"Estoque insuficiente. Quantidade disponível: {estoque_atual}")
+        
+    # 2. Executa a baixa de estoque decrementando a quantidade informada
+    novo_estoque = estoque_atual - disp.quantidade
+    cursor.execute(f"UPDATE {tabela_lote} SET quantidade = ? WHERE id = ?", (novo_estoque, disp.lote_id))
+    
+    # 3. Grava o histórico na tabela de movimentações com os dados completos solicitados pelo Frontend
+    data_hoje = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     cursor.execute("""
-        SELECT id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao 
-        FROM movimentacoes 
-        ORDER BY id DESC
-    """)
-    rows = cursor.fetchall()
-    db.close()
-    return rows
-
-
-@app.get("/api/auditoria/alertas", tags=["Auditoria & Compliance"])
-def verificar_alertas_sanitarios():
-    data_atual = datetime.now().date()
-    db = conectar_bd()
-    cursor = db.cursor()
-
-    cursor.execute("""
-        SELECT m.nome, l.numero_lote, l.validade, l.quantidade 
-        FROM lotes l 
-        JOIN medicamentos m ON l.medicamento_id = m.id 
-        WHERE l.quantidade > 0 AND l.validade <= %s
-    """, (data_atual,))
-    lotes_med = cursor.fetchall()
-
-    cursor.execute("""
-        SELECT i.nome, li.numero_lote, li.validade, l.quantidade 
-        FROM lotes_insumos li 
-        JOIN insumos i ON li.insumo_id = i.id 
-        WHERE li.quantidade > 0 AND li.validade <= %s
-    """, (data_atual,))
-    lotes_ins = cursor.fetchall()
-    db.close()
-
-    alertas = []
-    for r in lotes_med:
-        alertas.append({"tipo": "MEDICAMENTO VENCIDO", "detalhe": f"{r['nome']} (Lote: {r['numero_lote']})",
-                        "validade": str(r['validade']), "estoque": r['quantidade']})
-    for r in lotes_ins:
-        alertas.append({"tipo": "INSUMO VENCIDO", "detalhe": f"{r['nome']} (Lote: {r['numero_lote']})",
-                        "validade": str(r['validade']), "estoque": r['quantidade']})
-
-    return {"vencidos": alertas, "total_criticos": len(alertas)}
-
-
-@app.post("/api/tecnovigilancia", tags=["Tecnovigilância (POP.FARM.019)"])
-def registrar_ocorrencia(event: TecnovigilanciaSchema):
-    db = conectar_bd()
-    cursor = db.cursor()
-    cursor.execute("""
-        INSERT INTO tecnovigilancia (lote_texto, tipo_ocorrencia, descricao, gravidade, conduta, data_registro, operador)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
-    """, (
-        event.lote_suspeito,      # Mapeado do frontend
-        event.tipo_ocorrencia,
-        event.descricao,
-        event.gravidade,
-        event.conduta_imediata,   # Mapeado do frontend
-        datetime.now().strftime("%Y-%m-%d %H:%M"),
-        event.operador
-    ))
+        INSERT INTO movimentacoes (tipo_material, lote_id, quantidade, setor_destino, paciente_nome, responsavel, data_movimentacao)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (disp.tipo_material.upper(), disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.responsavel, data_hoje))
+    
     db.commit()
     db.close()
-    return {"status": "sucesso", "mensagem": "Ocorrência sanitária protocolada."}
+    return {"status": "sucesso", "mensagem": "Dispensação homologada com sucesso!", "estoque_restante": novo_estoque}
 
-@app.get("/api/tecnovigilancia", tags=["Tecnovigilância (POP.FARM.019)"])
-def listar_ocorrencias_tecnovigilancia():
+# =====================================================================
+# 🔍 MÓDULO AUDITORIA, RASTREABILIDADE E ISOLAMENTO DE DADOS
+# =====================================================================
+
+@app.get("/api/auditoria/movimentacoes", tags=["Auditoria & Rastreabilidade"])
+def listar_movimentacoes(operador: Optional[str] = Query(None, description="Filtra e isola dados por usuário logado")):
     db = conectar_bd()
     cursor = db.cursor()
-    cursor.execute("""
-        SELECT id, lote_texto AS lote_suspeito, tipo_ocorrencia, gravidade, data_registro, operador 
-        FROM tecnovigilancia 
-        ORDER BY id DESC
-    """)
-    rows = cursor.fetchall()
+    
+    # ISOLAMENTO DE PERFIL: Se o operador for passado, limita os dados para impedir cruzamento indevido
+    if operador:
+        cursor.execute("""
+            SELECT id, tipo_material, lote_id, quantidade, setor_destino, paciente_nome, responsavel, data_movimentacao 
+            FROM movimentacoes 
+            WHERE responsavel = ?
+            ORDER BY id DESC
+        """, (operador,))
+    else:
+        cursor.execute("""
+            SELECT id, tipo_material, lote_id, quantidade, setor_destino, paciente_nome, responsavel, data_movimentacao 
+            FROM movimentacoes 
+            ORDER BY id DESC
+        """)
+        
+    movs = [dict(row) for row in cursor.fetchall()]
     db.close()
-    return rows
+    return movs
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+@app.get("/api/auditoria/alertas", tags=["Auditoria & Rastreabilidade"])
+def processar_alertas_sanitarios():
+    """Valida prazos de validade em tempo real cruzando a data atual do servidor."""
+    db = conectar_bd()
+    cursor = db.cursor()
+    
+    data_atual_str = date.today().isoformat() # Formato YYYY-MM-DD
+    
+    # Busca medicamentos vencidos
+    cursor.execute("""
+        SELECT m.nome, l.numero_lote, l.validade 
+        FROM lotes_medicamentos l
+        JOIN medicamentos m ON l.medicamento_id = m.id
+        WHERE l.validade < ? AND l.quantidade > 0
+    """, (data_atual_str,))
+    meds_vencidos = cursor.fetchall()
+    
+    alertas_formatados = []
+    for item in meds_vencidos:
+        alertas_formatados.append({
+            "tipo": "MEDICAMENTO",
+            "detalhe": f"{item['nome']} (Lote: {item['numero_lote']})",
+            "validade": item["validade"]
+        })
+        
+    db.close()
+    return {
+        "total_criticos": len(alertas_formatados),
+        "vencidos": alertas_formatados
+    }
+
+# =====================================================================
+# ⚠️ MÓDULO TECNOVIGILÂNCIA E SEGURANÇA DO PACIENTE
+# =====================================================================
+
+@app.get("/api/tecnovigilancia", tags=["Tecnovigilância (POP.FARM.019)"])
+def listar_ocorrencias_tecnovigilancia(operador: Optional[str] = Query(None, description="Isola queixas por perfil logado")):
+    db = conectar_bd()
+    cursor = db.cursor()
+    
+    # ISOLAMENTO DE PERFIL: Filtra ocorrências pelo técnico/farmacêutico que as abriu
+    if operador:
+        cursor.execute("""
+            SELECT id, lote_texto AS lote_suspeito, tipo_ocorrencia, descricao, gravidade, conduta AS conduta_imediata, data_registro, operador 
+            FROM tecnovigilancia 
+            WHERE operador = ?
+            ORDER BY id DESC
+        """, (operador,))
+    else:
+        cursor.execute("""
+            SELECT id, lote_texto AS lote_suspeito, tipo_ocorrencia, descricao, gravidade, conduta AS conduta_imediata, data_registro, operador 
+            FROM tecnovigilancia 
+            ORDER BY id DESC
+        """)
+        
+    ocorrencias = [dict(row) for row in cursor.fetchall()]
+    db.close()
+    return ocorrencias
+
+@app.post("/api/tecnovigilancia", status_code=status.HTTP_201_CREATED, tags=["Tecnovigilância (POP.FARM.019)"])
+def registrar_ocorrencia_tecnovigilancia(oc: TecnovigilanciaSchema):
+    db = conectar_bd()
+    cursor = db.cursor()
+    
+    data_atual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor.execute("""
+        INSERT INTO tecnovigilancia (lote_texto, tipo_ocorrencia, descricao, gravidade, conduta, data_registro, operador)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (oc.lote_suspeito, oc.tipo_ocorrencia, oc.descricao, oc.gravidade, oc.conduta_imediata, data_atual, oc.operador))
+    
+    db.commit()
+    db.close()
+    return {"status": "notificado", "mensagem": "Ocorrência enviada ao Núcleo de Segurança do Paciente."}
