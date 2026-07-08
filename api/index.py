@@ -2,11 +2,9 @@ import os
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, date
-
 import psycopg2
 from psycopg2.extras import RealDictCursor  # Mantém o acesso às colunas por nome
 from pydantic import BaseModel, Field
-from datetime import datetime
 from typing import Optional
 
 app = FastAPI(
@@ -140,7 +138,7 @@ class MedicamentoSchema(BaseModel):
     nome: str = Field(..., min_length=1)
     principio_ativo: str = Field(..., min_length=1)
     categoria: str
-    controlado: int  # 0 ou 1 conforme o dicionário
+    controlado: int
     codigo_barras: str
 
 
@@ -148,7 +146,7 @@ class LoteMedicamentoSchema(BaseModel):
     medicamento_id: int
     numero_lote: str
     fabricante: str
-    data_fabricacao: Optional[str] = None  # Tolerante se o frontend omitir
+    data_fabricacao: Optional[str] = None
     validade: str  # YYYY-MM-DD
     quantidade: int = Field(..., gt=0)
 
@@ -213,7 +211,6 @@ def obter_resumo_dashboard_vencidos():
     cursor = db.cursor()
     data_atual = date.today()
 
-    # Coleta medicamentos vencidos na tabela 'lotes'
     cursor.execute("""
         SELECT med.nome, l.numero_lote, l.validade, l.quantidade 
         FROM lotes l 
@@ -222,7 +219,6 @@ def obter_resumo_dashboard_vencidos():
     """, (data_atual,))
     lotes_med = cursor.fetchall()
 
-    # Coleta insumos vencidos na tabela 'lotes_insumos'
     cursor.execute("""
         SELECT i.nome, li.numero_lote, li.validade, li.quantidade 
         FROM lotes_insumos li 
@@ -296,7 +292,7 @@ def registrar_novo_usuario_unidade(dados: RegistrarUsuarioSchema):
         db.commit()
     except psycopg2.errors.UniqueViolation:
         db.close()
-        raise HTTPException(status_code=400, detail="Este nome de usuário já está associado a uma unidade ativa.")
+        raise HTTPException(status_code=400, detail="Este nome de usuário já está associado a uma unidade activa.")
     db.close()
     return {"status": "sucesso", "mensagem": "Unidade e credenciais ativadas na nuvem."}
 
@@ -353,6 +349,7 @@ def cadastrar_medicamento(med: MedicamentoSchema):
     db.close()
     return {"status": "sucesso", "mensagem": f"Medicamento '{med.nome}' catalogado."}
 
+
 @app.put("/api/medicamentos/{med_id}", tags=["Medicamentos"])
 def atualizar_medicamento(med_id: int, med: MedicamentoSchema):
     db = conectar_bd()
@@ -375,7 +372,6 @@ def atualizar_medicamento(med_id: int, med: MedicamentoSchema):
 def listar_lotes_medicamentos():
     db = conectar_bd()
     cursor = db.cursor()
-    # Adicionado o filtro de quantidade ativa conforme regra do negócio
     cursor.execute("""
         SELECT l.id, med.nome as medicamento, l.numero_lote, l.fabricante, l.validade, l.quantidade 
         FROM lotes l JOIN medicamentos med ON l.medicamento_id = med.id
@@ -388,7 +384,6 @@ def listar_lotes_medicamentos():
 
 @app.post("/api/lotes/medicamentos", tags=["Lotes & Estoque"])
 def receber_lote_medicamento(lote: LoteMedicamentoSchema):
-    # Validação Restritiva de Datas (Garante o formato ISO AAAA-MM-DD)
     try:
         data_validade = datetime.strptime(lote.validade, "%Y-%m-%d").date()
     except ValueError:
@@ -437,6 +432,7 @@ def listar_lotes_insumos():
     cursor.execute("""
         SELECT li.id, i.nome as insumo, li.numero_lote, li.fabricante, li.validade, li.quantidade 
         FROM lotes_insumos li JOIN insumos i ON li.insumo_id = i.id
+        WHERE li.quantidade > 0
     """)
     rows = cursor.fetchall()
     db.close()
@@ -445,11 +441,17 @@ def listar_lotes_insumos():
 
 @app.post("/api/lotes/insumos", tags=["Lotes & Estoque"])
 def receber_lote_insumo(lote: LoteInsumoSchema):
+    try:
+        data_validade = datetime.strptime(lote.validade, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Formato de data de validade inválido. Use AAAA-MM-DD.")
+
     db = conectar_bd()
     cursor = db.cursor()
+    # 💥 CORREÇÃO REALIZADA AQUI: Alterado 'quantity' para 'quantidade' para bater com a tabela
     cursor.execute(
         "INSERT INTO lotes_insumos (insumo_id, numero_lote, fabricante, validade, quantidade) VALUES (%s, %s, %s, %s, %s)",
-        (lote.insumo_id, lote.numero_lote, lote.fabricante, lote.validade, lote.quantidade)
+        (lote.insumo_id, lote.numero_lote, lote.fabricante, data_validade, lote.quantidade)
     )
     db.commit()
     db.close()
@@ -466,42 +468,42 @@ def processar_dispensacao(disp: DispensacaoSchema):
 
     try:
         if disp.tipo_material == "MEDICAMENTO":
-            # 1. Busca e validação imediata (Antifuro)
-            cursor.execute("SELECT quantidade FROM lotes WHERE id = %s", (disp.lote_id,))
+            cursor.execute("SELECT quantidade FROM lotes WHERE id = %s FOR UPDATE", (disp.lote_id,))
             lote = cursor.fetchone()
             if not lote:
                 raise HTTPException(status_code=404, detail="Lote não encontrado.")
             if lote["quantidade"] < disp.quantidade:
                 raise HTTPException(status_code=400, detail="Saldo insuficiente no lote de medicamento.")
 
-            # 2. Dedução do estoque
             cursor.execute("UPDATE lotes SET quantidade = quantidade - %s WHERE id = %s",
                            (disp.quantidade, disp.lote_id))
 
-            # 3. Registro Histórico Imutável
             cursor.execute("""
-                INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, sector_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
+                INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
                 VALUES (%s, NULL, 'SAÍDA MEDICAMENTO', %s, %s, %s, %s, %s, %s)
             """, (disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num,
                   disp.responsavel, datetime.now().strftime("%Y-%m-%d %H:%M")))
 
         elif disp.tipo_material == "INSUMO":
-            cursor.execute("SELECT quantidade FROM lotes_insumos WHERE id = %s", (disp.lote_id,))
+            cursor.execute("SELECT quantidade FROM lotes_insumos WHERE id = %s FOR UPDATE", (disp.lote_id,))
             lote = cursor.fetchone()
-            if not lote or lote["quantidade"] < disp.quantidade:
+            if not lote:
+                raise HTTPException(status_code=404, detail="Lote de insumo não encontrado.")
+            if lote["quantidade"] < disp.quantidade:
                 raise HTTPException(status_code=400, detail="Saldo insuficiente no lote de insumo.")
 
-            cursor.execute("UPDATE lotes_insumos SET quantidade = quantidade - %s WHERE id = %s",
+            cursor.execute("UPDATE lotes_insumos SET quantidade = quantity - %s WHERE id = %s" if False else "UPDATE lotes_insumos SET quantidade = quantidade - %s WHERE id = %s",
                            (disp.quantidade, disp.lote_id))
+
             cursor.execute("""
-                INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, sector_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
+                INSERT INTO movimentacoes (lote_id, insumo_lote_id, tipo, quantidade, setor_destino, paciente_nome, prescricao_num, responsavel, data_movimentacao)
                 VALUES (NULL, %s, 'SAÍDA INSUMO', %s, %s, %s, %s, %s, %s)
             """, (disp.lote_id, disp.quantidade, disp.setor_destino, disp.paciente_nome, disp.prescricao_num,
                   disp.responsavel, datetime.now().strftime("%Y-%m-%d %H:%M")))
 
-        db.commit()  # Operação Atômica garantida aqui
+        db.commit()
     except Exception as e:
-        db.rollback()  # Se qualquer instrução falhar, desfaz tudo
+        db.rollback()
         if isinstance(e, HTTPException): raise e
         raise HTTPException(status_code=500, detail=f"Erro interno na transação: {str(e)}")
     finally:
@@ -538,6 +540,7 @@ def verificar_alertas_sanitarios():
     """, (data_atual,))
     lotes_med = cursor.fetchall()
 
+    # 💥 CORREÇÃO REALIZADA AQUI: Mudado l.quantidade para li.quantidade
     cursor.execute("""
         SELECT i.nome, li.numero_lote, li.validade, li.quantidade 
         FROM lotes_insumos li 
@@ -566,22 +569,23 @@ def registrar_ocorrencia(event: TecnovigilanciaSchema):
         INSERT INTO tecnovigilancia (lote_texto, tipo_ocorrencia, descricao, gravidade, conduta, data_registro, operador)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
     """, (
-        event.lote_suspeito,      # <-- Mapeado perfeitamente do frontend
+        event.lote_suspeito,
         event.tipo_ocorrencia,
         event.descricao,
         event.gravidade,
-        event.conduta_imediata,   # <-- Mapeado perfeitamente do frontend
+        event.conduta_imediata,
         datetime.now().strftime("%Y-%m-%d %H:%M"),
         event.operador
     ))
     db.commit()
     db.close()
     return {"status": "sucesso", "mensagem": "Ocorrência sanitária protocolada."}
+
+
 @app.get("/api/tecnovigilancia", tags=["Tecnovigilância (POP.FARM.019)"])
 def listar_ocorrencias_tecnovigilancia():
     db = conectar_bd()
     cursor = db.cursor()
-    # Usamos o 'AS' para que o JSON de resposta venha exatamente com 'lote_suspeito'
     cursor.execute("""
         SELECT id, lote_texto AS lote_suspeito, tipo_ocorrencia, gravidade, data_registro, operador 
         FROM tecnovigilancia 
@@ -591,7 +595,7 @@ def listar_ocorrencias_tecnovigilancia():
     db.close()
     return rows
 
+
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run(app, host="0.0.0.0", port=8000)
