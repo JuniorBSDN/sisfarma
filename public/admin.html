@@ -50,7 +50,6 @@
             overflow: hidden;
         }
 
-        /* Barra Lateral Responsiva */
         .sidebar {
             width: 220px;
             background-color: var(--sidebar-bg);
@@ -106,7 +105,6 @@
             margin-bottom: 25px;
         }
 
-        /* Grid de Formulário Responsivo */
         .form-inline-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -138,7 +136,11 @@
             box-sizing: border-box;
         }
 
-        /* Tabelas com Suporte a Rolagem Lateral */
+        .form-group small {
+            color: #666;
+            font-size: 11px;
+        }
+
         .table-container {
             background: white;
             border: 1px solid #b5b5b5;
@@ -201,15 +203,12 @@
         .row-btn.edit { background-color: var(--btn-orange); }
         .row-btn.delete { background-color: var(--btn-red); }
 
-        /* ==========================================
-           📱 MEDIA QUERIES (ADAPTAÇÃO MOBILE)
-           ========================================== */
         @media (max-width: 768px) {
             .main-layout {
                 flex-direction: column;
                 overflow-y: auto;
             }
-            
+
             .sidebar {
                 width: 100%;
                 height: auto;
@@ -220,9 +219,9 @@
                 padding: 10px;
                 gap: 8px;
             }
-            
+
             .menu-group { display: none; }
-            
+
             .menu-btn {
                 white-space: nowrap;
                 width: auto;
@@ -247,7 +246,7 @@
                 grid-template-columns: 1fr;
                 gap: 15px;
             }
-            
+
             .action-btn {
                 width: 100%;
                 justify-content: center;
@@ -291,8 +290,9 @@
 
                         <div class="form-inline-row">
                             <div class="form-group">
-                                <label>Senha do Cliente:</label>
-                                <input type="password" id="adm-unidade-pass" placeholder="Defina a senha de acesso" required>
+                                <label id="label-senha">Senha do Cliente:</label>
+                                <input type="password" id="adm-unidade-pass" placeholder="Defina a senha de acesso">
+                                <small id="dica-senha" style="display:none;">Deixe em branco para manter a senha atual.</small>
                             </div>
                             <div class="form-group">
                                 <label>Perfil Mestre:</label>
@@ -308,7 +308,7 @@
                         <button type="button" id="btn-cancelar-edicao" class="action-btn" style="background-color:#7f8c8d; display:none;" onclick="resetarFormulario()">Cancelar Edição</button>
                     </form>
 
-                    <h4 style="margin-top: 30px; font-size: 13px; color: #333;">Clientes com Acesso Liberado no PostgreSQL</h4>
+                    <h4 style="margin-top: 30px; font-size: 13px; color: #333;">Empresas/Unidades com Acesso Liberado (isoladas entre si no PostgreSQL)</h4>
                     <div class="table-container">
                         <table>
                             <thead>
@@ -332,7 +332,6 @@
     <script>
         const API_URL = "/api";
 
-        // Bloqueio visual imediato por segurança
         document.body.style.display = 'none';
 
         document.addEventListener("DOMContentLoaded", async () => {
@@ -368,7 +367,7 @@
             }
         }
 
-        // 📥 2. LISTAR USUÁRIOS/UNIDADES
+        // 📥 2. LISTAR EMPRESAS/UNIDADES (cada uma é um tenant isolado)
         async function carregarUnidadesCadastradas() {
             try {
                 const res = await fetch(`${API_URL}/auth/usuarios`);
@@ -381,7 +380,6 @@
                 usuarios.forEach(user => {
                     const perfilEscapado = user.perfil.replace(/'/g, "\\'");
                     const usuarioEscapado = user.usuario.replace(/'/g, "\\'");
-                    const senhaEscapada = (user.senha || '').replace(/'/g, "\\'");
 
                     tabela.innerHTML += `
                         <tr>
@@ -390,7 +388,7 @@
                             <td>${user.perfil}</td>
                             <td><span style="color: #10b981; font-weight: bold;">🟢 Ativo</span></td>
                             <td>
-                                <button class="row-btn edit" onclick="prepararEdicao(${user.id}, '${usuarioEscapado}', '${senhaEscapada}', '${perfilEscapado}')">✏️ Editar</button>
+                                <button class="row-btn edit" onclick="prepararEdicao(${user.id}, '${usuarioEscapado}', '${perfilEscapado}')">✏️ Editar</button>
                                 <button class="row-btn delete" onclick="excluirUnidade(${user.id})">🗑️ Excluir</button>
                             </td>
                         </tr>
@@ -411,9 +409,14 @@
             const perfilCombo = document.getElementById("adm-unidade-perfil").value;
             const nomeUnidade = document.getElementById("adm-unidade-nome").value;
 
+            if (!idExistente && !senha) {
+                alert("❌ Defina uma senha para a nova unidade.");
+                return;
+            }
+
             const payload = {
                 usuario: usuario,
-                senha: senha,
+                senha: senha, // Vazio + edição = backend mantém a senha atual (hash preservado)
                 perfil: `${perfilCombo} - ${nomeUnidade}`
             };
 
@@ -433,7 +436,7 @@
                 });
 
                 if (res.ok) {
-                    alert(idExistente ? "Dados da unidade atualizados com sucesso!" : `Acesso liberado para a unidade: ${nomeUnidade}`);
+                    alert(idExistente ? "Dados da unidade atualizados com sucesso!" : `Acesso liberado para a unidade: ${nomeUnidade}. Cada unidade só verá os próprios dados no sistema.`);
                     resetarFormulario();
                     carregarUnidadesCadastradas();
                 } else {
@@ -445,11 +448,11 @@
             }
         });
 
-        // ✏️ 4. PREPARAR INTERFACE PARA EDIÇÃO
-        function prepararEdicao(id, usuario, senha, perfilCompleto) {
+        // ✏️ 4. PREPARAR INTERFACE PARA EDIÇÃO (senha não é mais trafegada em texto puro)
+        function prepararEdicao(id, usuario, perfilCompleto) {
             document.getElementById("adm-unidade-id").value = id;
             document.getElementById("adm-unidade-user").value = usuario;
-            document.getElementById("adm-unidade-pass").value = senha;
+            document.getElementById("adm-unidade-pass").value = "";
 
             let perfilParte = "Farmacêutico Chefe";
             let nomeParte = perfilCompleto;
@@ -463,6 +466,9 @@
             document.getElementById("adm-unidade-perfil").value = perfilParte;
             document.getElementById("adm-unidade-nome").value = nomeParte;
 
+            document.getElementById("label-senha").innerText = "Nova Senha (opcional):";
+            document.getElementById("dica-senha").style.display = "block";
+
             document.getElementById("form-titulo").innerText = "✏️ Alterar Dados da Unidade Cadastrada";
             const btnSubmit = document.getElementById("btn-submit-form");
             btnSubmit.innerText = "💾 Salvar Alterações";
@@ -472,7 +478,7 @@
 
         // 🗑️ 5. EXCLUIR ACESSO DA UNIDADE
         async function excluirUnidade(id) {
-            if (!confirm("⚠️ Tem certeza de que deseja revogar permanentemente o acesso desta unidade hospitalar?")) return;
+            if (!confirm("⚠️ Tem certeza de que deseja revogar permanentemente o acesso desta unidade hospitalar? Todos os dados dela (medicamentos, lotes, movimentações) também deixarão de existir.")) return;
 
             try {
                 const res = await fetch(`${API_URL}/auth/usuarios/${id}`, {
@@ -495,6 +501,8 @@
             document.getElementById("form-admin-cadastro-unidade").reset();
             document.getElementById("adm-unidade-id").value = "";
             document.getElementById("form-titulo").innerText = "Ativação e Cadastro de Nova Unidade Hospitalar";
+            document.getElementById("label-senha").innerText = "Senha do Cliente:";
+            document.getElementById("dica-senha").style.display = "none";
 
             const btnSubmit = document.getElementById("btn-submit-form");
             btnSubmit.innerText = "🚀 Ativar e Liberar Unidade";
