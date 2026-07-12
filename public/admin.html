@@ -173,122 +173,196 @@
     </div>
 
     <script>
-        const API_URL = "/api";
+      const API_URL = "/api";
+let idEmEdicao = null; // Controla se estamos criando ou editando
 
-        // --- 1. PROMPT MASTER DE AUTENTICAÇÃO (Sua segurança original) ---
-        document.addEventListener("DOMContentLoaded", async () => {
-            const senhaDigitada = prompt("🔒 Acesso Restrito! Digite a Senha Master do Painel Administrador:");
-            if (!senhaDigitada) {
-                alert("Acesso Negado.");
-                return;
-            }
+// --- 1. PROMPT MASTER DE AUTENTICAÇÃO ---
+document.addEventListener("DOMContentLoaded", async () => {
+    const senhaDigitada = prompt("🔒 Acesso Restrito! Digite a Senha Master do Painel Administrador:");
+    if (!senhaDigitada) {
+        alert("Acesso Negado.");
+        return;
+    }
 
-            try {
-                // Chama a nossa nova rota Python
-                const res = await fetch(`${API_URL}/auth/verificar-admin`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ senha: senhaDigitada })
-                });
-
-                if (res.ok) {
-                    document.body.style.display = 'block'; // Libera a tela!
-                    carregarUnidades();
-                } else {
-                    alert("❌ Senha Master Inválida!");
-                    window.location.reload();
-                }
-            } catch (err) {
-                console.error(err);
-                alert("Erro ao conectar com a API. (Servidor Offline?)");
-            }
+    try {
+        const res = await fetch(`${API_URL}/auth/verificar-admin`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ senha: senhaDigitada })
         });
 
-        // --- 2. NAVEGAÇÃO SPA ---
-        function changeView(viewId, menuElement) {
-            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-            menuElement.classList.add('active');
-            document.getElementById('view-' + viewId).classList.add('active');
+        if (res.ok) {
+            document.body.style.display = 'block'; 
+            carregarUnidades();
+        } else {
+            alert("❌ Senha Master Inválida!");
+            window.location.reload();
         }
+    } catch (err) {
+        console.error(err);
+        alert("Erro ao conectar com a API.");
+    }
+});
 
-        function toggleModal() {
-            document.getElementById('addTenantModal').classList.toggle('active');
-        }
+// --- 2. NAVEGAÇÃO SPA E MODAL ---
+function changeView(viewId, menuElement) {
+    document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+    menuElement.classList.add('active');
+    document.getElementById('view-' + viewId).classList.add('active');
+}
 
-        // --- 3. CARREGAR DADOS DA API ---
-        async function carregarUnidades() {
-            try {
-                const res = await fetch(`${API_URL}/auth/usuarios`);
-                if (!res.ok) return;
+function toggleModal() {
+    const modal = document.getElementById('addTenantModal');
+    if(modal.classList.contains('active')) {
+        resetarFormulario(); // Limpa ao fechar
+    }
+    modal.classList.toggle('active');
+}
 
-                const usuarios = await res.json();
-                const tbody = document.getElementById("tenant-table-body");
-                tbody.innerHTML = "";
+function resetarFormulario() {
+    document.getElementById("form-admin-cadastro").reset();
+    idEmEdicao = null;
+    document.querySelector("#addTenantModal h3").innerText = "Cadastrar Nova Unidade";
+    document.querySelector("#addTenantModal button[type='submit']").innerText = "Ativar Unidade";
+}
 
-                let ativas = 0, bloqueadas = 0;
+// --- 3. CARREGAR DADOS DA API ---
+async function carregarUnidades() {
+    try {
+        const res = await fetch(`${API_URL}/auth/usuarios`);
+        if (!res.ok) return;
 
-                usuarios.forEach(user => {
-                    if(user.status === 'Ativo') ativas++; else bloqueadas++;
+        const usuarios = await res.json();
+        const tbody = document.getElementById("tenant-table-body");
+        tbody.innerHTML = "";
 
-                    const statusBadge = user.status === 'Ativo' 
-                        ? '<span class="status-badge status-active">Ativo</span>' 
-                        : '<span class="status-badge status-blocked">Bloqueado</span>';
+        let ativas = 0, bloqueadas = 0;
 
-                    tbody.innerHTML += `
-                        <tr>
-                            <td style="color: var(--text-muted); font-weight: 600;">#${user.id}</td>
-                            <td><strong>${user.usuario}</strong></td>
-                            <td>${user.perfil}</td>
-                            <td>${statusBadge}</td>
-                            <td><button style="background: none; border: none; color: var(--primary); cursor: pointer; font-weight: 600;">Bloquear</button></td>
-                        </tr>
-                    `;
-                });
+        usuarios.forEach(user => {
+            if(user.status === 'Ativo') ativas++; else bloqueadas++;
 
-                document.getElementById('dash-ativas').innerText = ativas;
-                document.getElementById('dash-bloqueadas').innerText = bloqueadas;
-            } catch (err) {
-                console.error("Erro ao listar unidades:", err);
-            }
-        }
+            const statusBadge = user.status === 'Ativo' 
+                ? '<span class="status-badge status-active">Ativo</span>' 
+                : '<span class="status-badge status-blocked">Bloqueado</span>';
 
-        // --- 4. CADASTRAR NOVA UNIDADE (Adaptado para o novo modelo) ---
-        document.getElementById("form-admin-cadastro").addEventListener("submit", async (e) => {
-            e.preventDefault();
+            // Escapando dados para evitar quebra no HTML
+            const perfilEscapado = user.perfil.replace(/'/g, "\\'");
+            const usuarioEscapado = user.usuario.replace(/'/g, "\\'");
 
-            const nomeUnidade = document.getElementById("adm-unidade-nome").value;
-            const usuario = document.getElementById("adm-unidade-user").value;
-            const senha = document.getElementById("adm-unidade-pass").value;
-            const perfilCombo = document.getElementById("adm-unidade-perfil").value;
-
-            // Formata o payload para a API quebrar o Hífen perfeitamente
-            const payload = {
-                usuario: usuario,
-                senha: senha,
-                perfil: `${perfilCombo} - ${nomeUnidade}`
-            };
-
-            try {
-                const res = await fetch(`${API_URL}/auth/registrar`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                });
-
-                if (res.ok) {
-                    alert(`Unidade ${nomeUnidade} ativada com sucesso!`);
-                    document.getElementById("form-admin-cadastro").reset();
-                    toggleModal();
-                    carregarUnidades(); // Atualiza a tabela
-                } else {
-                    const erro = await res.json();
-                    alert(`Falha: ${erro.detail || 'Usuário já existe'}`);
-                }
-            } catch (err) {
-                alert("Erro ao conectar com o banco de dados Neon.");
-            }
+            tbody.innerHTML += `
+                <tr>
+                    <td style="color: var(--text-muted); font-weight: 600;">#${user.id}</td>
+                    <td><strong>${user.usuario}</strong></td>
+                    <td>${user.perfil}</td>
+                    <td>${statusBadge}</td>
+                    <td style="display: flex; gap: 10px;">
+                        <button onclick="prepararEdicao(${user.id}, '${usuarioEscapado}', '${perfilEscapado}')" style="background: none; border: none; color: var(--primary); cursor: pointer; font-weight: 600;">Editar</button>
+                        <button onclick="excluirUnidade(${user.id})" style="background: none; border: none; color: var(--danger); cursor: pointer; font-weight: 600;">Excluir</button>
+                    </td>
+                </tr>
+            `;
         });
+
+        document.getElementById('dash-ativas').innerText = ativas;
+        document.getElementById('dash-bloqueadas').innerText = bloqueadas;
+    } catch (err) {
+        console.error("Erro ao listar unidades:", err);
+    }
+}
+
+// --- 4. PREPARAR EDIÇÃO (Trazendo os dados para o Modal) ---
+function prepararEdicao(id, usuario, perfilCompleto) {
+    idEmEdicao = id;
+    document.getElementById("adm-unidade-user").value = usuario;
+    
+    // A senha fica em branco por segurança. Se digitar, altera. Se não, mantém a atual no banco.
+    document.getElementById("adm-unidade-pass").placeholder = "Deixe em branco para manter a atual";
+    document.getElementById("adm-unidade-pass").required = false; 
+
+    // Quebra a string "Cargo - Unidade" para preencher o formulário
+    let perfilParte = "Gerente";
+    let nomeParte = perfilCompleto;
+
+    if (perfilCompleto.includes(" - ")) {
+        const partes = perfilCompleto.split(" - ");
+        perfilParte = partes[0];
+        nomeParte = partes.slice(1).join(" - ");
+    }
+
+    document.getElementById("adm-unidade-perfil").value = perfilParte;
+    document.getElementById("adm-unidade-nome").value = nomeParte;
+
+    // Altera o visual do modal
+    document.querySelector("#addTenantModal h3").innerText = "Editar Unidade";
+    document.querySelector("#addTenantModal button[type='submit']").innerText = "Salvar Alterações";
+    
+    // Abre o modal
+    document.getElementById('addTenantModal').classList.add('active');
+}
+
+// --- 5. CADASTRAR OU ATUALIZAR UNIDADE (POST / PUT) ---
+document.getElementById("form-admin-cadastro").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const nomeUnidade = document.getElementById("adm-unidade-nome").value;
+    const usuario = document.getElementById("adm-unidade-user").value;
+    const senha = document.getElementById("adm-unidade-pass").value;
+    const perfilCombo = document.getElementById("adm-unidade-perfil").value;
+
+    const payload = {
+        usuario: usuario,
+        senha: senha,
+        perfil: `${perfilCombo} - ${nomeUnidade}`
+    };
+
+    try {
+        let url = `${API_URL}/auth/registrar`;
+        let metodo = "POST";
+
+        if (idEmEdicao) {
+            url = `${API_URL}/auth/usuarios/${idEmEdicao}`;
+            metodo = "PUT";
+        }
+
+        const res = await fetch(url, {
+            method: metodo,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            alert(idEmEdicao ? "Unidade atualizada com sucesso!" : `Unidade ${nomeUnidade} ativada!`);
+            toggleModal(); // Fecha e reseta
+            carregarUnidades();
+        } else {
+            const erro = await res.json();
+            alert(`Falha: ${erro.detail || 'Usuário já existe'}`);
+        }
+    } catch (err) {
+        alert("Erro ao conectar com a API.");
+    }
+});
+
+// --- 6. EXCLUIR UNIDADE (DELETE) ---
+async function excluirUnidade(id) {
+    if (!confirm("⚠️ Tem certeza que deseja excluir esta unidade e revogar o acesso?")) return;
+
+    try {
+        const res = await fetch(`${API_URL}/auth/usuarios/${id}`, {
+            method: "DELETE"
+        });
+
+        if (res.ok) {
+            alert("Unidade excluída com sucesso!");
+            carregarUnidades();
+        } else {
+            alert("Não foi possível excluir a unidade.");
+        }
+    } catch (err) {
+        alert("Erro de rede ao tentar deletar o registro.");
+    }
+}
     </script>
 </body>
 </html>
