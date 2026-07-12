@@ -1,6 +1,6 @@
 fastapi
 uvicorn
-pydantic
 psycopg2-binary
-pytz
-fpdf==1.7.2
+pydantic
+PyJWT==2.9.0
+bcrypt==4.2.0
