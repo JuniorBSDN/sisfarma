@@ -5,66 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PharmaSaaS - Painel Master</title>
     <style>
-        /* --- Variáveis de Tema --- */
-        :root {
-            --primary: #1a365d;
-            --primary-hover: #122847;
-            --bg-color: #f3f4f6;
-            --surface: #ffffff;
-            --text-main: #1f2937;
-            --text-muted: #6b7280;
-            --border: #e5e7eb;
-            --success: #10b981;
-            --danger: #ef4444;
-            --info: #3b82f6;
-        }
-
-        /* --- Reset e Tipografia --- */
+        :root { --primary: #1a365d; --bg-color: #f3f4f6; --surface: #ffffff; --text-main: #1f2937; --text-muted: #6b7280; --border: #e5e7eb; --success: #10b981; --danger: #ef4444; --info: #3b82f6; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
         body { background-color: var(--bg-color); color: var(--text-main); display: none; height: 100vh; overflow: hidden; }
-
-        /* --- Layout Principal --- */
         .app-container { display: flex; height: 100vh; width: 100%; }
-        
         .sidebar { width: 260px; background-color: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 1.5rem; }
         .sidebar h2 { color: var(--primary); font-size: 1.5rem; margin-bottom: 2rem; font-weight: 700; }
-        .menu-item { padding: 0.75rem 1rem; margin-bottom: 0.5rem; border-radius: 0.5rem; cursor: pointer; color: var(--text-muted); font-weight: 600; transition: all 0.2s; }
-        .menu-item:hover, .menu-item.active { background-color: #eff6ff; color: var(--primary); }
-
         .main-content { flex: 1; padding: 2rem; overflow-y: auto; }
-        .view { display: none; animation: fadeIn 0.3s ease-in-out; }
-        .view.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* --- Cabeçalhos e Botões --- */
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
         .btn-primary { background-color: var(--success); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; }
-        .btn-primary:hover { background-color: #059669; }
         .btn-secondary { background: white; border: 1px solid var(--border); padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-weight: 600; }
-
-        /* --- Tabelas --- */
-        .table-container { background-color: var(--surface); border-radius: 0.75rem; border: 1px solid var(--border); overflow-x: auto; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .table-container { background-color: var(--surface); border-radius: 0.75rem; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         table { width: 100%; border-collapse: collapse; text-align: left; min-width: 800px; }
         th { background-color: #f9fafb; padding: 1rem 1.5rem; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); }
         td { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); vertical-align: middle; font-size: 0.875rem; }
-        
-        .status-badge { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+        .status-badge { display: inline-flex; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
         .status-active { background-color: #d1fae5; color: #065f46; }
         .status-blocked { background-color: #fee2e2; color: #991b1b; }
-
-        /* --- Modais --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .modal-overlay.active { display: flex; }
         .modal-content { background: var(--surface); padding: 2rem; border-radius: 0.75rem; width: 100%; max-width: 700px; max-height: 90vh; overflow-y: auto; }
-        
         .form-group { margin-bottom: 1.2rem; }
         .form-group label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 600; color: var(--text-muted); }
         .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; outline: none; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
         .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
         .modal-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem; }
-
-        /* --- Visualização de Dados (Read Only) --- */
         .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
         .data-item { background: #f9fafb; padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border); }
         .data-item span { display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-bottom: 0.25rem; }
@@ -76,112 +42,60 @@
     <div class="app-container">
         <aside class="sidebar">
             <h2>⚙️ Master Admin</h2>
-            <div class="menu-item active" onclick="changeView('farmacias', this)">Gestão de Clientes</div>
+            <div style="color: var(--primary); font-weight: bold; padding: 10px; background: #eff6ff; border-radius: 5px;">Gestão de Clientes</div>
         </aside>
 
         <main class="main-content">
-            <section id="view-farmacias" class="view active">
-                <header class="header">
-                    <div>
-                        <h1>Clientes Cadastrados</h1>
-                        <p style="color: var(--text-muted);">Administre as empresas e seus acessos.</p>
-                    </div>
-                    <button class="btn-primary" onclick="abrirModalCadastro()">+ Novo Cliente</button>
-                </header>
-                
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>Login</th>
-                                <th>Senha</th>
-                                <th>Status</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tenant-table-body">
-                            </tbody>
-                    </table>
+            <header class="header">
+                <div>
+                    <h1>Clientes Cadastrados</h1>
+                    <p style="color: var(--text-muted);">Administre as empresas conectadas ao Banco de Dados.</p>
                 </div>
-            </section>
+                <button class="btn-primary" onclick="abrirModalCadastro()">+ Novo Cliente</button>
+            </header>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr><th>Nome</th><th>Login</th><th>Senha</th><th>Status</th><th>Ações</th></tr>
+                    </thead>
+                    <tbody id="tenant-table-body">
+                        </tbody>
+                </table>
+            </div>
         </main>
     </div>
 
     <div class="modal-overlay" id="addTenantModal">
         <div class="modal-content">
-            <h3 id="modal-titulo" style="margin-bottom: 1.5rem;">Cadastrar Novo Cliente</h3>
+            <h3 style="margin-bottom: 1.5rem;">Cadastrar Novo Cliente</h3>
             <form id="form-admin-cadastro">
-                
-                <h4 style="margin-bottom: 1rem; color: var(--primary); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Dados da Empresa</h4>
                 <div class="form-row">
-                    <div class="form-group">
-                        <label>Nome da Empresa (Fantasia/Razão)</label>
-                        <input type="text" id="cad-nome" required>
-                    </div>
-                    <div class="form-group">
-                        <label>CPF / CNPJ</label>
-                        <input type="text" id="cad-cnpj" required>
-                    </div>
+                    <div class="form-group"><label>Nome da Empresa</label><input type="text" id="cad-nome" required></div>
+                    <div class="form-group"><label>CPF / CNPJ</label><input type="text" id="cad-cnpj" required></div>
                 </div>
-                
                 <div class="form-row-3">
-                    <div class="form-group">
-                        <label>Responsável</label>
-                        <input type="text" id="cad-responsavel" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Telefone / WhatsApp</label>
-                        <input type="text" id="cad-telefone" required>
-                    </div>
-                    <div class="form-group">
-                        <label>CNAE</label>
-                        <input type="text" id="cad-cnae">
-                    </div>
+                    <div class="form-group"><label>Responsável</label><input type="text" id="cad-responsavel" required></div>
+                    <div class="form-group"><label>Telefone</label><input type="text" id="cad-telefone" required></div>
+                    <div class="form-group"><label>CNAE</label><input type="text" id="cad-cnae"></div>
                 </div>
-
-                <div class="form-group">
-                    <label>E-mail Corporativo</label>
-                    <input type="email" id="cad-email" required>
-                </div>
-
-                <h4 style="margin: 1.5rem 0 1rem 0; color: var(--primary); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Contrato e Acesso</h4>
+                <div class="form-group"><label>E-mail</label><input type="email" id="cad-email" required></div>
                 <div class="form-row">
-                    <div class="form-group">
-                        <label>Tipo de Contrato</label>
-                        <select id="cad-contrato">
-                            <option value="Mensal">Mensal</option>
-                            <option value="Anual">Anual</option>
-                            <option value="Vitalício">Vitalício</option>
-                        </select>
+                    <div class="form-group"><label>Tipo de Contrato</label>
+                        <select id="cad-contrato"><option>Mensal</option><option>Anual</option><option>Vitalício</option></select>
                     </div>
-                    <div class="form-group">
-                        <label>Período (Ex: 12 meses)</label>
-                        <input type="text" id="cad-periodo" placeholder="Ex: 12 meses">
-                    </div>
+                    <div class="form-group"><label>Período</label><input type="text" id="cad-periodo" placeholder="Ex: 12 meses"></div>
                 </div>
-
                 <div class="form-row-3">
-                    <div class="form-group">
-                        <label>Usuário (Login)</label>
-                        <input type="text" id="cad-usuario" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Senha</label>
-                        <input type="text" id="cad-senha" placeholder="Defina a senha" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Status</label>
-                        <select id="cad-status">
-                            <option value="Ativo">Ativo</option>
-                            <option value="Bloqueado">Bloqueado</option>
-                        </select>
+                    <div class="form-group"><label>Usuário (Login)</label><input type="text" id="cad-usuario" required></div>
+                    <div class="form-group"><label>Senha Segura</label><input type="password" id="cad-senha" required></div>
+                    <div class="form-group"><label>Status</label>
+                        <select id="cad-status"><option>Ativo</option><option>Bloqueado</option></select>
                     </div>
                 </div>
-
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" onclick="fecharModais()">Cancelar</button>
-                    <button type="submit" class="btn-primary" id="btn-salvar">Salvar Cliente</button>
+                    <button type="submit" class="btn-primary">Salvar no Banco</button>
                 </div>
             </form>
         </div>
@@ -189,167 +103,74 @@
 
     <div class="modal-overlay" id="viewTenantModal">
         <div class="modal-content">
-            <h3 style="margin-bottom: 1.5rem; display: flex; justify-content: space-between;">
-                Ficha Completa da Empresa
-                <span id="view-status" class="status-badge status-active">Ativo</span>
-            </h3>
-            
+            <h3 style="margin-bottom: 1.5rem; display: flex; justify-content: space-between;">Ficha da Empresa <span id="view-status" class="status-badge status-active">Ativo</span></h3>
             <div class="data-grid">
-                <div class="data-item"><span>Nome da Empresa</span><strong id="view-nome">--</strong></div>
+                <div class="data-item"><span>Empresa</span><strong id="view-nome">--</strong></div>
                 <div class="data-item"><span>CPF / CNPJ</span><strong id="view-cnpj">--</strong></div>
                 <div class="data-item"><span>Responsável</span><strong id="view-responsavel">--</strong></div>
                 <div class="data-item"><span>Telefone</span><strong id="view-telefone">--</strong></div>
                 <div class="data-item"><span>E-mail</span><strong id="view-email">--</strong></div>
                 <div class="data-item"><span>CNAE</span><strong id="view-cnae">--</strong></div>
-                <div class="data-item"><span>Tipo de Contrato</span><strong id="view-contrato">--</strong></div>
+                <div class="data-item"><span>Contrato</span><strong id="view-contrato">--</strong></div>
                 <div class="data-item"><span>Período</span><strong id="view-periodo">--</strong></div>
             </div>
-
-            <h4 style="margin: 1.5rem 0 1rem 0; color: var(--primary); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Credenciais de Acesso</h4>
             <div class="data-grid" style="grid-template-columns: 1fr 1fr;">
-                <div class="data-item"><span>Usuário (Login)</span><strong id="view-usuario">--</strong></div>
-                <div class="data-item"><span>Senha</span><strong id="view-senha">••••••••</strong></div>
+                <div class="data-item"><span>Usuário de Acesso</span><strong id="view-usuario">--</strong></div>
+                <div class="data-item"><span>Senha</span><strong>••••••••</strong></div>
             </div>
-
-            <div class="modal-actions">
-                <button type="button" class="btn-secondary" onclick="fecharModais()">Fechar</button>
-            </div>
+            <div class="modal-actions"><button type="button" class="btn-secondary" onclick="fecharModais()">Fechar</button></div>
         </div>
     </div>
 
     <script>
         const API_URL = "/api";
-        let idEmEdicao = null;
-        
-        // Simulação do Banco de Dados para o Frontend Funcionar (Mock)
-        // Substitua as requisições `fetch` pela sua API real futuramente
-        let clientes = [
-            {
-                id: 1, nome: "Farmácia Central Ltda", cnpj: "12.345.678/0001-90", responsavel: "João Silva",
-                telefone: "(11) 98888-1111", cnae: "4771-7/01", email: "contato@central.com",
-                contrato: "Mensal", periodo: "Indeterminado", usuario: "admin.central", senha: "123", status: "Ativo"
-            }
-        ];
+        let clientesEmMemoria = []; // Guarda os dados da API para visualização rápida
 
-        // --- 1. PROMPT MASTER DE AUTENTICAÇÃO ---
-        document.addEventListener("DOMContentLoaded", () => {
-            const senhaDigitada = prompt("🔒 Acesso Restrito! Digite a Senha Master:");
-            // Simulação de segurança visual
-            if (senhaDigitada === "admin123" || senhaDigitada) { 
-                document.body.style.display = 'block'; 
-                renderizarTabela();
-            } else {
-                alert("Acesso Negado.");
-                window.location.reload();
-            }
+        document.addEventListener("DOMContentLoaded", async () => {
+            const senhaDigitada = prompt("🔒 Digite a Senha Master:");
+            try {
+                const res = await fetch(`${API_URL}/auth/verificar-admin`, {
+                    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ senha: senhaDigitada })
+                });
+                if (res.ok) {
+                    document.body.style.display = 'block'; 
+                    carregarTabela();
+                } else { alert("Acesso Negado."); window.location.reload(); }
+            } catch (err) { alert("Erro de conexão com o servidor Python."); }
         });
 
-        function changeView(viewId, menuElement) {
-            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
-            menuElement.classList.add('active');
+        // GET: Buscar no Banco
+        async function carregarTabela() {
+            try {
+                const res = await fetch(`${API_URL}/auth/usuarios`);
+                if (!res.ok) return;
+                
+                clientesEmMemoria = await res.json();
+                const tbody = document.getElementById("tenant-table-body");
+                tbody.innerHTML = "";
+
+                clientesEmMemoria.forEach(cliente => {
+                    const badge = cliente.status === 'Ativo' ? '<span class="status-badge status-active">Ativo</span>' : '<span class="status-badge status-blocked">Bloqueado</span>';
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${cliente.nome}</strong></td>
+                            <td>${cliente.usuario}</td>
+                            <td style="color: var(--text-muted);">••••••••</td>
+                            <td>${badge}</td>
+                            <td style="display: flex; gap: 10px;">
+                                <button onclick="abrirVisualizacao(${cliente.id})" style="background:none; border:none; color:var(--info); cursor:pointer; font-weight:600;">Visualizar</button>
+                                <button onclick="excluirCliente(${cliente.id})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:600;">Excluir</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (err) { console.error(err); }
         }
 
-        // --- 2. RENDERIZAR TABELA PRINCIPAL ---
-        function renderizarTabela() {
-            const tbody = document.getElementById("tenant-table-body");
-            tbody.innerHTML = "";
-
-            clientes.forEach(cliente => {
-                const statusBadge = cliente.status === 'Ativo' 
-                    ? '<span class="status-badge status-active">Ativo</span>' 
-                    : '<span class="status-badge status-blocked">Bloqueado</span>';
-
-                // A senha real é mascarada na tabela por boas práticas, mas a coluna existe como solicitado
-                const senhaExibida = "••••••••"; 
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td><strong>${cliente.nome}</strong></td>
-                        <td>${cliente.usuario}</td>
-                        <td style="color: var(--text-muted);">${senhaExibida}</td>
-                        <td>${statusBadge}</td>
-                        <td style="display: flex; gap: 10px;">
-                            <button onclick="abrirVisualizacao(${cliente.id})" style="background: none; border: none; color: var(--info); cursor: pointer; font-weight: 600;">Visualizar</button>
-                            <button onclick="abrirEdicao(${cliente.id})" style="background: none; border: none; color: var(--primary); cursor: pointer; font-weight: 600;">Alterar</button>
-                            <button onclick="excluirCliente(${cliente.id})" style="background: none; border: none; color: var(--danger); cursor: pointer; font-weight: 600;">Excluir</button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-
-        // --- 3. CONTROLE DE MODAIS ---
-        function fecharModais() {
-            document.getElementById('addTenantModal').classList.remove('active');
-            document.getElementById('viewTenantModal').classList.remove('active');
-            document.getElementById("form-admin-cadastro").reset();
-            idEmEdicao = null;
-        }
-
-        function abrirModalCadastro() {
-            fecharModais();
-            document.getElementById("modal-titulo").innerText = "Cadastrar Novo Cliente";
-            document.getElementById("btn-salvar").innerText = "Salvar Cliente";
-            document.getElementById("cad-senha").required = true;
-            document.getElementById('addTenantModal').classList.add('active');
-        }
-
-        // --- 4. VISUALIZAR REGISTRO COMPLETO ---
-        function abrirVisualizacao(id) {
-            const cliente = clientes.find(c => c.id === id);
-            if(!cliente) return;
-
-            document.getElementById("view-nome").innerText = cliente.nome;
-            document.getElementById("view-cnpj").innerText = cliente.cnpj;
-            document.getElementById("view-responsavel").innerText = cliente.responsavel;
-            document.getElementById("view-telefone").innerText = cliente.telefone;
-            document.getElementById("view-email").innerText = cliente.email;
-            document.getElementById("view-cnae").innerText = cliente.cnae;
-            document.getElementById("view-contrato").innerText = cliente.contrato;
-            document.getElementById("view-periodo").innerText = cliente.periodo;
-            document.getElementById("view-usuario").innerText = cliente.usuario;
-            
-            // Senha mascarada na visualização
-            document.getElementById("view-senha").innerText = "••••••••"; 
-            
-            const statusBadge = document.getElementById("view-status");
-            statusBadge.innerText = cliente.status;
-            statusBadge.className = cliente.status === 'Ativo' ? 'status-badge status-active' : 'status-badge status-blocked';
-
-            document.getElementById('viewTenantModal').classList.add('active');
-        }
-
-        // --- 5. EDITAR REGISTRO ---
-        function abrirEdicao(id) {
-            const cliente = clientes.find(c => c.id === id);
-            if(!cliente) return;
-
-            idEmEdicao = cliente.id;
-            document.getElementById("cad-nome").value = cliente.nome;
-            document.getElementById("cad-cnpj").value = cliente.cnpj;
-            document.getElementById("cad-responsavel").value = cliente.responsavel;
-            document.getElementById("cad-telefone").value = cliente.telefone;
-            document.getElementById("cad-email").value = cliente.email;
-            document.getElementById("cad-cnae").value = cliente.cnae;
-            document.getElementById("cad-contrato").value = cliente.contrato;
-            document.getElementById("cad-periodo").value = cliente.periodo;
-            document.getElementById("cad-usuario").value = cliente.usuario;
-            document.getElementById("cad-status").value = cliente.status;
-            
-            document.getElementById("cad-senha").required = false;
-            document.getElementById("cad-senha").placeholder = "Preencha apenas se for alterar";
-
-            document.getElementById("modal-titulo").innerText = "Alterar Dados do Cliente";
-            document.getElementById("btn-salvar").innerText = "Salvar Alterações";
-            document.getElementById('addTenantModal').classList.add('active');
-        }
-
-        // --- 6. SALVAR / ATUALIZAR ---
-        document.getElementById("form-admin-cadastro").addEventListener("submit", (e) => {
+        // POST: Salvar no Banco
+        document.getElementById("form-admin-cadastro").addEventListener("submit", async (e) => {
             e.preventDefault();
-
-            const novoCliente = {
-                id: idEmEdicao ? idEmEdicao : Date.now(),
+            const payload = {
                 nome: document.getElementById("cad-nome").value,
                 cnpj: document.getElementById("cad-cnpj").value,
                 responsavel: document.getElementById("cad-responsavel").value,
@@ -359,33 +180,52 @@
                 contrato: document.getElementById("cad-contrato").value,
                 periodo: document.getElementById("cad-periodo").value,
                 usuario: document.getElementById("cad-usuario").value,
-                status: document.getElementById("cad-status").value,
-                senha: document.getElementById("cad-senha").value || "mantida"
+                senha: document.getElementById("cad-senha").value,
+                status: document.getElementById("cad-status").value
             };
 
-            if (idEmEdicao) {
-                const index = clientes.findIndex(c => c.id === idEmEdicao);
-                // Mantém a senha antiga se o campo ficou vazio na edição
-                if(!document.getElementById("cad-senha").value) {
-                    novoCliente.senha = clientes[index].senha;
-                }
-                clientes[index] = novoCliente;
-                alert("Cliente atualizado com sucesso!");
-            } else {
-                clientes.push(novoCliente);
-                alert("Novo cliente cadastrado com sucesso!");
-            }
-
-            fecharModais();
-            renderizarTabela();
+            try {
+                const res = await fetch(`${API_URL}/auth/registrar`, {
+                    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    alert("Cliente gravado no banco de dados com sucesso!");
+                    fecharModais();
+                    carregarTabela();
+                } else { alert("Erro ao cadastrar. Verifique se o login já existe."); }
+            } catch(e) { alert("Falha na comunicação com a API."); }
         });
 
-        // --- 7. EXCLUIR REGISTRO ---
-        function excluirCliente(id) {
-            if(confirm("⚠️ Tem certeza que deseja excluir esta empresa e todos os seus dados permanentemente?")) {
-                clientes = clientes.filter(c => c.id !== id);
-                renderizarTabela();
+        // DELETE: Apagar do Banco
+        async function excluirCliente(id) {
+            if(confirm("⚠️ Excluir esta empresa apagará TODOS os dados dela do banco. Confirmar?")) {
+                await fetch(`${API_URL}/auth/usuarios/${id}`, { method: "DELETE" });
+                carregarTabela();
             }
+        }
+
+        // Funções de Interface
+        function fecharModais() {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+            document.getElementById("form-admin-cadastro").reset();
+        }
+
+        function abrirModalCadastro() { document.getElementById('addTenantModal').classList.add('active'); }
+
+        function abrirVisualizacao(id) {
+            const cliente = clientesEmMemoria.find(c => c.id === id);
+            document.getElementById("view-nome").innerText = cliente.nome || "--";
+            document.getElementById("view-cnpj").innerText = cliente.cnpj || "--";
+            document.getElementById("view-responsavel").innerText = cliente.responsavel || "--";
+            document.getElementById("view-telefone").innerText = cliente.telefone || "--";
+            document.getElementById("view-email").innerText = cliente.email || "--";
+            document.getElementById("view-cnae").innerText = cliente.cnae || "--";
+            document.getElementById("view-contrato").innerText = cliente.contrato || "--";
+            document.getElementById("view-periodo").innerText = cliente.periodo || "--";
+            document.getElementById("view-usuario").innerText = cliente.usuario || "--";
+            document.getElementById("view-status").innerText = cliente.status;
+            document.getElementById("view-status").className = cliente.status === 'Ativo' ? 'status-badge status-active' : 'status-badge status-blocked';
+            document.getElementById('viewTenantModal').classList.add('active');
         }
     </script>
 </body>
