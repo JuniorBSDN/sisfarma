@@ -178,7 +178,7 @@
     </div>
 
     <script>
-        const API_URL = "/api";
+       const API_URL = "/api";
         let clientesEmMemoria = [];
         let idEmEdicao = null;
 
@@ -192,7 +192,7 @@
             }
 
             try {
-                // Envia para a Vercel/Python validar a senha real
+                // Tenta falar com a API na Vercel
                 const res = await fetch(`${API_URL}/auth/verificar-admin`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -207,7 +207,16 @@
                     window.location.reload();
                 }
             } catch (err) {
-                alert("Erro: Não foi possível conectar ao servidor (API offline ou não configurada).");
+                // SE A API ESTIVER OFFLINE (Testando no computador local)
+                const querTestar = confirm("⚠️ Servidor Python offline ou não encontrado.\n\nDeseja abrir o layout em MODO VISUAL (Mock) apenas para ver como ficou a tela?");
+                
+                if(querTestar) {
+                    document.body.style.display = 'block'; // Libera a tela no modo visual
+                    carregarTabelaMock(); // Carrega dados falsos para você ver a tabela
+                } else {
+                    document.body.innerHTML = "<h2 style='text-align:center; margin-top:20%; color: var(--danger);'>Acesso Bloqueado. Servidor Offline.</h2>";
+                    document.body.style.display = 'block';
+                }
             }
         });
 
@@ -218,31 +227,45 @@
                 if (!res.ok) return;
 
                 clientesEmMemoria = await res.json();
-                const tbody = document.getElementById("tenant-table-body");
-                tbody.innerHTML = "";
-
-                clientesEmMemoria.forEach(cliente => {
-                    const statusBadge = cliente.status === 'Ativo' 
-                        ? '<span class="status-badge status-active">Ativo</span>' 
-                        : '<span class="status-badge status-blocked">Bloqueado</span>';
-
-                    tbody.innerHTML += `
-                        <tr>
-                            <td><strong>${cliente.nome}</strong></td>
-                            <td>${cliente.usuario}</td>
-                            <td style="color: var(--text-muted);">••••••••</td>
-                            <td>${statusBadge}</td>
-                            <td style="display: flex; gap: 10px;">
-                                <button onclick="abrirVisualizacao(${cliente.id})" style="background: none; border: none; color: var(--info); cursor: pointer; font-weight: 600;">Visualizar</button>
-                                <button onclick="abrirEdicao(${cliente.id})" style="background: none; border: none; color: var(--primary); cursor: pointer; font-weight: 600;">Alterar</button>
-                                <button onclick="excluirCliente(${cliente.id})" style="background: none; border: none; color: var(--danger); cursor: pointer; font-weight: 600;">Excluir</button>
-                            </td>
-                        </tr>
-                    `;
-                });
+                renderizarHtmlTabela();
             } catch (err) {
                 console.error("Erro ao carregar clientes", err);
             }
+        }
+
+        // --- FUNÇÃO PARA MODO OFFLINE (Visualização) ---
+        function carregarTabelaMock() {
+            clientesEmMemoria = [
+                { id: 1, nome: "Hospital São Lucas", cnpj: "12.345.678/0001-90", responsavel: "Dr. Carlos", telefone: "(11) 99999-9999", email: "contato@saolucas.com", cnae: "8610-1/01", contrato: "Anual", periodo: "12 meses", usuario: "admin.saolucas", status: "Ativo" },
+                { id: 2, nome: "Farmácia Central", cnpj: "98.765.432/0001-10", responsavel: "Ana Maria", telefone: "(21) 98888-8888", email: "gerencia@central.com", cnae: "4771-7/01", contrato: "Mensal", periodo: "Indeterminado", usuario: "ana.central", status: "Bloqueado" }
+            ];
+            renderizarHtmlTabela();
+        }
+
+        // --- RENDERIZAR TABELA ---
+        function renderizarHtmlTabela() {
+            const tbody = document.getElementById("tenant-table-body");
+            tbody.innerHTML = "";
+
+            clientesEmMemoria.forEach(cliente => {
+                const statusBadge = cliente.status === 'Ativo' 
+                    ? '<span class="status-badge status-active">Ativo</span>' 
+                    : '<span class="status-badge status-blocked">Bloqueado</span>';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${cliente.nome}</strong></td>
+                        <td>${cliente.usuario}</td>
+                        <td style="color: var(--text-muted);">••••••••</td>
+                        <td>${statusBadge}</td>
+                        <td style="display: flex; gap: 10px;">
+                            <button onclick="abrirVisualizacao(${cliente.id})" style="background: none; border: none; color: var(--info); cursor: pointer; font-weight: 600;">Visualizar</button>
+                            <button onclick="abrirEdicao(${cliente.id})" style="background: none; border: none; color: var(--primary); cursor: pointer; font-weight: 600;">Alterar</button>
+                            <button onclick="excluirCliente(${cliente.id})" style="background: none; border: none; color: var(--danger); cursor: pointer; font-weight: 600;">Excluir</button>
+                        </td>
+                    </tr>
+                `;
+            });
         }
 
         // --- 3. ABRIR MODAIS ---
@@ -299,7 +322,6 @@
             document.getElementById("cad-usuario").value = cliente.usuario || "";
             document.getElementById("cad-status").value = cliente.status || "Ativo";
             
-            // Senha não é obrigatória na edição
             document.getElementById("cad-senha").required = false;
             document.getElementById("cad-senha").placeholder = "Deixe em branco para manter a atual";
 
@@ -326,9 +348,7 @@
             };
 
             const senhaInput = document.getElementById("cad-senha").value;
-            if (senhaInput) {
-                payload.senha = senhaInput;
-            }
+            if (senhaInput) payload.senha = senhaInput;
 
             try {
                 let url = `${API_URL}/auth/registrar`;
@@ -354,7 +374,9 @@
                     alert(`Falha: ${erro.error || 'Verifique se o usuário já existe.'}`);
                 }
             } catch (err) {
-                alert("Erro ao conectar com a API.");
+                // Comportamento Offline
+                alert("Modo Visual: Como a API está offline, os dados não foram salvos no banco. Quando estiver na Vercel, isso funcionará perfeitamente!");
+                fecharModais();
             }
         });
 
@@ -374,7 +396,7 @@
                     alert("Erro ao tentar excluir a empresa.");
                 }
             } catch (err) {
-                alert("Erro de conexão com a API.");
+                 alert("Modo Visual: Ação de exclusão ignorada porque o banco de dados não está conectado.");
             }
         }
     </script>
