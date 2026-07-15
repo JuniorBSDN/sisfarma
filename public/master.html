@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sisFarma - Painel Master Administrador</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ==========================================
+           1. VARIÁVEIS DE DESIGN & RESET
+           ========================================== */
+        :root {
+            --primary: #1e3d59;
+            --primary-light: #17b978;
+            --secondary: #112233;
+            --bg-body: #f4f6f9;
+            --bg-card: #ffffff;
+            --text-main: #2d3748;
+            --text-muted: #718096;
+            --border-color: #e2e8f0;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --sidebar-width: 260px;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ==========================================
+           2. LAYOUT PRINCIPAL (GRID/FLEX)
+           ========================================== */
+        .app-container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+        }
+
+        /* Sidebar Lateral */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--secondary);
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 24px 16px;
+            z-index: 10;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 12px 24px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .brand-logo {
+            background-color: var(--primary-light);
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #ffffff;
+        }
+
+        .brand-name {
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .brand-name span {
+            color: var(--primary-light);
+            font-size: 0.75rem;
+            display: block;
+            font-weight: 400;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            margin-top: 24px;
+            flex-grow: 1;
+        }
+
+        .menu-item {
+            margin-bottom: 8px;
+        }
+
+        .menu-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            color: #a0aec0;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .menu-link:hover, .menu-link.active {
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+
+        .menu-link.active {
+            border-left: 4px solid var(--primary-light);
+            background-color: rgba(255, 255, 255, 0.1);
+            padding-left: 8px;
+        }
+
+        .sidebar-footer {
+            padding: 12px;
+            font-size: 0.8rem;
+            color: #718096;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        /* Área de Conteúdo Principal */
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        /* Topbar de Navegação */
+        .topbar {
+            background-color: #ffffff;
+            border-bottom: 1px solid var(--border-color);
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+        }
+
+        .page-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--secondary);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background-color: var(--primary);
+            color: #ffffff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .user-info h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .user-info p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Container de Páginas */
+        .content-body {
+            padding: 32px;
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .page-section {
+            display: none;
+            animation: fadeIn 0.4s ease-in-out forwards;
+        }
+
+        .page-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ==========================================
+           3. CARD DE DASHBOARD (MÉTRICAS)
+           ========================================== */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .metric-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+
+        .metric-title {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+
+        .metric-badge {
+            font-size: 0.75rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 500;
+            color: var(--success);
+        }
+
+        /* ==========================================
+           4. FORMULÁRIOS MODERNOS & ALERTA DE SENHA
+           ========================================== */
+        .form-container {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            max-width: 800px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .form-group-full {
+            grid-column: span 2;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .form-input, .form-select {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: var(--transition);
+            background-color: #f8fafc;
+        }
+
+        .form-input:focus, .form-select:focus {
+            border-color: var(--primary-light);
+            background-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(23, 185, 120, 0.15);
+        }
+
+        .btn-submit {
+            background-color: var(--primary-light);
+            color: #ffffff;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-submit:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+        }
+
+        /* Alerta de Credencial Gerada */
+        .credential-alert {
+            display: none;
+            background-color: #ecfdf5;
+            border: 1px solid #10b981;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .credential-alert h4 {
+            color: #065f46;
+            margin-bottom: 10px;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .credential-box {
+            background-color: #ffffff;
+            border: 1px dashed #34d399;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-copy {
+            background-color: #059669;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-copy:hover {
+            background-color: #047857;
+        }
+
+        /* ==========================================
+           5. TABELA DE COMPANHIAS CADASTRADAS
+           ========================================== */
+        .table-container {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+
+        .table-header-controls {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #fafbfc;
+        }
+
+        .search-wrapper {
+            position: relative;
+            width: 320px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary-light);
+        }
+
+        .companies-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        .companies-table th {
+            background-color: #f8fafc;
+            color: var(--text-muted);
+            font-weight: 600;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-color);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+
+        .companies-table td {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+
+        .companies-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .companies-table tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .badge-status {
+            display: inline-flex;
+            padding: 4px 8px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-status.active {
+            background-color: #def7ec;
+            color: #03543f;
+        }
+
+        .badge-status.inactive {
+            background-color: #fde8e8;
+            color: #9b1c1c;
+        }
+
+        .badge-plan {
+            background-color: #e1effe;
+            color: #1e429f;
+            display: inline-flex;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .credential-cell {
+            font-family: monospace;
+            background-color: #f1f5f9;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: #334155;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-action-sm {
+            background: none;
+            border: none;
+            color: var(--primary-light);
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-decoration: underline;
+        }
+
+        /* Ações na Tabela */
+        .btn-action {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 4px;
+            transition: var(--transition);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-action:hover {
+            background-color: var(--border-color);
+            color: var(--secondary);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <div>
+                <div class="sidebar-brand">
+                    <div class="brand-logo">sF</div>
+                    <div class="brand-name">
+                        sisFarma Master
+                        <span>Gestor Multi-Empresas</span>
+                    </div>
+                </div>
+
+                <ul class="sidebar-menu">
+                    <li class="menu-item">
+                        <a onclick="switchTab('dashboard')" id="nav-dashboard" class="menu-link active">
+                            📊 Dashboard Geral
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a onclick="switchTab('cadastro')" id="nav-cadastro" class="menu-link">
+                            ➕ Cadastrar Empresa
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a onclick="switchTab('clientes')" id="nav-clientes" class="menu-link">
+                            🏢 Empresas Parceiras
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="sidebar-footer">
+                v1.0.0 Master <br> Todos os direitos reservados
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <div class="page-title" id="page-current-title">Dashboard Geral</div>
+                <div class="user-profile">
+                    <div class="user-avatar">ADM</div>
+                    <div class="user-info">
+                        <h4>Administrador Global</h4>
+                        <p>Acesso Nível Master</p>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-body">
+
+                <section id="sec-dashboard" class="page-section active">
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <span class="metric-title">Empresas Compradoras</span>
+                            <div class="metric-value" id="metric-total">0</div>
+                            <span class="metric-badge">Ativas na plataforma</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-title">Clientes Ativos</span>
+                            <div class="metric-value" id="metric-active" style="color: var(--success)">0</div>
+                            <span class="metric-badge" style="color: var(--success)">Operando normalmente</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-title">Clientes Inativos</span>
+                            <div class="metric-value" id="metric-inactive" style="color: var(--danger)">0</div>
+                            <span class="metric-badge" style="color: var(--danger)">Contratos suspensos</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 32px;">
+                        <h3 style="margin-bottom: 16px; font-weight: 600;">Regras de Acesso sisFarma</h3>
+                        <p style="color: var(--text-muted); line-height: 1.6; margin-bottom: 12px;">
+                            Ao registrar um novo cliente, o painel gera automaticamente uma **chave de acesso criptográfica única (senha)**.
+                        </p>
+                        <p style="color: var(--text-muted); line-height: 1.6;">
+                            O gestor da farmácia utilizará o <strong>CNPJ</strong> corporativo e a <strong>senha gerada</strong> para realizar login e gerenciar seu próprio estabelecimento no painel local (<code>admin.html</code>). Certifique-se de salvar ou repassar essa senha com segurança após o cadastro.
+                        </p>
+                    </div>
+                </section>
+
+                <section id="sec-cadastro" class="page-section">
+                    <div class="form-container">
+                        <h2 style="margin-bottom: 24px; font-weight: 600; color: var(--secondary)">Cadastrar Novo Comprador</h2>
+
+                        <div class="credential-alert" id="credentialAlert">
+                            <h4>✓ Empresa Cadastrada com Sucesso!</h4>
+                            <p style="font-size: 0.85rem; color: #047857; margin-bottom: 12px;">Repasse as credenciais abaixo para o administrador da farmácia:</p>
+                            <div class="credential-box">
+                                <div>
+                                    <strong>CNPJ:</strong> <span id="copyCnpj">--</span> |
+                                    <strong>Senha de Acesso:</strong> <span id="copyPassword" style="font-weight: bold; color: var(--secondary);">--</span>
+                                </div>
+                                <button class="btn-copy" onclick="copyCredentialsToClipboard()">Copiar Dados</button>
+                            </div>
+                        </div>
+
+                        <form id="cadastroForm" onsubmit="handleFormSubmit(event)">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label" for="razao_social">Razão Social</label>
+                                    <input class="form-input" type="text" id="razao_social" placeholder="Ex: Hospital das Clínicas S/A" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="cnpj">CNPJ (Apenas números ou formatado)</label>
+                                    <input class="form-input" type="text" id="cnpj" placeholder="00.000.000/0000-00" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="email">E-mail de Contrato</label>
+                                    <input class="form-input" type="email" id="email" placeholder="financeiro@empresa.com" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="telefone">Telefone</label>
+                                    <input class="form-input" type="text" id="telefone" placeholder="(11) 98888-8888" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="plano">Plano Escolhido</label>
+                                    <select class="form-select" id="plano" required>
+                                        <option value="Clínica Base">Clínica Base (Limite Pequeno)</option>
+                                        <option value="Hospital Standard">Hospital Standard (Médio Porte)</option>
+                                        <option value="Hospitalar Enterprise">Hospitalar Enterprise (Rede/Ilimitado)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="status_inicial">Status Inicial</label>
+                                    <select class="form-select" id="status_inicial" required>
+                                        <option value="Ativa">Ativa (Acesso Liberado)</option>
+                                        <option value="Inativa">Inativa (Acesso Bloqueado)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn-submit">
+                                Gerar Senha & Cadastrar Empresa
+                            </button>
+                        </form>
+                    </div>
+                </section>
+
+                <section id="sec-clientes" class="page-section">
+                    <div class="table-container">
+                        <div class="table-header-controls">
+                            <h3 style="font-weight: 600; color: var(--secondary)">Empresas Registradas</h3>
+                            <div class="search-wrapper">
+                                <input type="text" class="search-input" id="searchBox" onkeyup="filterTable()" placeholder="Buscar por CNPJ ou Razão Social...">
+                            </div>
+                        </div>
+
+                        <table class="companies-table" id="companiesTable">
+                            <thead>
+                                <tr>
+                                    <th>Razão Social</th>
+                                    <th>CNPJ / Login</th>
+                                    <th>Senha Gerada</th>
+                                    <th>Plano</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="companiesTableBody">
+                                </tbody>
+                        </table>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Banco de Dados Simulado em Memória Local (com senhas fictícias pré-geradas)
+        let database = [
+            {
+                razaoSocial: "Santa Casa Hospitalar S.A.",
+                cnpj: "12.345.678/0001-90",
+                email: "ti@santacasa.com.br",
+                telefone: "(11) 3211-4040",
+                plano: "Hospitalar Enterprise",
+                status: "Ativa",
+                senha: "sF_" + Math.random().toString(36).substring(2, 10).toUpperCase()
+            },
+            {
+                razaoSocial: "Clínica Vida & Saúde Ltda.",
+                cnpj: "98.765.432/0001-10",
+                email: "admin@clinicavida.com",
+                telefone: "(21) 99888-7766",
+                plano: "Clínica Base",
+                status: "Ativa",
+                senha: "sF_" + Math.random().toString(36).substring(2, 10).toUpperCase()
+            }
+        ];
+
+        // Função geradora de senha randômica segura
+        function generateRandomPassword() {
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#";
+            let password = "sF_"; // Prefixo padrão do sisFarma
+            for (let i = 0; i < 8; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return password;
+        }
+
+        // 1. Navegação SPA entre as Abas
+        function switchTab(tabId) {
+            document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
+            document.querySelectorAll('.menu-link').forEach(link => link.classList.remove('active'));
+
+            const targetSection = document.getElementById('sec-' + tabId);
+            const targetNavLink = document.getElementById('nav-' + tabId);
+
+            if (targetSection && targetNavLink) {
+                targetSection.classList.add('active');
+                targetNavLink.classList.add('active');
+            }
+
+            // Oculta o painel de alerta de senha ao mudar de aba
+            document.getElementById('credentialAlert').style.display = 'none';
+
+            const titleElement = document.getElementById('page-current-title');
+            if (tabId === 'dashboard') titleElement.innerText = "Dashboard Geral";
+            else if (tabId === 'cadastro') titleElement.innerText = "Painel de Cadastro de Empresas";
+            else if (tabId === 'clientes') titleElement.innerText = "Gestão de Empresas Parceiras";
+        }
+
+        // 2. Atualizar Métricas e Contadores no Dashboard
+        function updateDashboardMetrics() {
+            const total = database.length;
+            const active = database.filter(c => c.status === "Ativa").length;
+            const inactive = total - active;
+
+            document.getElementById('metric-total').innerText = total;
+            document.getElementById('metric-active').innerText = active;
+            document.getElementById('metric-inactive').innerText = inactive;
+        }
+
+        // 3. Renderizar a Tabela de Empresas com Senhas Ocultas por Padrão
+        function renderTable() {
+            const tbody = document.getElementById('companiesTableBody');
+            tbody.innerHTML = "";
+
+            database.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                const statusBadgeClass = item.status === "Ativa" ? "active" : "inactive";
+
+                tr.innerHTML = `
+                    <td style="font-weight: 500;">${item.razaoSocial}</td>
+                    <td><strong>${item.cnpj}</strong></td>
+                    <td>
+                        <div class="credential-cell">
+                            <span id="pass-text-${index}">••••••••</span>
+                            <button class="btn-action-sm" onclick="togglePasswordVisibility(${index})">Mostrar</button>
+                        </div>
+                    </td>
+                    <td><span class="badge-plan">${item.plano}</span></td>
+                    <td><span class="badge-status ${statusBadgeClass}">${item.status}</span></td>
+                    <td>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn-action" onclick="toggleCompanyStatus(${index})" title="Alternar Status de Acesso">
+                                🔄 Status
+                            </button>
+                            <button class="btn-action" onclick="copyTablePassword(${index})" title="Copiar Senha">
+                                📋 Copiar Senha
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Revelar/Ocultar senha na tabela
+        function togglePasswordVisibility(index) {
+            const passSpan = document.getElementById(`pass-text-${index}`);
+            const btn = passSpan.nextElementSibling;
+            if (passSpan.innerText === "••••••••") {
+                passSpan.innerText = database[index].senha;
+                btn.innerText = "Ocultar";
+            } else {
+                passSpan.innerText = "••••••••";
+                btn.innerText = "Mostrar";
+            }
+        }
+
+        // Copiar senha direto da tabela
+        function copyTablePassword(index) {
+            navigator.clipboard.writeText(database[index].senha);
+            alert("Senha copiada para a área de transferência!");
+        }
+
+        // 4. Manipular Envio do Formulário de Cadastro e Exibir nova Senha
+        function handleFormSubmit(event) {
+            event.preventDefault();
+
+            const razaoSocial = document.getElementById('razao_social').value.trim();
+            const cnpj = document.getElementById('cnpj').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const telefone = document.getElementById('telefone').value.trim();
+            const plano = document.getElementById('plano').value;
+            const status = document.getElementById('status_inicial').value;
+
+            // GERADOR DE SENHA ÚNICA
+            const senhaGerada = generateRandomPassword();
+
+            // Salva no banco simulado
+            database.push({ razaoSocial, cnpj, email, telefone, plano, status, senha: senhaGerada });
+
+            // Exibe a senha gerada no container de sucesso
+            document.getElementById('copyCnpj').innerText = cnpj;
+            document.getElementById('copyPassword').innerText = senhaGerada;
+            document.getElementById('credentialAlert').style.display = 'block';
+
+            // Reseta o formulário
+            document.getElementById('cadastroForm').reset();
+
+            // Atualiza views em background
+            updateDashboardMetrics();
+            renderTable();
+
+            // Rola a página para cima para ver a senha gerada
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Copiar credenciais recém-geradas
+        function copyCredentialsToClipboard() {
+            const cnpj = document.getElementById('copyCnpj').innerText;
+            const pass = document.getElementById('copyPassword').innerText;
+            const textToCopy = `Acesso sisFarma:\nCNPJ: ${cnpj}\nSenha: ${pass}`;
+
+            navigator.clipboard.writeText(textToCopy);
+            alert("Credenciais copiadas com sucesso!");
+        }
+
+        // 5. Alternar status Ativo/Inativo na Tabela
+        function toggleCompanyStatus(index) {
+            if (database[index]) {
+                const currentStatus = database[index].status;
+                const newStatus = currentStatus === "Ativa" ? "Inativa" : "Ativa";
+                database[index].status = newStatus;
+
+                updateDashboardMetrics();
+                renderTable();
+            }
+        }
+
+        // 6. Barra de busca / Filtro em Tempo Real
+        function filterTable() {
+            const filter = document.getElementById('searchBox').value.toLowerCase();
+            const table = document.getElementById('companiesTable');
+            const trs = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < trs.length; i++) {
+                const tdRazao = trs[i].getElementsByTagName('td')[0];
+                const tdCNPJ = trs[i].getElementsByTagName('td')[1];
+
+                if (tdRazao || tdCNPJ) {
+                    const txtRazao = tdRazao.textContent || tdRazao.innerText;
+                    const txtCNPJ = tdCNPJ.textContent || tdCNPJ.innerText;
+
+                    if (txtRazao.toLowerCase().indexOf(filter) > -1 || txtCNPJ.toLowerCase().indexOf(filter) > -1) {
+                        trs[i].style.display = "";
+                    } else {
+                        trs[i].style.display = "none";
+                    }
+                }
+            }
+        }
+
+        window.onload = function() {
+            updateDashboardMetrics();
+            renderTable();
+        };
+    </script>
+</body>
+</html>
