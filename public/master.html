@@ -11,7 +11,7 @@
 
     <style>
         /* ==========================================
-           VARIÁVEIS DE DESIGN E LAYOUT (MANTIDOS)
+           VARIÁVEIS DE DESIGN & RESET E LAYOUT
            ========================================== */
         :root {
             --primary: #1e3d59; --primary-light: #17b978; --secondary: #112233;
@@ -21,85 +21,93 @@
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background-color: var(--bg-body); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
-        .app-container { display: flex; width: 100%; height: 100vh; }
+        .app-container { display: flex; width: 100%; height: 100vh; filter: blur(5px); transition: 0.3s; }
+        
+        .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .login-card { background: white; padding: 40px; border-radius: 12px; width: 100%; max-width: 400px; text-align: center; }
+
         .sidebar { width: var(--sidebar-width); background-color: var(--secondary); color: #ffffff; display: flex; flex-direction: column; justify-content: space-between; padding: 24px 16px; z-index: 10; }
         .sidebar-brand { display: flex; align-items: center; gap: 12px; padding: 0 12px 24px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
         .brand-logo { background-color: var(--primary-light); width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; color: #ffffff; }
         .brand-name { font-size: 1.15rem; font-weight: 700; letter-spacing: 0.5px; }
         .brand-name span { color: var(--primary-light); font-size: 0.75rem; display: block; font-weight: 400; }
         .sidebar-menu { list-style: none; margin-top: 24px; flex-grow: 1; }
-        .menu-item { margin-bottom: 8px; }
         .menu-link { display: flex; align-items: center; gap: 12px; padding: 12px; color: #a0aec0; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 0.95rem; transition: var(--transition); cursor: pointer; }
         .menu-link:hover, .menu-link.active { color: #ffffff; background-color: rgba(255, 255, 255, 0.08); }
         .menu-link.active { border-left: 4px solid var(--primary-light); background-color: rgba(255, 255, 255, 0.1); padding-left: 8px; }
         .sidebar-footer { padding: 12px; font-size: 0.8rem; color: #718096; border-top: 1px solid rgba(255, 255, 255, 0.1); text-align: center; }
+        
         .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; }
         .topbar { background-color: #ffffff; border-bottom: 1px solid var(--border-color); min-height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; }
         .page-title { font-size: 1.25rem; font-weight: 600; color: var(--secondary); }
         .user-profile { display: flex; align-items: center; gap: 12px; }
         .user-avatar { width: 40px; height: 40px; background-color: var(--primary); color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; }
-        .user-info h4 { font-size: 0.9rem; font-weight: 600; }
-        .user-info p { font-size: 0.75rem; color: var(--text-muted); }
+        
         .content-body { padding: 32px; max-width: 1400px; width: 100%; margin: 0 auto; }
-        .page-section { display: none; animation: fadeIn 0.4s ease-in-out forwards; }
-        .page-section.active { display: block; }
+        .page-section { display: none; }
+        .page-section.active { display: block; animation: fadeIn 0.4s ease forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
         .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; margin-bottom: 32px; }
-        .metric-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .metric-title { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+        .metric-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 8px; }
+        .metric-title { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
         .metric-value { font-size: 2rem; font-weight: 700; color: var(--secondary); }
-        .metric-badge { font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px; font-weight: 500; color: var(--success); }
-        .form-container { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 32px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); max-width: 800px; }
+        
+        .form-container { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 32px; max-width: 800px; }
         .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 24px; }
         .form-group { display: flex; flex-direction: column; gap: 8px; }
         .form-label { font-size: 0.85rem; font-weight: 600; color: var(--text-main); }
-        .form-input, .form-select { padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem; outline: none; transition: var(--transition); background-color: #f8fafc; }
-        .form-input:focus, .form-select:focus { border-color: var(--primary-light); background-color: #ffffff; box-shadow: 0 0 0 3px rgba(23, 185, 120, 0.15); }
-        .btn-submit { background-color: var(--primary-light); color: #ffffff; border: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: var(--transition); font-size: 0.95rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .form-input, .form-select { padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem; outline: none; background-color: #f8fafc; }
+        .form-input:focus, .form-select:focus { border-color: var(--primary-light); background-color: #ffffff; }
+        .btn-submit { background-color: var(--primary-light); color: #ffffff; border: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: var(--transition); }
         .btn-submit:hover { opacity: 0.95; transform: translateY(-1px); }
-        .credential-alert { display: none; background-color: #ecfdf5; border: 1px solid #10b981; border-radius: 8px; padding: 20px; margin-bottom: 24px; animation: fadeIn 0.4s ease; }
+        .btn-cancel { background-color: var(--text-muted); color: #ffffff; border: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; cursor: pointer; display: none; }
+        
+        .credential-alert { display: none; background-color: #ecfdf5; border: 1px solid #10b981; border-radius: 8px; padding: 20px; margin-bottom: 24px; }
         .credential-alert h4 { color: #065f46; margin-bottom: 10px; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
         .credential-box { background-color: #ffffff; border: 1px dashed #34d399; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 1rem; display: flex; justify-content: space-between; align-items: center; }
         .btn-copy { background-color: #059669; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; font-weight: 600; }
-        .btn-copy:hover { background-color: #047857; }
-        .table-container { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        
+        .table-container { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; }
         .table-header-controls { padding: 20px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background-color: #fafbfc; }
-        .search-wrapper { position: relative; width: 320px; }
-        .search-input { width: 100%; padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.85rem; outline: none; }
-        .search-input:focus { border-color: var(--primary-light); }
+        .search-input { width: 300px; padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 8px; outline: none; }
+        .btn-print-list { background-color: #f1f5f9; color: var(--secondary); border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; gap: 8px; align-items: center;}
+        
         .companies-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
-        .companies-table th { background-color: #f8fafc; color: var(--text-muted); font-weight: 600; padding: 16px 24px; border-bottom: 1px solid var(--border-color); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; }
-        .companies-table td { padding: 18px 24px; border-bottom: 1px solid var(--border-color); color: var(--text-main); }
-        .companies-table tr:last-child td { border-bottom: none; }
-        .companies-table tr:hover { background-color: #f8fafc; }
-        .badge-status { display: inline-flex; padding: 4px 8px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
-        .badge-status.active { background-color: #def7ec; color: #03543f; }
-        .badge-status.inactive { background-color: #fde8e8; color: #9b1c1c; }
-        .badge-plan { background-color: #e1effe; color: #1e429f; display: inline-flex; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 500; }
-        .credential-cell { font-family: monospace; background-color: #f1f5f9; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; color: #334155; display: inline-flex; align-items: center; gap: 6px; }
-        .btn-action-sm { background: none; border: none; color: var(--primary-light); cursor: pointer; font-size: 0.75rem; font-weight: 600; text-decoration: underline; }
-        .btn-action { background: none; border: none; cursor: pointer; padding: 6px 10px; border-radius: 4px; transition: var(--transition); color: var(--text-muted); font-size: 0.85rem; font-weight: 500; border: 1px solid var(--border-color); }
-        .btn-action:hover { background-color: var(--border-color); color: var(--secondary); }
-        /* Modal de Login Simples para o Master */
-        .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; display: flex; align-items: center; justify-content: center; z-index: 9999; }
-        .login-card { background: white; padding: 40px; border-radius: 12px; width: 100%; max-width: 400px; text-align: center; }
+        .companies-table th { background-color: #f8fafc; color: var(--text-muted); padding: 16px 24px; border-bottom: 1px solid var(--border-color); font-size: 0.75rem; text-transform: uppercase; }
+        .companies-table td { padding: 16px 24px; border-bottom: 1px solid var(--border-color); }
+        
+        .badge-status.active { background-color: #def7ec; color: #03543f; padding: 4px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+        .badge-status.inactive { background-color: #fde8e8; color: #9b1c1c; padding: 4px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+        
+        .actions-cell { display: flex; gap: 6px; flex-wrap: wrap; }
+        .btn-action { background: none; border: 1px solid var(--border-color); cursor: pointer; padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 500; }
+        .btn-action:hover { background-color: #f1f5f9; }
+
+        /* Área de Impressão */
+        @media print {
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
+        }
     </style>
 </head>
 <body>
 
-    <!-- OVERLAY DE AUTENTICAÇÃO DO MASTER (Segurança Base) -->
+    <div id="printArea" style="display: none; padding: 40px; font-family: sans-serif;"></div>
+
     <div class="login-overlay" id="masterLoginOverlay">
         <div class="login-card">
             <h2 style="color: var(--secondary); margin-bottom: 10px;">🔐 Acesso Master</h2>
             <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px;">Insira a palavra-passe mestra do sistema sisFarma.</p>
             <input type="password" id="masterPasswordInput" class="form-input" style="width: 100%; margin-bottom: 16px;" placeholder="Palavra-passe de Gestão">
-            <button class="btn-submit" style="width: 100%;" onclick="authenticateMaster()">Desbloquear Painel</button>
+            <button class="btn-submit" style="width: 100%; background-color: var(--primary-light);" onclick="authenticateMaster()">Desbloquear Painel</button>
         </div>
     </div>
 
-    <div class="app-container" style="filter: blur(5px); transition: 0.3s;" id="mainApp">
-        <!-- SIDEBAR -->
-        <aside class="sidebar">
+    <div class="app-container" id="mainApp">
+        <aside class="sidebar no-print">
             <div>
                 <div class="sidebar-brand">
                     <div class="brand-logo">sF</div>
@@ -114,10 +122,8 @@
             <div class="sidebar-footer">v1.0.0 Master <br> Todos os direitos reservados</div>
         </aside>
 
-        <!-- MAIN WINDOW -->
         <main class="main-content">
-            <!-- TOPBAR -->
-            <header class="topbar">
+            <header class="topbar no-print">
                 <div class="page-title" id="page-current-title">Dashboard Geral</div>
                 <div class="user-profile">
                     <div class="user-avatar">ADM</div>
@@ -129,36 +135,17 @@
             </header>
 
             <div class="content-body">
-                <!-- 1. ABA DASHBOARD -->
                 <section id="sec-dashboard" class="page-section active">
                     <div class="metrics-grid">
-                        <div class="metric-card">
-                            <span class="metric-title">Empresas Compradoras</span>
-                            <div class="metric-value" id="metric-total">0</div>
-                            <span class="metric-badge">Ativas na plataforma</span>
-                        </div>
-                        <div class="metric-card">
-                            <span class="metric-title">Clientes Ativos</span>
-                            <div class="metric-value" id="metric-active" style="color: var(--success)">0</div>
-                            <span class="metric-badge" style="color: var(--success)">Operando normalmente</span>
-                        </div>
-                        <div class="metric-card">
-                            <span class="metric-title">Clientes Inativos</span>
-                            <div class="metric-value" id="metric-inactive" style="color: var(--danger)">0</div>
-                            <span class="metric-badge" style="color: var(--danger)">Contratos suspensos</span>
-                        </div>
-                    </div>
-                    <div style="margin-top: 32px;">
-                        <h3 style="margin-bottom: 16px; font-weight: 600;">Regras de Acesso sisFarma</h3>
-                        <p style="color: var(--text-muted); line-height: 1.6;">Ao registrar um novo cliente, o painel gera automaticamente uma **chave de acesso criptográfica única (senha)**.</p>
-                        <p style="color: var(--text-muted); line-height: 1.6;">O gestor da farmácia utilizará o <strong>CNPJ</strong> e a <strong>senha gerada</strong> para realizar login no painel local (<code>admin.html</code>).</p>
+                        <div class="metric-card"><span class="metric-title">Empresas Compradoras</span><div class="metric-value" id="metric-total">0</div></div>
+                        <div class="metric-card"><span class="metric-title">Clientes Ativos</span><div class="metric-value" id="metric-active" style="color: var(--success)">0</div></div>
+                        <div class="metric-card"><span class="metric-title">Clientes Inativos</span><div class="metric-value" id="metric-inactive" style="color: var(--danger)">0</div></div>
                     </div>
                 </section>
 
-                <!-- 2. ABA CADASTRO DE EMPRESAS -->
                 <section id="sec-cadastro" class="page-section">
                     <div class="form-container">
-                        <h2 style="margin-bottom: 24px; font-weight: 600; color: var(--secondary)">Registrar Novo Comprador</h2>
+                        <h2 id="form-title" style="margin-bottom: 24px; font-weight: 600; color: var(--secondary)">Registrar Novo Comprador</h2>
                         
                         <div class="credential-alert" id="credentialAlert">
                             <h4>✓ Empresa Registrada com Sucesso!</h4>
@@ -170,51 +157,43 @@
                         </div>
 
                         <form id="cadastroForm" onsubmit="handleFormSubmit(event)">
+                            <input type="hidden" id="edit-cnpj-original" value="">
                             <div class="form-grid">
+                                <div class="form-group"><label class="form-label">Razão Social</label><input class="form-input" type="text" id="razao_social" required></div>
+                                <div class="form-group"><label class="form-label">CNPJ</label><input class="form-input" type="text" id="cnpj" required></div>
+                                <div class="form-group"><label class="form-label">E-mail</label><input class="form-input" type="email" id="email" required></div>
+                                <div class="form-group"><label class="form-label">Telefone</label><input class="form-input" type="text" id="telefone" required></div>
                                 <div class="form-group">
-                                    <label class="form-label" for="razao_social">Razão Social</label>
-                                    <input class="form-input" type="text" id="razao_social" placeholder="Ex: Hospital das Clínicas S/A" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label" for="cnpj">CNPJ (Apenas números ou formatado)</label>
-                                    <input class="form-input" type="text" id="cnpj" placeholder="00.000.000/0000-00" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label" for="email">E-mail de Contrato</label>
-                                    <input class="form-input" type="email" id="email" placeholder="financeiro@empresa.com" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label" for="telefone">Telefone</label>
-                                    <input class="form-input" type="text" id="telefone" placeholder="(11) 98888-8888" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label" for="plano">Plano Escolhido</label>
+                                    <label class="form-label">Plano</label>
                                     <select class="form-select" id="plano" required>
-                                        <option value="Clínica Base">Clínica Base (Limite Pequeno)</option>
-                                        <option value="Hospital Standard">Hospital Standard (Médio Porte)</option>
-                                        <option value="Hospitalar Enterprise">Hospitalar Enterprise (Redes)</option>
+                                        <option value="Clínica Base">Clínica Base</option>
+                                        <option value="Hospital Standard">Hospital Standard</option>
+                                        <option value="Hospitalar Enterprise">Hospitalar Enterprise</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label" for="status_inicial">Status Inicial</label>
+                                    <label class="form-label">Status Inicial</label>
                                     <select class="form-select" id="status_inicial" required>
-                                        <option value="Ativa">Ativa (Acesso Liberado)</option>
-                                        <option value="Inativa">Inativa (Acesso Bloqueado)</option>
+                                        <option value="Ativa">Ativa</option>
+                                        <option value="Inativa">Inativa</option>
                                     </select>
                                 </div>
                             </div>
-                            <button type="submit" class="btn-submit" id="btn-submit-cad">Gerar Senha & Cadastrar Empresa</button>
+                            <div style="display: flex; gap: 10px;">
+                                <button type="submit" class="btn-submit" id="btn-submit-cad">Gerar Senha & Cadastrar</button>
+                                <button type="button" class="btn-cancel" id="btn-cancel-edit" onclick="cancelEdit()">Cancelar Edição</button>
+                            </div>
                         </form>
                     </div>
                 </section>
 
-                <!-- 3. ABA LISTA DE CLIENTES -->
                 <section id="sec-clientes" class="page-section">
                     <div class="table-container">
                         <div class="table-header-controls">
                             <h3 style="font-weight: 600; color: var(--secondary)">Empresas Registradas</h3>
-                            <div class="search-wrapper">
+                            <div style="display: flex; gap: 10px; align-items: center;">
                                 <input type="text" class="search-input" id="searchBox" onkeyup="filterTable()" placeholder="Buscar por CNPJ ou Razão Social...">
+                                <button class="btn-print-list" onclick="printCompaniesReport()">🖨️ Imprimir Lista</button>
                             </div>
                         </div>
                         <table class="companies-table" id="companiesTable">
@@ -222,15 +201,13 @@
                                 <tr>
                                     <th>Razão Social</th>
                                     <th>CNPJ / Login</th>
-                                    <th>Senha Gerada</th>
                                     <th>Plano</th>
                                     <th>Status</th>
+                                    <th>Senha Gerada</th>
                                     <th>Ações</th>
                                 </tr>
                             </thead>
-                            <tbody id="companiesTableBody">
-                                <!-- Preenchido dinamicamente via JS e API -->
-                            </tbody>
+                            <tbody id="companiesTableBody"></tbody>
                         </table>
                     </div>
                 </section>
@@ -238,13 +215,10 @@
         </main>
     </div>
 
-    <!-- ==========================================
-       NOVA LÓGICA DE INTEGRAÇÃO COM A API (FETCH)
-       ========================================== -->
     <script>
-        let companiesData = []; // Armazena a lista real de clientes do banco de dados vazio no início!
+        let companiesData = [];
 
-        // 1. Autenticação Master (Protege a tela inicial)
+        // 1. Autenticação Master
         async function authenticateMaster() {
             const pass = document.getElementById('masterPasswordInput').value;
             try {
@@ -257,16 +231,14 @@
                 if(data.success) {
                     document.getElementById('masterLoginOverlay').style.display = 'none';
                     document.getElementById('mainApp').style.filter = 'none';
-                    loadCompaniesFromDB(); // Carrega os dados reais do Neon apenas após o login
+                    loadCompaniesFromDB(); 
                 } else {
                     alert(data.message || "Senha incorreta.");
                 }
-            } catch(e) {
-                alert("Erro ao conectar com a API Vercel.");
-            }
+            } catch(e) { alert("Erro ao conectar com a API."); }
         }
 
-        // 2. Buscar Dados Reais do Banco de Dados PostgreSQL
+        // 2. Carregar Dados do Banco
         async function loadCompaniesFromDB() {
             try {
                 const response = await fetch('/api/master/companies');
@@ -274,21 +246,16 @@
                     companiesData = await response.json();
                     updateDashboardMetrics();
                     renderTable();
-                } else {
-                    console.error("Erro ao puxar dados do banco de dados.");
                 }
-            } catch(error) {
-                console.error("Erro de rede:", error);
-            }
+            } catch(error) { console.error("Erro de rede:", error); }
         }
 
-        // 3. Cadastrar Nova Empresa via POST
+        // 3. Cadastrar ou Editar Empresa via POST
         async function handleFormSubmit(event) {
             event.preventDefault();
             
-            const btn = document.getElementById('btn-submit-cad');
-            btn.innerText = "Processando na Nuvem...";
-            btn.disabled = true;
+            const originalCnpj = document.getElementById('edit-cnpj-original').value;
+            const isEdit = originalCnpj !== "";
 
             const payload = {
                 razao_social: document.getElementById('razao_social').value.trim(),
@@ -299,58 +266,49 @@
                 status: document.getElementById('status_inicial').value
             };
 
-            try {
-                const response = await fetch('/api/master/companies', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
+            // Se for Cadastro Novo (Vai para o Backend)
+            if (!isEdit) {
+                const btn = document.getElementById('btn-submit-cad');
+                btn.innerText = "Processando...";
+                btn.disabled = true;
 
-                if (result.success) {
-                    // Mostrar senha gerada pelo Python
-                    document.getElementById('copyCnpj').innerText = result.cnpj;
-                    document.getElementById('copyPassword').innerText = result.senha;
-                    document.getElementById('credentialAlert').style.display = 'block';
-
-                    document.getElementById('cadastroForm').reset();
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    
-                    // Recarregar tabela do banco de dados
-                    loadCompaniesFromDB();
-                } else {
-                    alert("Atenção: " + result.message);
-                }
-            } catch (error) {
-                alert("Erro de servidor. Tente novamente.");
-            } finally {
-                btn.innerText = "Gerar Senha & Cadastrar Empresa";
-                btn.disabled = false;
-            }
-        }
-
-        // 4. Alternar Status via PUT
-        async function toggleCompanyStatus(index) {
-            const company = companiesData[index];
-            if(!company) return;
-
-            if(confirm(`Deseja alterar o status de acesso da empresa ${company.razao_social}?`)) {
                 try {
-                    const response = await fetch(`/api/master/companies/${company.cnpj}/status`, { method: 'PUT' });
+                    const response = await fetch('/api/master/companies', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
                     const result = await response.json();
-                    if(result.success) {
-                        loadCompaniesFromDB(); // Atualiza a tabela na hora
+
+                    if (result.success) {
+                        document.getElementById('copyCnpj').innerText = result.cnpj;
+                        document.getElementById('copyPassword').innerText = result.senha;
+                        document.getElementById('credentialAlert').style.display = 'block';
+
+                        document.getElementById('cadastroForm').reset();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        loadCompaniesFromDB();
                     } else {
-                        alert(result.message);
+                        alert("Atenção: " + result.message);
                     }
-                } catch(e) {
-                    alert("Falha de rede ao alterar status.");
+                } catch (error) { alert("Erro de servidor."); } 
+                finally { btn.innerText = "Gerar Senha & Cadastrar Empresa"; btn.disabled = false; }
+            } 
+            // Se for Edição (Simulação na Interface Local até implementarmos a rota PUT completa no index.py)
+            else {
+                const idx = companiesData.findIndex(c => c.cnpj === originalCnpj);
+                if (idx > -1) {
+                    companiesData[idx] = { ...companiesData[idx], ...payload };
+                    alert("Dados da empresa atualizados com sucesso (Atualizado na interface local).");
+                    cancelEdit();
+                    updateDashboardMetrics();
+                    renderTable();
+                    switchTab('clientes');
                 }
             }
         }
 
-        // --- Funções Auxiliares de Visualização (Interface) ---
-
+        // --- Renderização e Interface ---
         function updateDashboardMetrics() {
             const total = companiesData.length;
             const active = companiesData.filter(c => c.status === "Ativa").length;
@@ -364,46 +322,128 @@
             tbody.innerHTML = "";
 
             companiesData.forEach((item, index) => {
-                const tr = document.createElement('tr');
-                const statusBadgeClass = item.status === "Ativa" ? "active" : "inactive";
+                const statusClass = item.status === "Ativa" ? "active" : "inactive";
+                const toggleText = item.status === "Ativa" ? "🚫 Bloquear" : "✅ Ativar";
                 
-                tr.innerHTML = `
-                    <td style="font-weight: 500;">${item.razao_social}</td>
-                    <td><strong>${item.cnpj}</strong></td>
-                    <td>
-                        <div class="credential-cell">
-                            <span id="pass-text-${index}">••••••••</span>
-                            <button class="btn-action-sm" onclick="togglePasswordVisibility(${index})">Mostrar</button>
-                        </div>
-                    </td>
-                    <td><span class="badge-plan">${item.plano}</span></td>
-                    <td><span class="badge-status ${statusBadgeClass}">${item.status}</span></td>
-                    <td>
-                        <div style="display: flex; gap: 8px;">
-                            <button class="btn-action" onclick="toggleCompanyStatus(${index})">🔄 Status</button>
-                            <button class="btn-action" onclick="copyTablePassword(${index})">📋 Copiar</button>
-                        </div>
-                    </td>
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-weight: 500;">${item.razao_social}</td>
+                        <td><strong>${item.cnpj}</strong></td>
+                        <td><span class="badge-plan">${item.plano}</span></td>
+                        <td><span class="badge-status ${statusClass}">${item.status}</span></td>
+                        <td>
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <span id="pass-text-${index}" style="font-family:monospace; background:#f1f5f9; padding:2px 6px; border-radius:4px;">••••••••</span>
+                                <button class="btn-action" style="padding:2px 6px; font-size:0.7rem;" onclick="togglePasswordVisibility(${index})">👁️</button>
+                                <button class="btn-action" style="padding:2px 6px; font-size:0.7rem;" onclick="copyTablePassword(${index})">📋</button>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="actions-cell">
+                                <button class="btn-action" onclick="startEditCompany('${item.cnpj}')">📝 Editar</button>
+                                <button class="btn-action" onclick="toggleCompanyStatus(${index})">${toggleText}</button>
+                            </div>
+                        </td>
+                    </tr>
                 `;
-                tbody.appendChild(tr);
             });
         }
 
+        // 4. Ações da Tabela
+        function startEditCompany(cnpj) {
+            const company = companiesData.find(c => c.cnpj === cnpj);
+            if (!company) return;
+
+            document.getElementById('edit-cnpj-original').value = company.cnpj;
+            document.getElementById('razao_social').value = company.razao_social;
+            document.getElementById('cnpj').value = company.cnpj;
+            document.getElementById('email').value = company.email;
+            document.getElementById('telefone').value = company.telefone;
+            document.getElementById('plano').value = company.plano;
+            document.getElementById('status_inicial').value = company.status;
+
+            document.getElementById('form-title').innerText = "Editar Cadastro da Empresa";
+            document.getElementById('btn-submit-cad').innerText = "Salvar Alterações";
+            document.getElementById('btn-cancel-edit').style.display = "inline-block";
+            document.getElementById('credentialAlert').style.display = 'none';
+
+            switchTab('cadastro');
+        }
+
+        function cancelEdit() {
+            document.getElementById('cadastroForm').reset();
+            document.getElementById('edit-cnpj-original').value = "";
+            document.getElementById('form-title').innerText = "Registrar Novo Comprador";
+            document.getElementById('btn-submit-cad').innerText = "Gerar Senha & Cadastrar Empresa";
+            document.getElementById('btn-cancel-edit').style.display = "none";
+        }
+
+        async function toggleCompanyStatus(index) {
+            const company = companiesData[index];
+            if(!company) return;
+
+            if(confirm(`Deseja alterar o status da empresa ${company.razao_social}?`)) {
+                try {
+                    const response = await fetch(`/api/master/companies/${company.cnpj}/status`, { method: 'PUT' });
+                    const result = await response.json();
+                    if(result.success) {
+                        loadCompaniesFromDB(); 
+                    } else { alert(result.message); }
+                } catch(e) { alert("Falha de rede ao alterar status."); }
+            }
+        }
+
+        // 5. Impressão do Relatório de Clientes
+        function printCompaniesReport() {
+            const printContent = document.getElementById('printArea');
+            let rowsHtml = "";
+
+            companiesData.forEach(c => {
+                rowsHtml += `
+                    <tr>
+                        <td style="padding: 10px; border-bottom: 1px solid #ccc;">${c.razao_social}</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #ccc;">${c.cnpj}</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #ccc;">${c.email}</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #ccc;">${c.plano}</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #ccc;">${c.status}</td>
+                    </tr>
+                `;
+            });
+
+            printContent.innerHTML = `
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h2>SÍSFARMA - GESTÃO MASTER MULTI-EMPRESAS</h2>
+                    <h3>RELATÓRIO GERAL DE CLIENTES E LICENÇAS</h3>
+                    <p>Emitido em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
+                    <hr style="border: 0; border-top: 2px solid #000; margin-top: 20px;">
+                </div>
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                    <thead>
+                        <tr style="background-color: #f0f0f0;">
+                            <th style="padding: 10px; border-bottom: 2px solid #000;">Razão Social</th>
+                            <th style="padding: 10px; border-bottom: 2px solid #000;">CNPJ</th>
+                            <th style="padding: 10px; border-bottom: 2px solid #000;">E-mail de Contrato</th>
+                            <th style="padding: 10px; border-bottom: 2px solid #000;">Plano Contratado</th>
+                            <th style="padding: 10px; border-bottom: 2px solid #000;">Status Atual</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rowsHtml}</tbody>
+                </table>
+            `;
+            window.print();
+        }
+
+        // Funções menores
         function togglePasswordVisibility(index) {
             const passSpan = document.getElementById(`pass-text-${index}`);
-            const btn = passSpan.nextElementSibling;
             if (passSpan.innerText === "••••••••") {
                 passSpan.innerText = companiesData[index].senha;
-                btn.innerText = "Ocultar";
-            } else {
-                passSpan.innerText = "••••••••";
-                btn.innerText = "Mostrar";
-            }
+            } else { passSpan.innerText = "••••••••"; }
         }
 
         function copyTablePassword(index) {
             navigator.clipboard.writeText(companiesData[index].senha);
-            alert("Senha copiada para a área de transferência!");
+            alert("Senha copiada com sucesso!");
         }
 
         function copyCredentialsToClipboard() {
@@ -417,22 +457,16 @@
             const filter = document.getElementById('searchBox').value.toLowerCase();
             const trs = document.getElementById('companiesTable').getElementsByTagName('tr');
             for (let i = 1; i < trs.length; i++) {
-                const textContent = trs[i].textContent || trs[i].innerText;
-                trs[i].style.display = textContent.toLowerCase().includes(filter) ? "" : "none";
+                trs[i].style.display = trs[i].innerText.toLowerCase().includes(filter) ? "" : "none";
             }
         }
 
         function switchTab(tabId) {
-            document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
-            document.querySelectorAll('.menu-link').forEach(link => link.classList.remove('active'));
+            document.querySelectorAll('.page-section, .menu-link').forEach(el => el.classList.remove('active'));
             document.getElementById('sec-' + tabId).classList.add('active');
             document.getElementById('nav-' + tabId).classList.add('active');
-            document.getElementById('credentialAlert').style.display = 'none';
-
-            const titleElement = document.getElementById('page-current-title');
-            if (tabId === 'dashboard') titleElement.innerText = "Dashboard Geral";
-            else if (tabId === 'cadastro') titleElement.innerText = "Painel de Cadastro de Empresas";
-            else if (tabId === 'clientes') titleElement.innerText = "Gestão de Empresas Parceiras";
+            const titles = { 'dashboard': 'Dashboard Geral', 'cadastro': 'Painel de Cadastro de Empresas', 'clientes': 'Gestão de Empresas Parceiras' };
+            document.getElementById('page-current-title').innerText = titles[tabId];
         }
     </script>
 </body>
