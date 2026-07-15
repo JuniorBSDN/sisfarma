@@ -3,283 +3,348 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SaaS Admin - Gestão Consolidada</title>
+    <title>SisFarma v.1 - Painel de Controle Master</title>
     <style>
-        /* --- Variáveis de Tema --- */
         :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --bg-color: #f3f4f6;
-            --surface: #ffffff;
-            --text-main: #1f2937;
-            --text-muted: #6b7280;
-            --border: #e5e7eb;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --info: #0ea5e9;
+            --bg-main: #d9d9d9;
+            --sidebar-bg: #e6e6e6;
+            --topbar-bg: #1a365d;
+            --btn-blue: #3b82f6;
+            --btn-green: #10b981;
+            --btn-red: #ef4444;
+            --btn-orange: #f97316;
+            --text-dark: #1e293b;
         }
 
-        /* --- Reset e Tipografia --- */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
-        /* TELA BLOQUEADA INICIALMENTE POR SEGURANÇA */
-        body { background-color: var(--bg-color); color: var(--text-main); display: none; height: 100vh; overflow: hidden; }
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-main);
+        }
 
-        /* --- Sidebar --- */
-        .sidebar { width: 260px; background-color: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 1.5rem; }
-        .sidebar h2 { color: var(--primary); font-size: 1.5rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 0.5rem; }
-        .menu-item { padding: 0.75rem 1rem; margin-bottom: 0.5rem; border-radius: 0.5rem; cursor: pointer; color: var(--text-muted); font-weight: 500; transition: all 0.2s; }
-        .menu-item:hover, .menu-item.active { background-color: #eff6ff; color: var(--primary); }
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
 
-        /* --- Área Principal & Views --- */
-        .main-content { flex: 1; padding: 2rem; overflow-y: auto; }
-        .view { display: none; animation: fadeIn 0.3s ease-in-out; }
-        .view.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .topbar {
+            min-height: 45px;
+            background-color: var(--topbar-bg);
+            color: white;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            font-size: 13px;
+            font-weight: bold;
+            gap: 10px;
+        }
 
-        /* --- Cabeçalhos e Botões --- */
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-        .btn-primary { background-color: var(--primary); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-        .btn-primary:hover { background-color: var(--primary-hover); }
-        .btn-secondary { background: white; border: 1px solid var(--border); padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-weight: 600; }
+        .main-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
 
-        /* --- Cards --- */
-        .dashboard-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-        .card { background-color: var(--surface); padding: 1.5rem; border-radius: 0.75rem; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .card h3 { font-size: 0.875rem; color: var(--text-muted); font-weight: 500; }
-        .card .value { font-size: 2rem; font-weight: 700; margin-top: 0.5rem; color: var(--text-main); }
+        /* Barra Lateral Responsiva */
+        .sidebar {
+            width: 220px;
+            background-color: var(--sidebar-bg);
+            padding: 15px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            border-right: 1px solid #bccc;
+            overflow-y: auto;
+        }
 
-        /* --- Tabelas --- */
-        .table-container { background-color: var(--surface); border-radius: 0.75rem; border: 1px solid var(--border); overflow: hidden; margin-bottom: 1.5rem; }
-        table { width: 100%; border-collapse: collapse; text-align: left; }
-        th { background-color: #f9fafb; padding: 1rem 1.5rem; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); }
-        td { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
-        
-        /* --- Badges --- */
-        .status-badge { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.875rem; font-weight: 500; }
-        .status-active { background-color: #d1fae5; color: #065f46; }
-        .status-blocked { background-color: #fee2e2; color: #991b1b; }
-        .status-pending { background-color: #fef3c7; color: #92400e; }
-        .status-indicator { width: 8px; height: 8px; border-radius: 50%; }
-        .status-active .status-indicator { background-color: var(--success); }
-        .status-blocked .status-indicator { background-color: var(--danger); }
-        .status-pending .status-indicator { background-color: var(--warning); }
+        .menu-group {
+            font-size: 10px;
+            color: #666;
+            font-weight: bold;
+            margin: 10px 0 3px 5px;
+            text-transform: uppercase;
+        }
 
-        /* --- Formulários (Configurações e Modal) --- */
-        .form-group { margin-bottom: 1.2rem; }
-        .form-group label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 500; }
-        .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; outline: none; background: #fff; }
-        .form-group input:focus, .form-group select:focus { border-color: var(--primary); }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
-        .settings-panel { background: var(--surface); padding: 2rem; border-radius: 0.75rem; border: 1px solid var(--border); max-width: 600px; }
+        .menu-btn {
+            width: 100%;
+            text-align: left;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            color: white;
+            font-weight: 500;
+            background-color: #34495e;
+        }
 
-        /* --- Modal --- */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-overlay.active { display: flex; }
-        .modal-content { background: var(--surface); padding: 2rem; border-radius: 0.75rem; width: 100%; max-width: 700px; max-height: 90vh; overflow-y: auto; }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+        .content-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
 
-        /* --- Visualização Ficha --- */
-        .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
-        .data-item { background: #f9fafb; padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border); }
-        .data-item span { display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-bottom: 0.25rem; }
-        .data-item strong { font-size: 1rem; color: var(--text-main); }
+        .panel-card {
+            background-color: #e0e0e0;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+            min-height: 85vh;
+            box-sizing: border-box;
+        }
+
+        .panel-card h2 {
+            margin-top: 0;
+            font-size: 18px;
+            color: #000;
+            margin-bottom: 25px;
+        }
+
+        /* Grid de Formulário Responsivo */
+        .form-inline-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            color: #333;
+            text-align: left;
+            width: 100%;
+            font-weight: bold;
+        }
+
+        .form-group input, .form-group select {
+            padding: 8px 10px;
+            border: 1px solid #a3a3a3;
+            border-radius: 4px;
+            background: #fff;
+            font-size: 13px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Tabelas com Suporte a Rolagem Lateral */
+        .table-container {
+            background: white;
+            border: 1px solid #b5b5b5;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-x: auto;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        th {
+            background: #fff;
+            color: #333;
+            font-weight: bold;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+            border-right: 1px solid #eee;
+            text-align: left;
+        }
+
+        td {
+            padding: 9px 10px;
+            border-bottom: 1px solid #eee;
+            border-right: 1px solid #eee;
+        }
+
+        .action-btn {
+            padding: 10px 18px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 15px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: bold;
+            width: auto;
+        }
+        .action-btn.green { background-color: var(--btn-green); }
+        .action-btn.orange { background-color: var(--btn-orange); }
+
+        .row-btn {
+            padding: 4px 10px;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-right: 5px;
+        }
+        .row-btn.edit { background-color: var(--btn-orange); }
+        .row-btn.delete { background-color: var(--btn-red); }
+
+        /* ==========================================
+           📱 MEDIA QUERIES (ADAPTAÇÃO MOBILE)
+           ========================================== */
+        @media (max-width: 768px) {
+            .main-layout {
+                flex-direction: column;
+                overflow-y: auto;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid #bccc;
+                flex-direction: row;
+                overflow-x: auto;
+                padding: 10px;
+                gap: 8px;
+            }
+            
+            .menu-group { display: none; }
+            
+            .menu-btn {
+                white-space: nowrap;
+                width: auto;
+                padding: 8px 14px;
+            }
+
+            body, html {
+                overflow: auto;
+            }
+
+            .app-container {
+                height: auto;
+                min-height: 100vh;
+            }
+
+            .panel-card {
+                min-height: auto;
+                padding: 15px;
+            }
+
+            .form-inline-row {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .action-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
     </style>
 </head>
 <body>
 
-    <aside class="sidebar">
-        <h2>💊 PharmaSaaS</h2>
-        <div class="menu-item active" onclick="changeView('dashboard', this)">Dashboard</div>
-        <div class="menu-item" onclick="changeView('farmacias', this)">Farmácias Clientes</div>
-        <div class="menu-item" onclick="changeView('faturamento', this)">Faturamento</div>
-        <div class="menu-item" onclick="changeView('configuracoes', this)">Configurações</div>
-    </aside>
-
-    <main class="main-content">
-        
-        <section id="view-dashboard" class="view active">
-            <header class="header">
-                <div>
-                    <h1>Visão Geral do Sistema</h1>
-                    <p style="color: var(--text-muted);">Acompanhamento em tempo real do seu SaaS.</p>
-                </div>
-                <button class="btn-primary" onclick="abrirModalCadastro()">+ Nova Farmácia</button>
-            </header>
-            <div class="dashboard-cards">
-                <div class="card">
-                    <h3>Farmácias Ativas</h3>
-                    <div class="value" id="dash-ativas">--</div>
-                </div>
-                <div class="card">
-                    <h3>Faturamento MRR</h3>
-                    <div class="value">R$ 4.500,00</div>
-                </div>
-                <div class="card">
-                    <h3>Bloqueadas (Inadimplência)</h3>
-                    <div class="value" id="dash-bloqueadas" style="color: var(--danger);">--</div>
-                </div>
-            </div>
-            <h3 style="margin-bottom: 1rem;">Farmácias Adicionadas Recentemente</h3>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr><th>Nome Fantasia</th><th>Login Admin</th><th>Status</th></tr>
-                    </thead>
-                    <tbody id="dash-table-body">
-                        </tbody>
-                </table>
-            </div>
-        </section>
-
-        <section id="view-farmacias" class="view">
-            <header class="header">
-                <div>
-                    <h1>Farmácias Clientes</h1>
-                    <p style="color: var(--text-muted);">Gerencie todos os Tenants da sua base.</p>
-                </div>
-                <button class="btn-primary" onclick="abrirModalCadastro()">+ Nova Farmácia</button>
-            </header>
-            <div class="table-container" style="overflow-x: auto;">
-                <table style="min-width: 800px;">
-                    <thead>
-                        <tr>
-                            <th>Nome da Empresa</th>
-                            <th>Login</th>
-                            <th>Senha</th>
-                            <th>Status</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tenant-table-body">
-                        </tbody>
-                </table>
-            </div>
-        </section>
-
-        <section id="view-faturamento" class="view">
-            <header class="header">
-                <div>
-                    <h1>Histórico de Faturamento</h1>
-                    <p style="color: var(--text-muted);">Controle os pagamentos das mensalidades.</p>
-                </div>
-                <button class="btn-secondary">Exportar Relatório (.csv)</button>
-            </header>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr><th>Farmácia (Tenant)</th><th>Vencimento</th><th>Valor</th><th>Situação</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td style="font-weight: 600;">Farmácia Central</td><td>10/Jul/2026</td><td>R$ 150,00</td>
-                            <td><span class="status-badge status-active"><span class="status-indicator"></span> Pago</span></td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: 600;">Drogaria Vida</td><td>12/Jul/2026</td><td>R$ 150,00</td>
-                            <td><span class="status-badge status-pending"><span class="status-indicator"></span> Aguardando</span></td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: 600;">Pharma Mais</td><td>05/Jul/2026</td><td>R$ 150,00</td>
-                            <td><span class="status-badge status-blocked"><span class="status-indicator"></span> Atrasado</span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <section id="view-configuracoes" class="view">
-            <header class="header">
-                <div>
-                    <h1>Configurações do SaaS</h1>
-                    <p style="color: var(--text-muted);">Ajustes globais do sistema administrativo.</p>
-                </div>
-            </header>
-            <div class="settings-panel">
-                <form onsubmit="event.preventDefault(); alert('Configurações salvas!');">
-                    <div class="form-group"><label>Nome do Administrador</label><input type="text" value="Super Admin" required></div>
-                    <div class="form-group"><label>E-mail de Suporte do SaaS</label><input type="email" value="suporte@pharmasaas.com" required></div>
-                    <div class="form-group"><label>Valor da Mensalidade Padrão (R$)</label><input type="number" value="150.00" step="0.01" required></div>
-                    <div class="form-group"><label>Dias para Bloqueio Automático</label><select><option>3 Dias</option><option selected>5 Dias</option><option>10 Dias</option></select></div>
-                    <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1rem;">Salvar Alterações</button>
-                </form>
-            </div>
-        </section>
-
-    </main>
-
-    <div class="modal-overlay" id="addTenantModal">
-        <div class="modal-content">
-            <h3 id="modal-titulo" style="margin-bottom: 1.5rem; color: var(--primary);">Cadastrar Nova Farmácia</h3>
-            <form id="addTenantForm">
-                <h4 style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase;">Dados da Empresa</h4>
-                <div class="form-row">
-                    <div class="form-group"><label>Nome da Empresa (Fantasia)</label><input type="text" id="cad-nome" required></div>
-                    <div class="form-group"><label>CPF / CNPJ</label><input type="text" id="cad-cnpj" required></div>
-                </div>
-                <div class="form-row-3">
-                    <div class="form-group"><label>Responsável</label><input type="text" id="cad-responsavel" required></div>
-                    <div class="form-group"><label>Telefone / WhatsApp</label><input type="text" id="cad-telefone" required></div>
-                    <div class="form-group"><label>CNAE</label><input type="text" id="cad-cnae"></div>
-                </div>
-                <div class="form-group"><label>E-mail Corporativo</label><input type="email" id="cad-email" required></div>
-
-                <h4 style="margin: 1.5rem 0 1rem 0; color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase;">Contrato e Acesso</h4>
-                <div class="form-row">
-                    <div class="form-group"><label>Tipo de Contrato</label><select id="cad-contrato"><option value="Mensal">Mensal</option><option value="Anual">Anual</option><option value="Vitalício">Vitalício</option></select></div>
-                    <div class="form-group"><label>Período</label><input type="text" id="cad-periodo" placeholder="Ex: 12 meses"></div>
-                </div>
-                <div class="form-row-3">
-                    <div class="form-group"><label>Usuário (Login)</label><input type="text" id="cad-usuario" required></div>
-                    <div class="form-group"><label>Senha</label><input type="password" id="cad-senha" placeholder="Defina a senha" required></div>
-                    <div class="form-group"><label>Status</label><select id="cad-status"><option value="Ativo">Ativo</option><option value="Bloqueado">Bloqueado</option></select></div>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-secondary" onclick="fecharModais()">Cancelar</button>
-                    <button type="submit" class="btn-primary" id="btn-salvar">Salvar Registro</button>
-                </div>
-            </form>
+    <div class="app-container">
+        <div class="topbar">
+            <div>⚙️ Sis Hospitalar v.1 - Modulo Master</div>
+            <div>Perfil: Administrador Global</div>
         </div>
-    </div>
 
-    <div class="modal-overlay" id="viewTenantModal">
-        <div class="modal-content">
-            <h3 style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; color: var(--primary);">
-                Ficha Completa da Empresa <span id="view-status" class="status-badge status-active"><span class="status-indicator"></span> Ativo</span>
-            </h3>
-            <div class="data-grid">
-                <div class="data-item"><span>Nome da Empresa</span><strong id="view-nome">--</strong></div>
-                <div class="data-item"><span>CPF / CNPJ</span><strong id="view-cnpj">--</strong></div>
-                <div class="data-item"><span>Responsável</span><strong id="view-responsavel">--</strong></div>
-                <div class="data-item"><span>Telefone</span><strong id="view-telefone">--</strong></div>
-                <div class="data-item"><span>E-mail</span><strong id="view-email">--</strong></div>
-                <div class="data-item"><span>CNAE</span><strong id="view-cnae">--</strong></div>
-                <div class="data-item"><span>Tipo de Contrato</span><strong id="view-contrato">--</strong></div>
-                <div class="data-item"><span>Período</span><strong id="view-periodo">--</strong></div>
-            </div>
-            <h4 style="margin: 1.5rem 0 1rem 0; color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase;">Credenciais de Acesso</h4>
-            <div class="data-grid" style="grid-template-columns: 1fr 1fr;">
-                <div class="data-item"><span>Usuário (Login)</span><strong id="view-usuario">--</strong></div>
-                <div class="data-item"><span>Senha</span><strong>••••••••</strong></div>
-            </div>
-            <div class="modal-actions">
-                <button type="button" class="btn-secondary" onclick="fecharModais()">Fechar Ficha</button>
-            </div>
+        <div class="main-layout">
+            <aside class="sidebar">
+                <button class="menu-btn" style="background-color: #1a365d;">🏢 Unidades e Acessos</button>
+                <a href="index.html" style="text-decoration: none;">
+                    <button class="menu-btn" style="background-color: #7f8c8d;">↩ Voltar ao Sistema</button>
+                </a>
+            </aside>
+
+            <main class="content-area">
+                <div class="panel-card">
+                    <h2 id="form-titulo">Ativação e Cadastro de Nova Unidade Hospitalar</h2>
+
+                    <form id="form-admin-cadastro-unidade">
+                        <input type="hidden" id="adm-unidade-id" value="">
+
+                        <div class="form-inline-row">
+                            <div class="form-group">
+                                <label>Nome da Unidade:</label>
+                                <input type="text" id="adm-unidade-nome" placeholder="Ex: Hospital Regional" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Usuário / Login:</label>
+                                <input type="text" id="adm-unidade-user" placeholder="Ex: hospital.admin" required>
+                            </div>
+                        </div>
+
+                        <div class="form-inline-row">
+                            <div class="form-group">
+                                <label>Senha do Cliente:</label>
+                                <input type="password" id="adm-unidade-pass" placeholder="Defina a senha de acesso" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Perfil Mestre:</label>
+                                <select id="adm-unidade-perfil">
+                                    <option value="Farmacêutico Chefe">Farmacêutico Chefe</option>
+                                    <option value="Diretor Técnico">Diretor Técnico</option>
+                                    <option value="Administrador Hospitalar">Administrador Hospitalar</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="btn-submit-form" class="action-btn green">🚀 Ativar e Liberar Unidade</button>
+                        <button type="button" id="btn-cancelar-edicao" class="action-btn" style="background-color:#7f8c8d; display:none;" onclick="resetarFormulario()">Cancelar Edição</button>
+                    </form>
+
+                    <h4 style="margin-top: 30px; font-size: 13px; color: #333;">Clientes com Acesso Liberado no PostgreSQL</h4>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Usuário Gerado</th>
+                                    <th>Perfil / Unidade Vinculada</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-usuarios-unidades">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
         </div>
     </div>
 
     <script>
         const API_URL = "/api";
-        let clientesEmMemoria = [];
-        let idEmEdicao = null;
 
-        // --- 1. PROMPT DE SEGURANÇA E INICIALIZAÇÃO ---
+        // Bloqueio visual imediato por segurança
+        document.body.style.display = 'none';
+
         document.addEventListener("DOMContentLoaded", async () => {
+            await autenticarPainelAdmin();
+        });
+
+        // 🔒 1. PROMPT MASTER DE AUTENTICAÇÃO
+        async function autenticarPainelAdmin() {
             const senhaDigitada = prompt("🔒 Acesso Restrito! Digite a Senha Master do Painel Administrador:");
-            
+
             if (!senhaDigitada) {
-                alert("Acesso Negado.");
+                window.location.href = "index.html";
                 return;
             }
 
@@ -291,208 +356,150 @@
                 });
 
                 if (res.ok) {
-                    document.body.style.display = 'flex'; // Exibe o layout (Flexbox)
-                    carregarTabela();
+                    document.body.style.display = 'block';
+                    carregarUnidadesCadastradas();
                 } else {
                     alert("❌ Senha Master Inválida!");
-                    window.location.reload();
+                    window.location.href = "index.html";
                 }
             } catch (err) {
-                // FALLBACK MODO DE TESTE OFFLINE
-                const querTestar = confirm("⚠️ Servidor API não encontrado (offline).\n\nDeseja abrir o layout em MODO VISUAL (Mock) apenas para ver a tela?");
-                if(querTestar) {
-                    document.body.style.display = 'flex';
-                    carregarTabelaMock();
-                } else {
-                    document.body.innerHTML = "<h2 style='text-align:center; width:100%; margin-top:20%; color: var(--danger);'>Acesso Bloqueado.</h2>";
-                    document.body.style.display = 'block';
-                }
+                alert("Erro ao conectar ao servidor de segurança.");
+                window.location.href = "index.html";
             }
-        });
-
-        // --- 2. NAVEGAÇÃO SPA ---
-        function changeView(viewId, menuElement) {
-            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-            menuElement.classList.add('active');
-            document.getElementById('view-' + viewId).classList.add('active');
         }
 
-        // --- 3. DADOS (API E MOCK) ---
-        async function carregarTabela() {
+        // 📥 2. LISTAR USUÁRIOS/UNIDADES
+        async function carregarUnidadesCadastradas() {
             try {
                 const res = await fetch(`${API_URL}/auth/usuarios`);
                 if (!res.ok) return;
-                clientesEmMemoria = await res.json();
-                renderTables();
-            } catch (err) { console.error("Erro na API", err); }
+
+                const usuarios = await res.json();
+                const tabela = document.getElementById("tabela-usuarios-unidades");
+                tabela.innerHTML = "";
+
+                usuarios.forEach(user => {
+                    const perfilEscapado = user.perfil.replace(/'/g, "\\'");
+                    const usuarioEscapado = user.usuario.replace(/'/g, "\\'");
+                    const senhaEscapada = (user.senha || '').replace(/'/g, "\\'");
+
+                    tabela.innerHTML += `
+                        <tr>
+                            <td>${user.id}</td>
+                            <td><strong>${user.usuario}</strong></td>
+                            <td>${user.perfil}</td>
+                            <td><span style="color: #10b981; font-weight: bold;">🟢 Ativo</span></td>
+                            <td>
+                                <button class="row-btn edit" onclick="prepararEdicao(${user.id}, '${usuarioEscapado}', '${senhaEscapada}', '${perfilEscapado}')">✏️ Editar</button>
+                                <button class="row-btn delete" onclick="excluirUnidade(${user.id})">🗑️ Excluir</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                console.error("Erro ao sincronizar lista:", err);
+            }
         }
 
-        function carregarTabelaMock() {
-            clientesEmMemoria = [
-                { id: 101, nome: "Farmácia Central", cnpj: "12.345.678/0001-90", responsavel: "João", telefone: "(11) 98888-1111", email: "contato@central.com", cnae: "4771-7", contrato: "Mensal", periodo: "-", usuario: "admin.central", status: "Ativo" },
-                { id: 102, nome: "Drogaria Vida", cnpj: "98.765.432/0001-10", responsavel: "Maria", telefone: "(21) 97777-2222", email: "contato@vida.com", cnae: "4771-7", contrato: "Anual", periodo: "12 meses", usuario: "maria.vida", status: "Ativo" },
-                { id: 103, nome: "Pharma Mais", cnpj: "11.111.111/0001-11", responsavel: "Pedro", telefone: "(31) 96666-3333", email: "pedro@pharma.com", cnae: "4771-7", contrato: "Mensal", periodo: "-", usuario: "pharma.admin", status: "Bloqueado" }
-            ];
-            renderTables();
-        }
-
-        function renderTables() {
-            const fullTable = document.getElementById('tenant-table-body');
-            const dashTable = document.getElementById('dash-table-body');
-            fullTable.innerHTML = ''; dashTable.innerHTML = '';
-
-            let ativas = 0, bloqueadas = 0;
-
-            clientesEmMemoria.forEach((cliente, index) => {
-                if (cliente.status === "Ativo") ativas++; else bloqueadas++;
-
-                const statusClass = cliente.status === "Ativo" ? "status-active" : "status-blocked";
-                const statusHTML = `<span class="status-badge ${statusClass}"><span class="status-indicator"></span> ${cliente.status}</span>`;
-
-                // Tabela Completa (Aba Farmácias)
-                fullTable.innerHTML += `
-                    <tr>
-                        <td><strong>${cliente.nome}</strong></td>
-                        <td>${cliente.usuario}</td>
-                        <td style="color: var(--text-muted);">••••••••</td>
-                        <td>${statusHTML}</td>
-                        <td style="display: flex; gap: 8px;">
-                            <button onclick="abrirVisualizacao(${cliente.id})" style="background: none; border: none; color: var(--info); cursor: pointer; font-weight: 600; font-size: 0.8rem;">Visualizar</button>
-                            <button onclick="abrirEdicao(${cliente.id})" style="background: none; border: none; color: var(--primary); cursor: pointer; font-weight: 600; font-size: 0.8rem;">Alterar</button>
-                            <button onclick="excluirCliente(${cliente.id})" style="background: none; border: none; color: var(--danger); cursor: pointer; font-weight: 600; font-size: 0.8rem;">Excluir</button>
-                        </td>
-                    </tr>
-                `;
-
-                // Tabela Resumo (Aba Dashboard - max 3)
-                if(index < 3) {
-                    dashTable.innerHTML += `<tr><td style="font-weight: 600;">${cliente.nome}</td><td>${cliente.usuario}</td><td>${statusHTML}</td></tr>`;
-                }
-            });
-
-            document.getElementById('dash-ativas').innerText = ativas;
-            document.getElementById('dash-bloqueadas').innerText = bloqueadas;
-        }
-
-        // --- 4. CONTROLE DE MODAIS E FORMULÁRIOS ---
-        function fecharModais() {
-            document.getElementById('addTenantModal').classList.remove('active');
-            document.getElementById('viewTenantModal').classList.remove('active');
-            document.getElementById("addTenantForm").reset();
-            idEmEdicao = null;
-        }
-
-        function abrirModalCadastro() {
-            fecharModais();
-            document.getElementById("modal-titulo").innerText = "Cadastrar Nova Farmácia";
-            document.getElementById("btn-salvar").innerText = "Salvar Registro";
-            document.getElementById("cad-senha").required = true;
-            document.getElementById("cad-senha").placeholder = "Defina a senha";
-            document.getElementById('addTenantModal').classList.add('active');
-        }
-
-        function abrirVisualizacao(id) {
-            const cliente = clientesEmMemoria.find(c => c.id === id);
-            if(!cliente) return;
-
-            document.getElementById("view-nome").innerText = cliente.nome || "--";
-            document.getElementById("view-cnpj").innerText = cliente.cnpj || "--";
-            document.getElementById("view-responsavel").innerText = cliente.responsavel || "--";
-            document.getElementById("view-telefone").innerText = cliente.telefone || "--";
-            document.getElementById("view-email").innerText = cliente.email || "--";
-            document.getElementById("view-cnae").innerText = cliente.cnae || "--";
-            document.getElementById("view-contrato").innerText = cliente.contrato || "--";
-            document.getElementById("view-periodo").innerText = cliente.periodo || "--";
-            document.getElementById("view-usuario").innerText = cliente.usuario || "--";
-            
-            const badge = document.getElementById("view-status");
-            badge.innerHTML = `<span class="status-indicator"></span> ${cliente.status}`;
-            badge.className = cliente.status === 'Ativo' ? 'status-badge status-active' : 'status-badge status-blocked';
-
-            document.getElementById('viewTenantModal').classList.add('active');
-        }
-
-        function abrirEdicao(id) {
-            const cliente = clientesEmMemoria.find(c => c.id === id);
-            if(!cliente) return;
-
-            idEmEdicao = cliente.id;
-            document.getElementById("cad-nome").value = cliente.nome || "";
-            document.getElementById("cad-cnpj").value = cliente.cnpj || "";
-            document.getElementById("cad-responsavel").value = cliente.responsavel || "";
-            document.getElementById("cad-telefone").value = cliente.telefone || "";
-            document.getElementById("cad-email").value = cliente.email || "";
-            document.getElementById("cad-cnae").value = cliente.cnae || "";
-            document.getElementById("cad-contrato").value = cliente.contrato || "Mensal";
-            document.getElementById("cad-periodo").value = cliente.periodo || "";
-            document.getElementById("cad-usuario").value = cliente.usuario || "";
-            document.getElementById("cad-status").value = cliente.status || "Ativo";
-            
-            document.getElementById("cad-senha").required = false;
-            document.getElementById("cad-senha").placeholder = "Deixe em branco para manter a atual";
-
-            document.getElementById("modal-titulo").innerText = "Alterar Dados da Farmácia";
-            document.getElementById("btn-salvar").innerText = "Atualizar Registro";
-            document.getElementById('addTenantModal').classList.add('active');
-        }
-
-        // --- 5. SUBMIT (POST / PUT) ---
-        document.getElementById('addTenantForm').addEventListener('submit', async function(e) {
+        // 💾 3. FORMULÁRIO: SALVAR OU ALTERAR CADASTRO
+        document.getElementById("form-admin-cadastro-unidade").addEventListener("submit", async (e) => {
             e.preventDefault();
 
-            const payload = {
-                nome: document.getElementById("cad-nome").value,
-                cnpj: document.getElementById("cad-cnpj").value,
-                responsavel: document.getElementById("cad-responsavel").value,
-                telefone: document.getElementById("cad-telefone").value,
-                email: document.getElementById("cad-email").value,
-                cnae: document.getElementById("cad-cnae").value,
-                contrato: document.getElementById("cad-contrato").value,
-                periodo: document.getElementById("cad-periodo").value,
-                usuario: document.getElementById("cad-usuario").value,
-                status: document.getElementById("cad-status").value
-            };
+            const idExistente = document.getElementById("adm-unidade-id").value;
+            const usuario = document.getElementById("adm-unidade-user").value;
+            const senha = document.getElementById("adm-unidade-pass").value;
+            const perfilCombo = document.getElementById("adm-unidade-perfil").value;
+            const nomeUnidade = document.getElementById("adm-unidade-nome").value;
 
-            const senhaInput = document.getElementById("cad-senha").value;
-            if (senhaInput) payload.senha = senhaInput;
+            const payload = {
+                usuario: usuario,
+                senha: senha,
+                perfil: `${perfilCombo} - ${nomeUnidade}`
+            };
 
             try {
                 let url = `${API_URL}/auth/registrar`;
                 let metodo = "POST";
-                if (idEmEdicao) {
-                    url = `${API_URL}/auth/usuarios/${idEmEdicao}`;
+
+                if (idExistente) {
+                    url = `${API_URL}/auth/usuarios/${idExistente}`;
                     metodo = "PUT";
                 }
 
                 const res = await fetch(url, {
-                    method: metodo, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
+                    method: metodo,
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
                 });
 
                 if (res.ok) {
-                    fecharModais();
-                    carregarTabela();
+                    alert(idExistente ? "Dados da unidade atualizados com sucesso!" : `Acesso liberado para a unidade: ${nomeUnidade}`);
+                    resetarFormulario();
+                    carregarUnidadesCadastradas();
                 } else {
                     const erro = await res.json();
-                    alert(`Falha: ${erro.error || 'Verifique se o usuário já existe.'}`);
+                    alert(`Falha na operação: ${erro.detail || 'Usuário já existente'}`);
                 }
             } catch (err) {
-                // Comportamento Offline (Mock)
-                alert("Modo Visual: Cadastro simulado. Na Vercel isso será salvo no banco de dados Neon.");
-                fecharModais();
+                alert("Erro de comunicação com o servidor PostgreSQL em nuvem.");
             }
         });
 
-        // --- 6. EXCLUIR (DELETE) ---
-        async function excluirCliente(id) {
-            if (!confirm("⚠️ Tem certeza que deseja excluir esta farmácia e todos os seus dados?")) return;
-            try {
-                const res = await fetch(`${API_URL}/auth/usuarios/${id}`, { method: "DELETE" });
-                if (res.ok) carregarTabela();
-                else alert("Erro ao tentar excluir.");
-            } catch (err) {
-                alert("Modo Visual: Exclusão ignorada pois o banco está offline.");
+        // ✏️ 4. PREPARAR INTERFACE PARA EDIÇÃO
+        function prepararEdicao(id, usuario, senha, perfilCompleto) {
+            document.getElementById("adm-unidade-id").value = id;
+            document.getElementById("adm-unidade-user").value = usuario;
+            document.getElementById("adm-unidade-pass").value = senha;
+
+            let perfilParte = "Farmacêutico Chefe";
+            let nomeParte = perfilCompleto;
+
+            if (perfilCompleto.includes(" - ")) {
+                const partes = perfilCompleto.split(" - ");
+                perfilParte = partes[0];
+                nomeParte = partes.slice(1).join(" - ");
             }
+
+            document.getElementById("adm-unidade-perfil").value = perfilParte;
+            document.getElementById("adm-unidade-nome").value = nomeParte;
+
+            document.getElementById("form-titulo").innerText = "✏️ Alterar Dados da Unidade Cadastrada";
+            const btnSubmit = document.getElementById("btn-submit-form");
+            btnSubmit.innerText = "💾 Salvar Alterações";
+            btnSubmit.className = "action-btn orange";
+            document.getElementById("btn-cancelar-edicao").style.display = "inline-flex";
+        }
+
+        // 🗑️ 5. EXCLUIR ACESSO DA UNIDADE
+        async function excluirUnidade(id) {
+            if (!confirm("⚠️ Tem certeza de que deseja revogar permanentemente o acesso desta unidade hospitalar?")) return;
+
+            try {
+                const res = await fetch(`${API_URL}/auth/usuarios/${id}`, {
+                    method: "DELETE"
+                });
+
+                if (res.ok) {
+                    alert("Acesso revogado e removido com sucesso!");
+                    carregarUnidadesCadastradas();
+                } else {
+                    alert("Não foi possível excluir a unidade selecionada.");
+                }
+            } catch (err) {
+                alert("Erro de rede ao tentar deletar o registro.");
+            }
+        }
+
+        // 🔄 RESETAR FORMULÁRIO DE VOLTA PARA CRIAÇÃO
+        function resetarFormulario() {
+            document.getElementById("form-admin-cadastro-unidade").reset();
+            document.getElementById("adm-unidade-id").value = "";
+            document.getElementById("form-titulo").innerText = "Ativação e Cadastro de Nova Unidade Hospitalar";
+
+            const btnSubmit = document.getElementById("btn-submit-form");
+            btnSubmit.innerText = "🚀 Ativar e Liberar Unidade";
+            btnSubmit.className = "action-btn green";
+            document.getElementById("btn-cancelar-edicao").style.display = "none";
         }
     </script>
 </body>
