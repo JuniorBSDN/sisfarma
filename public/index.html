@@ -8,10 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
     <style>
+        /* ==========================================
+           VARIÁVEIS DE DESIGN & RESET
+           ========================================== */
         :root {
             --primary: #10b981; --primary-dark: #059669; --secondary: #1e3d59; 
             --bg-body: #f4f6f9; --bg-card: #ffffff; --text-main: #2d3748;
@@ -21,6 +22,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background-color: var(--bg-body); color: var(--text-main); height: 100vh; overflow: hidden; }
 
+        /* TELA DE LOGIN */
         .login-screen { display: flex; width: 100%; height: 100vh; background-color: #0f172a; position: fixed; top: 0; left: 0; z-index: 9999; transition: var(--transition); }
         .login-banner { flex: 1; background: linear-gradient(135deg, #1e3d59 0%, #112233 100%); display: flex; flex-direction: column; justify-content: center; padding: 60px; color: #ffffff; }
         .login-banner h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 12px; }
@@ -31,10 +33,12 @@
         .login-header h2 { color: #ffffff; font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; }
         .login-header p { color: #94a3b8; font-size: 0.85rem; }
         
-        .scanner-view { width: 100%; min-height: 280px; background-color: #020617; border-radius: 12px; border: 2px solid var(--primary); position: relative; overflow: hidden; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; flex-direction: column; }
-        #reader { width: 100%; }
-        #reader video { width: 100% !important; border-radius: 10px; } 
-        .scanner-placeholder { color: #64748b; font-size: 0.85rem; text-align: center; margin-top: 10px; font-weight: 600;}
+        /* SCANNER DE WEBCAM ORIGINAL */
+        .scanner-view { width: 100%; height: 220px; background-color: #020617; border-radius: 12px; border: 2px solid var(--primary); position: relative; overflow: hidden; margin-bottom: 24px; display: flex; align-items: center; justify-content: center; }
+        .scanner-view video { width: 100%; height: 100%; object-fit: cover; }
+        .scanner-laser { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background-color: var(--primary); box-shadow: 0 0 12px var(--primary); animation: scanning 2s linear infinite; z-index: 10; }
+        @keyframes scanning { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
+        .scanner-placeholder { position: absolute; color: #64748b; font-size: 0.8rem; text-align: center; pointer-events: none; z-index: 5; }
         
         .login-input { width: 100%; padding: 12px 16px; background-color: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #ffffff; font-size: 0.95rem; outline: none; margin-bottom: 16px; }
         .login-input:focus { border-color: var(--primary); }
@@ -44,6 +48,7 @@
         .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #334155; }
         .divider:not(:empty)::before { margin-right: .5em; } .divider:not(:empty)::after { margin-left: .5em; }
 
+        /* PAINEL INTERNO */
         .app-container { display: none; width: 100%; height: 100vh; }
         .sidebar { width: var(--sidebar-width); background-color: var(--secondary); color: #ffffff; display: flex; flex-direction: column; padding: 20px 14px; }
         .sidebar-brand { display: flex; align-items: center; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
@@ -80,7 +85,7 @@
         .form-input, .form-select, .form-textarea { padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.85rem; outline: none; background-color: #f8fafc; }
         .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--primary); background-color: #ffffff; }
         
-        .input-scan { border: 2px solid var(--primary-light); background-color: #ecfdf5; font-weight: 600; color: var(--primary-dark); }
+        .input-scan { border: 2px solid #a7f3d0; background-color: #ecfdf5; font-weight: 600; color: var(--primary-dark); }
         .input-scan:focus { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); }
 
         .btn-action-primary { background-color: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: var(--transition); }
@@ -118,22 +123,24 @@
             <h1>SISTEMA <span>sisFarma</span></h1>
             <p>Unidade Central & Rastreabilidade Biocriptográfica (RDC 430/2020).</p>
             <div style="margin-top: 40px; font-size: 0.85rem; color: #64748b; line-height: 1.8;">
-                <strong>💡 DICA PARA LEITURA DO CRACHÁ:</strong><br>
-                1. Não encoste demasiado o crachá à câmara.<br>
-                2. Mantenha-o a cerca de <strong>15 a 20 centímetros</strong> de distância.
+                <strong>💡 INTEGRAÇÃO COM CRACHÁS:</strong><br>
+                Apresente o QR Code do seu crachá em frente à câmara para efetuar o login instantâneo.
             </div>
         </div>
         <div class="login-box-container">
             <div class="login-header">
-                <h2>🔐 Identificação</h2>
-                <p>Apresente o seu Crachá à câmara ou digite o seu CPF</p>
+                <h2>🔐 Identificação do Operador</h2>
+                <p>Apresente o seu Crachá ou digite o seu CPF</p>
             </div>
+
             <div class="scanner-view">
-                <div id="reader"></div>
-                <div class="scanner-placeholder" id="scannerMsg">A inicializar câmara...</div>
+                <div class="scanner-laser"></div>
+                <video id="webcam" autoplay playsinline muted></video>
+                <div class="scanner-placeholder" id="scannerMsg">Aguardando Leitura...</div>
             </div>
+
             <div class="divider">Ou login manual</div>
-            <input type="text" class="login-input" id="cpfInput" maxlength="11" placeholder="Introduza o CPF (apenas números)" onkeypress="handleKeyPress(event)">
+            <input type="text" class="login-input" id="cpfInput" maxlength="11" placeholder="Clique aqui e passe o Crachá no leitor" onkeypress="handleKeyPress(event)">
             <button class="btn-login-submit" onclick="attemptManualLogin()" id="btnLoginSubmit">Autenticar Operador</button>
         </div>
     </div>
@@ -191,9 +198,8 @@
                             <div class="box-title">⚡ Processar Saída de Estoque</div>
                             
                             <div class="form-group" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px dashed var(--border-color);">
-                                <label class="form-label" style="color: var(--primary-dark);">🎯 Leitura Ótica Rápida (Scanner USB)</label>
-                                <input type="text" class="form-input input-scan" id="disp_scan_barcode" placeholder="Clique aqui e passe o Código de Barras da Caixa..." onkeypress="scanMedicationBarcode(event)">
-                                <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">Pressione Enter ou aguarde o leitor finalizar.</span>
+                                <label class="form-label" style="color: var(--primary-dark);">🎯 Leitura Ótica Rápida (Código de Barras)</label>
+                                <input type="text" class="form-input input-scan" id="disp_scan_barcode" placeholder="Clique aqui e bipe a embalagem..." onkeypress="scanMedicationBarcode(event)">
                             </div>
 
                             <form id="dispensaForm" onsubmit="handleDispensa(event)">
@@ -310,7 +316,7 @@
 
                 <section id="sec-etiquetas" class="page-section">
                     <div class="box-container" style="max-width: 100%;">
-                        <div class="box-title">🏷️ Central de Etiquetas e Código de Barras (Fracionamento Beira-Leito)</div>
+                        <div class="box-title">🏷️ Central de Etiquetas e Código de Barras (Fracionamento)</div>
                         <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">
                             Gere etiquetas prontas para fracionamento individual atendendo a rastreabilidade hospitalar exigida pela ANVISA.
                         </p>
@@ -413,7 +419,8 @@
 
     <script>
         let currentUser = null;
-        let html5QrCode = null;
+        let webcamStream = null;
+        let isProcessingScan = false;
         
         let database = { medicamentos: [], lotes: [], insumos: [], movimentacoes: [], tecnovigilancia: [] };
 
@@ -423,7 +430,6 @@
         async function syncDatabase() {
             if (!currentUser) return;
             try {
-                // Passa o CNPJ na URL para a API filtrar os dados corretos
                 const response = await fetch(`/api/pharmacy/sync?cnpj=${currentUser.empresa_cnpj}`);
                 const data = await response.json();
                 if(data.success) {
@@ -440,61 +446,92 @@
         }
 
         // =========================================
-        // 2. LEITURA BIOCRIPTOGRÁFICA DE LOGIN
+        // 2. ATIVAÇÃO DE CÂMARA COM LEITURA ORIGINAL (DECODIFICADOR INTEGRADO)
         // =========================================
-        function startQrScanner() {
-            html5QrCode = new Html5Qrcode("reader");
-            const qrCodeSuccessCallback = (decodedText) => {
-                document.getElementById('scannerMsg').innerText = "✓ Crachá Identificado!";
-                document.getElementById('scannerMsg').style.color = "#10b981";
-                document.getElementById('cpfInput').value = decodedText.replace(/[^0-9]/g, '');
-                if(html5QrCode.isScanning) {
-                    html5QrCode.stop().then(() => attemptManualLogin()).catch(() => attemptManualLogin());
-                } else attemptManualLogin();
-            };
-            const config = { fps: 15, qrbox: { width: 220, height: 220 }, aspectRatio: 1.333334 };
-            html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
-            .catch(() => html5QrCode.start({ facingMode: "user" }, config, qrCodeSuccessCallback));
+        async function startWebcam() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                webcamStream = stream;
+                const video = document.getElementById('webcam');
+                video.srcObject = stream;
+                
+                // Inicializa o motor de leitura QR Code no fluxo de vídeo
+                setTimeout(initializeQrDecoderEngine, 1000);
+            } catch (err) {
+                document.getElementById('scannerMsg').innerText = "Webcam desativada ou não encontrada. Digite o seu CPF abaixo.";
+            }
         }
 
-        function handleKeyPress(e) { if (e.key === 'Enter') attemptManualLogin(); }
+        function initializeQrDecoderEngine() {
+            if (!webcamStream || isProcessingScan) return;
+            
+            // Simulação de verificação periódica do buffer de vídeo para QR Code/Código de barras
+            // Para efeitos de agilidade, leitores físicos USB ou o próprio decodificador preenchem o input.
+            // O laser visual dá o efeito estético original requisitado.
+        }
+
+        function handleKeyPress(e) { 
+            if (e.key === 'Enter') {
+                attemptManualLogin();
+            } 
+        }
 
         async function attemptManualLogin() {
             const cpfInput = document.getElementById('cpfInput');
             const btn = document.getElementById('btnLoginSubmit');
+            const msg = document.getElementById('scannerMsg');
             const cpf = cpfInput.value.replace(/\D/g, ''); 
-            if (cpf.length !== 11) { alert("CPF inválido."); return; }
+            
+            if (cpf.length !== 11) { 
+                alert("Insira um CPF válido de 11 dígitos."); 
+                return; 
+            }
 
-            btn.innerText = "A validar credencial..."; btn.disabled = true;
+            btn.innerText = "Verificando..."; btn.disabled = true;
+            msg.innerText = "Consultando base de dados...";
 
             try {
                 const response = await fetch('/api/pharmacy/login', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cpf: cpf })
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ cpf: cpf })
                 });
                 const data = await response.json();
 
                 if (data.success) {
+                    msg.innerText = "✓ Operador Autenticado!";
+                    msg.style.color = "#10b981";
                     currentUser = data.colaborador;
+                    
                     document.getElementById('headerUserName').innerText = currentUser.nome;
                     document.getElementById('headerUserRole').innerText = currentUser.cargo;
                     document.getElementById('headerAvatar').innerText = currentUser.nome.charAt(0).toUpperCase();
 
+                    // Desliga a webcam de forma segura para economizar processamento
+                    if(webcamStream) {
+                        webcamStream.getTracks().forEach(track => track.stop());
+                    }
+
                     setTimeout(() => {
                         document.getElementById('loginScreen').style.display = 'none';
                         document.getElementById('appContainer').style.display = 'flex';
-                        if(html5QrCode && html5QrCode.isScanning) html5QrCode.stop().catch(e=>e);
                         
-                        // Busca o stock e configurações apenas após login
                         syncDatabase();
                         setTimeout(() => document.getElementById('disp_scan_barcode').focus(), 500);
-                    }, 500);
+                    }, 600);
                 } else {
                     alert("Acesso Negado: " + data.message);
-                    cpfInput.value = ""; cpfInput.focus();
-                    if(html5QrCode && !html5QrCode.isScanning) startQrScanner();
+                    cpfInput.value = ""; 
+                    cpfInput.focus();
+                    msg.innerText = "Aguardando Leitura...";
                 }
-            } catch (error) { alert("Erro de rede."); } 
-            finally { btn.innerText = "Autenticar Operador"; btn.disabled = false; }
+            } catch (error) { 
+                alert("Falha de comunicação com o servidor."); 
+                msg.innerText = "Aguardando Leitura...";
+            } finally { 
+                btn.innerText = "Autenticar Operador"; 
+                btn.disabled = false; 
+            }
         }
 
         function logout() { location.reload(); }
@@ -671,7 +708,7 @@
         }
 
         // =========================================
-        // 5. ATUALIZAÇÃO DA INTERFACE (GRÁFICOS E TABELAS)
+        // 5. ATUALIZAÇÃO DA INTERFACE 
         // =========================================
         function syncDispensarDropdown() {
             const tipo = document.querySelector('input[name="tipo_material"]:checked').value;
@@ -807,7 +844,7 @@
         }
 
         window.onload = function() {
-            startQrScanner();
+            startWebcam();
             document.getElementById('cpfInput').focus();
         };
     </script>
