@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
     <style>
         /* ==========================================
@@ -34,11 +36,12 @@
         .login-header p { color: #94a3b8; font-size: 0.85rem; }
         
         /* SCANNER DE WEBCAM ORIGINAL */
-        .scanner-view { width: 100%; height: 220px; background-color: #020617; border-radius: 12px; border: 2px solid var(--primary); position: relative; overflow: hidden; margin-bottom: 24px; display: flex; align-items: center; justify-content: center; }
-        .scanner-view video { width: 100%; height: 100%; object-fit: cover; }
-        .scanner-laser { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background-color: var(--primary); box-shadow: 0 0 12px var(--primary); animation: scanning 2s linear infinite; z-index: 10; }
+        .scanner-view { width: 100%; height: 240px; background-color: #020617; border-radius: 12px; border: 2px solid var(--primary); position: relative; overflow: hidden; margin-bottom: 24px; display: flex; align-items: center; justify-content: center; }
+        #webcam-reader { width: 100%; height: 100%; }
+        #webcam-reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+        .scanner-laser { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background-color: var(--primary); box-shadow: 0 0 12px var(--primary); animation: scanning 2s linear infinite; z-index: 10; pointer-events: none; }
         @keyframes scanning { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
-        .scanner-placeholder { position: absolute; color: #64748b; font-size: 0.8rem; text-align: center; pointer-events: none; z-index: 5; }
+        .scanner-placeholder { position: absolute; bottom: 12px; color: #ffffff; background-color: rgba(15, 23, 42, 0.85); padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; text-align: center; z-index: 15; font-weight: 600; pointer-events: none; border: 1px solid rgba(255, 255, 255, 0.1); }
         
         .login-input { width: 100%; padding: 12px 16px; background-color: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #ffffff; font-size: 0.95rem; outline: none; margin-bottom: 16px; }
         .login-input:focus { border-color: var(--primary); }
@@ -135,7 +138,7 @@
 
             <div class="scanner-view">
                 <div class="scanner-laser"></div>
-                <video id="webcam" autoplay playsinline muted></video>
+                <div id="webcam-reader"></div>
                 <div class="scanner-placeholder" id="scannerMsg">Aguardando Leitura...</div>
             </div>
 
@@ -419,8 +422,7 @@
 
     <script>
         let currentUser = null;
-        let webcamStream = null;
-        let isProcessingScan = false;
+        let html5QrCode = null; // Instância real do decodificador óptico
         
         let database = { medicamentos: [], lotes: [], insumos: [], movimentacoes: [], tecnovigilancia: [] };
 
@@ -445,33 +447,51 @@
             }
         }
 
-        // =========================================
-        // 2. ATIVAÇÃO DE CÂMARA COM LEITURA ORIGINAL (DECODIFICADOR INTEGRADO)
-        // =========================================
-        async function startWebcam() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-                webcamStream = stream;
-                const video = document.getElementById('webcam');
-                video.srcObject = stream;
-                
-                // Inicializa o motor de leitura QR Code no fluxo de vídeo
-                setTimeout(initializeQrDecoderEngine, 1000);
-            } catch (err) {
-                document.getElementById('scannerMsg').innerText = "Webcam desativada ou não encontrada. Digite o seu CPF abaixo.";
-            }
-        }
-
-        function initializeQrDecoderEngine() {
-            if (!webcamStream || isProcessingScan) return;
+        // ==========================================================
+        // 2. LEITURA REAL E ATIVA DE QR CODE (WEBCAM INTEGRADA)
+        // ==========================================================
+        function startWebcam() {
+            // Inicializa a biblioteca html5-qrcode apontando para a div de leitura
+            html5QrCode = new Html5Qrcode("webcam-reader");
             
-            // Simulação de verificação periódica do buffer de vídeo para QR Code/Código de barras
-            // Para efeitos de agilidade, leitores físicos USB ou o próprio decodificador preenchem o input.
-            // O laser visual dá o efeito estético original requisitado.
+            const qrCodeSuccessCallback = (decodedText) => {
+                // Ao identificar um QR Code (CPF do colaborador):
+                document.getElementById('scannerMsg').innerText = "✓ Crachá Identificado!";
+                document.getElementById('scannerMsg').style.color = "#10b981";
+                
+                // Preenche o input visual com o CPF encontrado
+                const cpfLimpo = decodedText.replace(/[^0-9]/g, '');
+                document.getElementById('cpfInput').value = cpfLimpo;
+                
+                // Para o scanner temporariamente e prossegue com a autenticação automática
+                if (html5QrCode.isScanning) {
+                    html5QrCode.stop()
+                        .then(() => attemptManualLogin())
+                        .catch(() => attemptManualLogin());
+                } else {
+                    attemptManualLogin();
+                }
+            };
+            
+            const config = { 
+                fps: 15, 
+                qrbox: { width: 180, height: 180 }, 
+                aspectRatio: 1.0 
+            };
+
+            // Tenta iniciar pela câmera traseira ("environment") e cai para a frontal ("user") caso necessário
+            html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
+                .catch(() => {
+                    html5QrCode.start({ facingMode: "user" }, config, qrCodeSuccessCallback)
+                        .catch(() => {
+                            document.getElementById('scannerMsg').innerText = "Câmera indisponível. Digite o CPF.";
+                        });
+                });
         }
 
         function handleKeyPress(e) { 
             if (e.key === 'Enter') {
+                // Se o usuário passar o crachá em um leitor de mesa USB (que age como teclado)
                 attemptManualLogin();
             } 
         }
@@ -507,9 +527,9 @@
                     document.getElementById('headerUserRole').innerText = currentUser.cargo;
                     document.getElementById('headerAvatar').innerText = currentUser.nome.charAt(0).toUpperCase();
 
-                    // Desliga a webcam de forma segura para economizar processamento
-                    if(webcamStream) {
-                        webcamStream.getTracks().forEach(track => track.stop());
+                    // Para a câmera definitivamente ao entrar no sistema
+                    if (html5QrCode && html5QrCode.isScanning) {
+                        await html5QrCode.stop().catch(e => console.log(e));
                     }
 
                     setTimeout(() => {
@@ -524,10 +544,20 @@
                     cpfInput.value = ""; 
                     cpfInput.focus();
                     msg.innerText = "Aguardando Leitura...";
+                    msg.style.color = "#ffffff";
+                    
+                    // Se o login falhar, reinicia a webcam para novas tentativas
+                    if (html5QrCode && !html5QrCode.isScanning) {
+                        startWebcam();
+                    }
                 }
             } catch (error) { 
                 alert("Falha de comunicação com o servidor."); 
                 msg.innerText = "Aguardando Leitura...";
+                msg.style.color = "#ffffff";
+                if (html5QrCode && !html5QrCode.isScanning) {
+                    startWebcam();
+                }
             } finally { 
                 btn.innerText = "Autenticar Operador"; 
                 btn.disabled = false; 
