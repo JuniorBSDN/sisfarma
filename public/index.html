@@ -96,6 +96,10 @@
         .btn-orange { background-color: #e67e22; } .btn-orange:hover { background-color: #d35400; }
         .btn-red { background-color: #ef4444; } .btn-red:hover { background-color: #dc2626; }
         
+        /* Botões de impressão embutidos */
+        .btn-print-mini { background-color: #f1f5f9; border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .btn-print-mini:hover { background-color: #e2e8f0; }
+
         .table-wrapper { margin-top: 14px; overflow-x: auto; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; }
         .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; }
         .data-table th { background-color: #f8fafc; padding: 12px 16px; color: var(--text-muted); border-bottom: 1px solid var(--border-color); font-size: 0.75rem; text-transform: uppercase; }
@@ -109,17 +113,27 @@
         .label-card-p { border: 2px dashed #000; background-color: white; padding: 16px; font-size: 0.75rem; color: #000; border-radius: 6px; position: relative; }
         
         .alert-banner { display: flex; align-items: center; gap: 12px; padding: 14px; background-color: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; color: #b45309; margin-bottom: 20px; font-size: 0.85rem; font-weight: 500; }
-        .search-input { width: 300px; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; outline: none; font-size: 0.85rem;}
+        .search-input { width: 260px; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; outline: none; font-size: 0.85rem;}
+
+        /* Modais de Impressão */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 10000; align-items: center; justify-content: center; }
+        .modal-content { background-color: #ffffff; border-radius: 16px; padding: 32px; max-width: 480px; width: 90%; text-align: center; position: relative; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        .modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); }
+
+        .receipt-card { border: 1px solid #cbd5e1; background-color: #f8fafc; padding: 20px; border-radius: 8px; text-align: left; margin: 20px 0; font-family: monospace; font-size: 0.8rem; color: #0f172a; line-height: 1.5; }
+        .receipt-card hr { border: 0; border-top: 1px dashed #cbd5e1; margin: 10px 0; }
 
         @media print {
             body * { visibility: hidden; }
-            #etiquetasContainer, #etiquetasContainer * { visibility: visible; }
-            #etiquetasContainer { position: absolute; left: 0; top: 0; width: 100%; display: flex; flex-wrap: wrap; gap: 10px; }
-            .label-card-p { width: 250px; page-break-inside: avoid; margin-bottom: 10px; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { position: absolute; left: 0; top: 0; width: 100%; }
+            .modal-overlay { display: none !important; }
         }
     </style>
 </head>
 <body>
+
+    <div id="printArea" style="display: none; padding: 30px; font-family: sans-serif;"></div>
 
     <div class="login-screen" id="loginScreen">
         <div class="login-banner">
@@ -230,7 +244,10 @@
                             </form>
                         </div>
                         <div class="box-container">
-                            <div class="box-title">Histórico Geral de Dispensações (Saídas)</div>
+                            <div class="box-title">
+                                <span>Histórico Geral de Dispensações</span>
+                                <button class="btn-print-mini" onclick="printReport('dispensacoes')">🖨️ Imprimir Histórico</button>
+                            </div>
                             <div class="table-wrapper">
                                 <table class="data-table">
                                     <thead><tr><th>Tipo</th><th>Item</th><th>Qtd</th><th>Destinatário / Paciente</th><th>Data e Hora</th></tr></thead>
@@ -267,7 +284,10 @@
                             </form>
                         </div>
                         <div class="box-container">
-                            <div class="box-title">Catálogo Base Cadastrado</div>
+                            <div class="box-title">
+                                <span>Catálogo Base Cadastrado</span>
+                                <button class="btn-print-mini" onclick="printReport('catalogo')">🖨️ Imprimir Catálogo</button>
+                            </div>
                             <div class="table-wrapper">
                                 <table class="data-table">
                                     <thead><tr><th>Cód. Barras</th><th>Nome</th><th>Princípio Ativo</th><th>Tipo</th></tr></thead>
@@ -292,7 +312,10 @@
                             </form>
                         </div>
                         <div class="box-container">
-                            <div class="box-title">Inventário de Lotes Ativos</div>
+                            <div class="box-title">
+                                <span>Inventário de Lotes Ativos</span>
+                                <button class="btn-print-mini" onclick="printReport('lotes')">🖨️ Imprimir Inventário</button>
+                            </div>
                             <div class="table-wrapper"><table class="data-table"><thead><tr><th>Fármaco</th><th>Lote</th><th>Validade</th><th>Qtd</th></tr></thead><tbody id="lote_table_body"></tbody></table></div>
                         </div>
                     </div>
@@ -311,7 +334,10 @@
                             </form>
                         </div>
                         <div class="box-container">
-                            <div class="box-title">Saldo Insumos</div>
+                            <div class="box-title">
+                                <span>Saldo Insumos</span>
+                                <button class="btn-print-mini" onclick="printReport('insumos')">🖨️ Imprimir Insumos</button>
+                            </div>
                             <div class="table-wrapper"><table class="data-table"><thead><tr><th>Insumo</th><th>Espec.</th><th>Saldo</th></tr></thead><tbody id="ins_table_body"></tbody></table></div>
                         </div>
                     </div>
@@ -343,7 +369,11 @@
                     <div class="box-container" style="max-width: 100%;">
                         <div class="box-title">
                             <span>🔍 Auditoria de Movimentações & Rastreabilidade Integral</span>
-                            <input type="text" class="search-input" id="rastreioSearch" onkeyup="filterRastreioTable()" placeholder="Filtrar por Paciente, Item ou Tipo...">
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <input type="text" class="search-input" id="rastreioSearch" onkeyup="filterRastreioTable()" placeholder="Filtrar por Paciente, Item ou Tipo...">
+                                <button class="btn-print-mini" style="background-color: #fee2e2; border-color: #fca5a5; color: #991b1b;" onclick="printPortaria344Report()">📋 Relatório Portaria 344/98</button>
+                                <button class="btn-print-mini" onclick="printReport('rastreio')">🖨️ Imprimir Tudo</button>
+                            </div>
                         </div>
                         <div class="table-wrapper">
                             <table class="data-table" id="rastreioTable">
@@ -406,7 +436,10 @@
                             </form>
                         </div>
                         <div class="box-container">
-                            <div class="box-title">Histórico de Ocorrências e Desvios Registados</div>
+                            <div class="box-title">
+                                <span>Histórico de Ocorrências e Desvios</span>
+                                <button class="btn-print-mini" onclick="printReport('tecnovigilancia')">🖨️ Imprimir Desvios</button>
+                            </div>
                             <div class="table-wrapper">
                                 <table class="data-table">
                                     <thead><tr><th>Lote Referência</th><th>Tipo de Ocorrência</th><th>Gravidade</th><th>Data e Hora do Registo</th></tr></thead>
@@ -420,11 +453,23 @@
         </main>
     </div>
 
+    <div class="modal-overlay" id="receiptModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="document.getElementById('receiptModal').style.display='none'">×</button>
+            <h3 style="color: var(--secondary)">✓ Registro Salvo com Sucesso</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Comprovante de Saída de Estoque Gerado.</p>
+            <div class="receipt-card" id="printReceiptArea">
+                </div>
+            <button class="btn-action-primary" style="width: 100%;" onclick="printSingleReceipt()">🖨️ Imprimir Recibo</button>
+        </div>
+    </div>
+
     <script>
         let currentUser = null;
         let html5QrCode = null; // Instância real do decodificador óptico
         
         let database = { medicamentos: [], lotes: [], insumos: [], movimentacoes: [], tecnovigilancia: [] };
+        let lastDispensaData = null; // Guarda os dados da última baixa para emissão de recibo
 
         // =========================================
         // 1. SINCRONIZAÇÃO COM O POSTGRESQL (NEON)
@@ -451,19 +496,15 @@
         // 2. LEITURA REAL E ATIVA DE QR CODE (WEBCAM INTEGRADA)
         // ==========================================================
         function startWebcam() {
-            // Inicializa a biblioteca html5-qrcode apontando para a div de leitura
             html5QrCode = new Html5Qrcode("webcam-reader");
             
             const qrCodeSuccessCallback = (decodedText) => {
-                // Ao identificar um QR Code (CPF do colaborador):
                 document.getElementById('scannerMsg').innerText = "✓ Crachá Identificado!";
                 document.getElementById('scannerMsg').style.color = "#10b981";
                 
-                // Preenche o input visual com o CPF encontrado
                 const cpfLimpo = decodedText.replace(/[^0-9]/g, '');
                 document.getElementById('cpfInput').value = cpfLimpo;
                 
-                // Para o scanner temporariamente e prossegue com a autenticação automática
                 if (html5QrCode.isScanning) {
                     html5QrCode.stop()
                         .then(() => attemptManualLogin())
@@ -479,7 +520,6 @@
                 aspectRatio: 1.0 
             };
 
-            // Tenta iniciar pela câmera traseira ("environment") e cai para a frontal ("user") caso necessário
             html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
                 .catch(() => {
                     html5QrCode.start({ facingMode: "user" }, config, qrCodeSuccessCallback)
@@ -491,7 +531,6 @@
 
         function handleKeyPress(e) { 
             if (e.key === 'Enter') {
-                // Se o usuário passar o crachá em um leitor de mesa USB (que age como teclado)
                 attemptManualLogin();
             } 
         }
@@ -527,7 +566,6 @@
                     document.getElementById('headerUserRole').innerText = currentUser.cargo;
                     document.getElementById('headerAvatar').innerText = currentUser.nome.charAt(0).toUpperCase();
 
-                    // Para a câmera definitivamente ao entrar no sistema
                     if (html5QrCode && html5QrCode.isScanning) {
                         await html5QrCode.stop().catch(e => console.log(e));
                     }
@@ -546,7 +584,6 @@
                     msg.innerText = "Aguardando Leitura...";
                     msg.style.color = "#ffffff";
                     
-                    // Se o login falhar, reinicia a webcam para novas tentativas
                     if (html5QrCode && !html5QrCode.isScanning) {
                         startWebcam();
                     }
@@ -625,14 +662,21 @@
             const setor = document.getElementById('disp_setor').value;
             const qtd = parseInt(document.getElementById('disp_qtd').value);
 
+            let itemNomeLog = "";
+            let loteNumeroLog = "N/A";
+
             if (tipo_mat === "MED") {
                 const lote = database.lotes.find(l => l.id === id_item);
                 if (qtd > lote.quantidade) { alert("Estoque de lote insuficiente."); return; }
                 const med = database.medicamentos.find(m => m.id === lote.medicamento_id || m.id === lote.med_id);
                 if (med && med.controlado == 1 && !confirm("⚠️ Medicamento Controlado (Port 344). Confirma a conferência da receita física?")) return;
+                
+                itemNomeLog = med.nome;
+                loteNumeroLog = lote.numero_lote || lote.numero;
             } else {
                 const insumo = database.insumos.find(i => i.id === id_item);
                 if (qtd > insumo.quantidade) { alert("Estoque de insumos insuficiente."); return; }
+                itemNomeLog = insumo.nome;
             }
 
             try {
@@ -646,8 +690,21 @@
                 const result = await res.json();
                 if(result.success) {
                     document.getElementById('dispensaForm').reset();
+                    
+                    // Configura os dados do recibo
+                    lastDispensaData = {
+                        tipo: tipo_mat === "MED" ? "MEDICAMENTO" : "INSUMO",
+                        item: itemNomeLog,
+                        lote: loteNumeroLog,
+                        qtd: qtd,
+                        paciente: paciente,
+                        setor: setor,
+                        responsavel: currentUser.nome,
+                        data: new Date().toLocaleString('pt-BR')
+                    };
+
                     await syncDatabase();
-                    document.getElementById('disp_scan_barcode').focus();
+                    showReceipt(lastDispensaData); // Dispara modal de comprovante de saída
                 } else alert(result.message);
             } catch(error) { alert("Erro ao comunicar com o servidor."); }
         }
@@ -871,6 +928,218 @@
 
             syncDispensarDropdown();
             previewEtiqueta();
+        }
+
+        // ==========================================================
+        // 6. IMPRESSÃO DO COMPROVANTE UNITÁRIO DE DISPENSAÇÃO (BAIXA)
+        // ==========================================================
+        function showReceipt(data) {
+            const container = document.getElementById('printReceiptArea');
+            container.innerHTML = `
+                <div style="text-align: center; font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">sisFarma Hospitalar</div>
+                <div style="text-align: center; font-size: 0.75rem; margin-bottom: 10px;">COMPROVANTE DE DISPENSAÇÃO</div>
+                <hr>
+                <div><strong>DATA/HORA:</strong> ${data.data}</div>
+                <div><strong>PACIENTE:</strong> ${data.paciente.toUpperCase()}</div>
+                <div><strong>SETOR:</strong> ${data.setor.toUpperCase()}</div>
+                <hr>
+                <div style="font-size: 0.9rem; margin: 8px 0;"><strong>ITEM:</strong> ${data.item.toUpperCase()}</div>
+                <div><strong>TIPO:</strong> ${data.tipo}</div>
+                <div><strong>LOTE:</strong> ${data.lote}</div>
+                <div style="font-size: 0.95rem; margin-top: 5px;"><strong>QTD:</strong> ${data.qtd} UNIDADE(S)</div>
+                <hr>
+                <div style="margin-top: 15px; font-size: 0.7rem; text-align: center;">
+                    Responsável: ${data.responsavel.toUpperCase()}<br>
+                    ------------------------------------------<br>
+                    Assinatura do Recebedor no Setor
+                </div>
+            `;
+            document.getElementById('receiptModal').style.display = "flex";
+        }
+
+        function printSingleReceipt() {
+            const printContent = document.getElementById('printArea');
+            printContent.innerHTML = `
+                <div style="width: 280px; padding: 15px; border: 1px solid #000; font-family: monospace; font-size: 11px; line-height: 1.4; color: #000; background-color: #fff;">
+                    ${document.getElementById('printReceiptArea').innerHTML}
+                </div>
+            `;
+            window.print();
+        }
+
+        // ==========================================================
+        // 7. RELATÓRIO OFICIAL DE CONTROLADOS (PORTARIA 344/98)
+        // ==========================================================
+        function printPortaria344Report() {
+            const printContent = document.getElementById('printArea');
+            
+            // Filtra o catálogo pelos controlados (controlado === 1)
+            const medsControladosIds = database.medicamentos
+                .filter(m => m.controlado == 1)
+                .map(m => m.nome.toLowerCase());
+
+            // Filtra as movimentações de medicamentos que estão na lista de controlados
+            const movsControladas = database.movimentacoes.filter(m => {
+                return medsControladosIds.some(nome => m.item_nome.toLowerCase().includes(nome));
+            });
+
+            let rowsHtml = "";
+            if (movsControladas.length === 0) {
+                rowsHtml = `<tr><td colspan="5" style="text-align: center; padding: 20px;">Nenhuma movimentação de medicamento controlado registrada.</td></tr>`;
+            } else {
+                movsControladas.forEach(m => {
+                    rowsHtml += `
+                        <tr>
+                            <td style="padding: 10px; border-bottom: 1px solid #ccc;">${m.data_movimentacao}</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #ccc;"><strong>${m.item_nome}</strong></td>
+                            <td style="padding: 10px; border-bottom: 1px solid #ccc;">${m.quantidade} FRS/AMP</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #ccc;">${m.paciente_nome} (${m.setor_destino})</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #ccc;">${m.responsavel}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            printContent.innerHTML = `
+                <div style="font-family: sans-serif; color: #000; padding: 10px;">
+                    <div style="text-align: center; margin-bottom: 25px;">
+                        <h2 style="font-size: 18px; margin-bottom: 5px; letter-spacing: 0.5px;">SÍSFARMA - CONTROLE DE PSICOTRÓPICOS E ENTORPECENTES</h2>
+                        <h3 style="font-size: 14px; margin-bottom: 5px; color: #333;">RELATÓRIO DE DISPENSAÇÃO DE CONTROLADOS (PORTARIA 344/98)</h3>
+                        <p style="font-size: 11px; margin-top: 5px;">Unidade Hospitalar: Unidade Central | Emitido em: ${new Date().toLocaleString('pt-BR')}</p>
+                        <hr style="border: 0; border-top: 2px solid #000; margin-top: 15px;">
+                    </div>
+
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; margin-bottom: 40px;">
+                        <thead>
+                            <tr style="background-color: #f1f5f9;">
+                                <th style="padding: 10px; border-bottom: 2px solid #000;">Data/Hora</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #000;">Fármaco Controlado</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #000;">Quantidade</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #000;">Paciente / Destinatário</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #000;">Dispensador</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+
+                    <div style="display: flex; justify-content: space-between; margin-top: 80px; font-size: 12px; text-align: center;">
+                        <div style="width: 45%;">
+                            __________________________________________________<br>
+                            Assinatura do Farmacêutico Responsável Técnico
+                        </div>
+                        <div style="width: 45%;">
+                            __________________________________________________<br>
+                            Visto da Vigilância Sanitária / Direção Clínica
+                        </div>
+                    </div>
+                </div>
+            `;
+            window.print();
+        }
+
+        // ==========================================================
+        // 8. IMPRESSÃO GERAL DE LISTAS (POR MÓDULO)
+        // ==========================================================
+        function printReport(tipo) {
+            const printContent = document.getElementById('printArea');
+            let titulo = "";
+            let colunas = [];
+            let rowsHtml = "";
+
+            if (tipo === 'dispensacoes' || tipo === 'rastreio') {
+                titulo = tipo === 'dispensacoes' ? "HISTÓRICO GERAL DE DISPENSAÇÕES (SAÍDAS)" : "AUDITORIA COMPLETA DE MOVIMENTAÇÕES DE ESTOQUE";
+                colunas = ["Tipo", "Item", "Quantidade", "Paciente / Setor", "Data/Hora"];
+                database.movimentacoes.forEach(m => {
+                    rowsHtml += `
+                        <tr>
+                            <td style="padding: 10px; border-bottom: 1px solid #ccc;">${m.tipo}</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #ccc;"><strong>${m.item_nome}</strong></td>
+                            <td style="padding: 10px; border-bottom: 1px solid #ccc;">${m.quantidade}</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #ccc;">${m.paciente_nome} (${m.setor_destino})</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #ccc;">${m.data_movimentacao} (${m.responsavel})</td>
+                        </tr>
+                    `;
+                });
+            } 
+            else if (tipo === 'catalogo') {
+                titulo = "CATÁLOGO BASE DE FÁRMACOS DA UNIDADE";
+                colunas = ["Cód. Barras", "Nome do Medicamento", "Princípio Ativo", "Classificação"];
+                database.medicamentos.forEach(m => {
+                    rowsHtml += `
+                        <tr>
+                            <td style="padding: 10px; border-bottom: 1px solid #ccc; font-family: monospace;">${m.codigo_barras || 'N/A'}</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #ccc;"><strong>${m.nome}</strong></td>
+                            <td style="padding: 10px; border-bottom: 1px solid #ccc;">${m.principio_ativo || m.principio}</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #ccc;">${m.controlado == 1 ? 'Portaria 344/98' : 'Uso Comum'}</td>
+                        </tr>
+                    `;
+                });
+            } 
+            else if (tipo === 'lotes') {
+                titulo = "INVENTÁRIO DE LOTES ATIVOS EM ESTOQUE";
+                colunas = ["Medicamento", "Número do Lote", "Validade", "Quantidade Restante"];
+                database.lotes.forEach(l => {
+                    const m = database.medicamentos.find(x => x.id === l.medicamento_id || x.id === l.med_id);
+                    if (m) {
+                        rowsHtml += `
+                            <tr>
+                                <td style="padding: 10px; border-bottom: 1px solid #ccc;"><strong>${m.nome}</strong></td>
+                                <td style="padding: 10px; border-bottom: 1px solid #ccc;">${l.numero_lote || l.numero}</td>
+                                <td style="padding: 10px; border-bottom: 1px solid #ccc;">${l.validade}</td>
+                                <td style="padding: 10px; border-bottom: 1px solid #ccc;">${l.quantidade} unidades</td>
+                            </tr>
+                        `;
+                    }
+                });
+            } 
+            else if (tipo === 'insumos') {
+                titulo = "BALANÇO GERAL DE INSUMOS HOSPITALARES";
+                colunas = ["Nome do Insumo", "Especificação Técnica", "Saldo em Estoque"];
+                database.insumos.forEach(i => {
+                    rowsHtml += `
+                        <tr>
+                            <td style="padding: 10px; border-bottom: 1px solid #ccc;"><strong>${i.nome}</strong></td>
+                            <td style="padding: 10px; border-bottom: 1px solid #ccc;">${i.especificacao}</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #ccc;">${i.quantidade} ${i.unidade_medida || 'Unidades'}</td>
+                        </tr>
+                    `;
+                });
+            } 
+            else if (tipo === 'tecnovigilancia') {
+                titulo = "RELATÓRIO DE DESVIOS DA QUALIDADE (TECNOVIGILÂNCIA)";
+                colunas = ["Lote Ocorrência", "Tipo de Desvio", "Nível de Gravidade", "Data de Registro"];
+                database.tecnovigilancia.forEach(t => {
+                    rowsHtml += `
+                        <tr>
+                            <td style="padding: 10px; border-bottom: 1px solid #ccc;"><strong>${t.lote_texto}</strong></td>
+                            <td style="padding: 10px; border-bottom: 1px solid #ccc;">${t.tipo_ocorrencia}</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #ccc; color: red;">${t.gravidade.toUpperCase()}</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #ccc;">${t.data_registro}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            const headerHtml = colunas.map(col => `<th style="padding: 10px; border-bottom: 2px solid #000;">${col}</th>`).join("");
+
+            printContent.innerHTML = `
+                <div style="font-family: sans-serif; color: #000; padding: 10px;">
+                    <div style="text-align: center; margin-bottom: 25px;">
+                        <h2 style="font-size: 18px; margin-bottom: 5px; letter-spacing: 0.5px;">SÍSFARMA HOSPITALAR</h2>
+                        <h3 style="font-size: 14px; margin-bottom: 5px; color: #333;">${titulo}</h3>
+                        <p style="font-size: 11px; margin-top: 5px;">Emitido em: ${new Date().toLocaleString('pt-BR')}</p>
+                        <hr style="border: 0; border-top: 2px solid #000; margin-top: 15px;">
+                    </div>
+
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px;">
+                        <thead>
+                            <tr style="background-color: #f1f5f9;">${headerHtml}</tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+                </div>
+            `;
+            window.print();
         }
 
         window.onload = function() {
