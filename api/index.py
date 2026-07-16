@@ -8,8 +8,7 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# A Vercel injeta automaticamente a variável DATABASE_URL se integrar o Neon pelo painel,
-# ou pode adicioná-la manualmente nas Environment Variables do projeto.
+# A Vercel injeta automaticamente a variável DATABASE_URL se integrar o Neon pelo painel
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 
@@ -17,7 +16,6 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 # LIGAÇÃO E INICIALIZAÇÃO DO POSTGRESQL (NEON)
 # =========================================================================
 def conectar_bd():
-    # Cria a ligação utilizando a Connection String do Neon
     if not DATABASE_URL:
         raise ValueError("A variável de ambiente DATABASE_URL não está configurada.")
     return psycopg2.connect(DATABASE_URL)
@@ -27,7 +25,7 @@ def inicializar_banco():
     conn = conectar_bd()
     cursor = conn.cursor()
 
-    # Tabela de Empresas (sisFarma Master) - PostgreSQL Syntax
+    # Tabela de Empresas (sisFarma Master)
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS empresas (
         id SERIAL PRIMARY KEY,
@@ -68,7 +66,7 @@ def inicializar_banco():
     )
     ''')
 
-    # Tabelas de Operação da Farmácia Hospitalar (index.html)
+    # Tabelas de Operação da Farmácia Hospitalar (Consolidada)
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS medicamentos (
         id SERIAL PRIMARY KEY,
@@ -111,6 +109,7 @@ def inicializar_banco():
         id SERIAL PRIMARY KEY,
         empresa_cnpj TEXT NOT NULL,
         tipo TEXT NOT NULL,
+        item_nome TEXT NOT NULL,
         quantidade INTEGER NOT NULL,
         setor_destino TEXT NOT NULL,
         paciente_nome TEXT NOT NULL,
@@ -147,110 +146,6 @@ if DATABASE_URL:
     except Exception as e:
         print(f"Erro ao inicializar banco Neon: {e}")
 
-# =========================================================================
-# ROTAS OPERACIONAIS (SISFARMA - DISPENSAÇÃO E ESTOQUE)
-# =========================================================================
-
-def inicializar_tabelas_operacionais():
-    conn = conectar_bd()
-    cursor = conn.cursor()
-    # Tabela de Catálogo de Medicamentos
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS medicamentos (
-        id SERIAL PRIMARY KEY,
-        codigo_barras TEXT UNIQUE,
-        nome TEXT NOT NULL,
-        principio TEXT,
-        categoria TEXT,
-        controlado BOOLEAN
-    )''')
-    # Tabela de Lotes
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS lotes (
-        id SERIAL PRIMARY KEY,
-        med_id INTEGER REFERENCES medicamentos(id),
-        numero TEXT NOT NULL,
-        fabricante TEXT,
-        validade DATE,
-        quantidade INTEGER
-    )''')
-    # Tabela de Movimentações (Rastreabilidade)
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS movimentacoes (
-        id SERIAL PRIMARY KEY,
-        tipo TEXT,
-        item_nome TEXT,
-        quantidade INTEGER,
-        paciente TEXT,
-        destino TEXT,
-        data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )''')
-    conn.commit()
-    cursor.close()
-    conn.close()
-
-# Rota para sincronizar todos os dados do painel logado
-@app.route('/api/pharmacy/sync', methods=['GET'])
-def sync_pharmacy_data():
-    conn = conectar_bd()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    
-    cursor.execute("SELECT * FROM medicamentos")
-    meds = cursor.fetchall()
-    
-    cursor.execute("SELECT * FROM lotes")
-    lotes = cursor.fetchall()
-    
-    cursor.execute("SELECT * FROM movimentacoes ORDER BY data_hora DESC LIMIT 100")
-    movs = cursor.fetchall()
-    
-    cursor.close()
-    conn.close()
-    
-    # Formata datas para envio
-    for l in lotes:
-        if l.get('validade'):
-            l['validade'] = l['validade'].strftime("%Y-%m-%d")
-    for m in movs:
-        if m.get('data_hora'):
-            m['data_hora'] = m['data_hora'].strftime("%d/%m/%Y %H:%M:%S")
-
-    return jsonify({"success": True, "medicamentos": meds, "lotes": lotes, "movimentacoes": movs})
-
-# Rota para registrar uma dispensação (Baixa de Estoque)
-@app.route('/api/pharmacy/dispensar', methods=['POST'])
-def register_dispensa():
-    data = request.json
-    lote_id = data.get('lote_id')
-    qtd_saida = int(data.get('qtd'))
-    
-    conn = conectar_bd()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    
-    # Verifica Saldo
-    cursor.execute("SELECT quantidade, med_id FROM lotes WHERE id = %s", (lote_id,))
-    lote = cursor.fetchone()
-    
-    if not lote or lote['quantidade'] < qtd_saida:
-        return jsonify({"success": False, "message": "Estoque insuficiente!"})
-        
-    # Dá baixa no estoque
-    cursor.execute("UPDATE lotes SET quantidade = quantidade - %s WHERE id = %s", (qtd_saida, lote_id))
-    
-    # Registra movimentação
-    cursor.execute("SELECT nome FROM medicamentos WHERE id = %s", (lote['med_id'],))
-    med = cursor.fetchone()
-    
-    cursor.execute('''
-        INSERT INTO movimentacoes (tipo, item_nome, quantidade, paciente, destino)
-        VALUES (%s, %s, %s, %s, %s)
-    ''', ("SAÍDA MED", med['nome'], qtd_saida, data.get('paciente'), data.get('setor')))
-    
-    conn.commit()
-    cursor.close()
-    conn.close()
-    
-    return jsonify({"success": True})
 
 # =========================================================================
 # FUNÇÕES AUXILIARES
@@ -261,7 +156,6 @@ def gerar_senha_aleatoria():
 
 
 def verificar_senha_master(senha):
-    # Puxa a variável de ambiente configurada na Vercel
     senha_correta = os.environ.get("ADMIN_MASTER_PASSWORD")
     return senha == senha_correta
 
@@ -282,7 +176,6 @@ def auth_master():
 @app.route('/api/master/companies', methods=['GET', 'POST'])
 def manage_companies():
     conn = conectar_bd()
-    # RealDictCursor faz com que o psycopg2 devolva os dados como dicionário chave:valor
     cursor = conn.cursor(cursor_factory=RealDictCursor)
 
     if request.method == 'POST':
@@ -296,7 +189,6 @@ def manage_companies():
         senha_gerada = gerar_senha_aleatoria()
 
         try:
-            # Substituição de ? por %s necessária no PostgreSQL
             cursor.execute('''
                 INSERT INTO empresas (razao_social, cnpj, email, telefone, plano, status, senha)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -388,8 +280,7 @@ def manage_employees():
             return jsonify({"success": True, "cpf": cpf}), 201
         except psycopg2.IntegrityError:
             conn.rollback()
-            return jsonify(
-                {"success": False, "message": "Este CPF já se encontra cadastrado nesta ou noutra unidade."}), 400
+            return jsonify({"success": False, "message": "Este CPF já se encontra cadastrado nesta ou noutra unidade."}), 400
         finally:
             cursor.close()
             conn.close()
@@ -402,7 +293,7 @@ def manage_employees():
 
 
 # =========================================================================
-# ROTAS DA OPERAÇÃO DE FARMÁCIA (index.html)
+# ROTAS DA OPERAÇÃO DE FARMÁCIA (index.html) - SEGURA POR CNPJ
 # =========================================================================
 
 @app.route('/api/pharmacy/login', methods=['POST'])
@@ -445,6 +336,228 @@ def employee_login():
             "empresa_cnpj": colab["empresa_cnpj"]
         }
     }), 200
+
+
+# Sincroniza Medicamentos, Lotes, Insumos, Saídas e Tecnovigilância filtrados pelo CNPJ da Unidade Hospitalar
+@app.route('/api/pharmacy/sync', methods=['GET'])
+def sync_pharmacy_data():
+    cnpj = request.args.get("cnpj")
+    if not cnpj:
+        return jsonify({"success": False, "message": "Parâmetro CNPJ ausente."}), 400
+
+    conn = conectar_bd()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    # 1. Puxa medicamentos da empresa logada
+    cursor.execute("SELECT * FROM medicamentos WHERE empresa_cnpj = %s", (cnpj,))
+    meds = cursor.fetchall()
+
+    # 2. Puxa lotes cujos medicamentos pertençam a essa empresa
+    cursor.execute('''
+        SELECT l.*, m.nome as med_nome FROM lotes l
+        JOIN medicamentos m ON l.medicamento_id = m.id
+        WHERE m.empresa_cnpj = %s
+    ''', (cnpj,))
+    lotes = cursor.fetchall()
+
+    # 3. Puxa Insumos da empresa
+    cursor.execute("SELECT * FROM insumos WHERE empresa_cnpj = %s", (cnpj,))
+    insumos = cursor.fetchall()
+
+    # 4. Puxa Rastreabilidade / Movimentações
+    cursor.execute("SELECT * FROM movimentacoes WHERE empresa_cnpj = %s ORDER BY id DESC LIMIT 100", (cnpj,))
+    movs = cursor.fetchall()
+
+    # 5. Puxa Registros de Tecnovigilância
+    cursor.execute("SELECT * FROM tecnovigilancia WHERE empresa_cnpj = %s ORDER BY id DESC", (cnpj,))
+    tecno = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify({
+        "success": True,
+        "medicamentos": meds,
+        "lotes": lotes,
+        "insumos": insumos,
+        "movimentacoes": movs,
+        "tecnovigilancia": tecno
+    })
+
+
+# Registrar novo Medicamento no Catálogo Base da empresa
+@app.route('/api/pharmacy/medicamentos', methods=['POST'])
+def add_medicamento():
+    data = request.json or {}
+    cnpj = data.get("empresa_cnpj")
+    nome = data.get("nome")
+    principio = data.get("principio_ativo")
+    categoria = data.get("categoria")
+    controlado = int(data.get("controlado", 0))
+    codigo_barras = data.get("codigo_barras")
+
+    if not cnpj:
+        return jsonify({"success": False, "message": "CNPJ não informado."}), 400
+
+    conn = conectar_bd()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cursor.execute('''
+            INSERT INTO medicamentos (empresa_cnpj, nome, principio_ativo, categoria, controlado, codigo_barras)
+            VALUES (%s, %s, %s, %s, %s, %s) RETURNING id
+        ''', (cnpj, nome, principio, categoria, controlado, codigo_barras))
+        new_id = cursor.fetchone()['id']
+        conn.commit()
+        return jsonify({"success": True, "id": new_id}), 201
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# Registrar Entrada de Lote vinculado a um Medicamento do Catálogo
+@app.route('/api/pharmacy/lotes', methods=['POST'])
+def add_lote():
+    data = request.json or {}
+    med_id = data.get("medicamento_id")
+    numero = data.get("numero_lote")
+    fabricante = data.get("fabricante")
+    validade = data.get("validade")
+    quantidade = int(data.get("quantidade", 0))
+
+    conn = conectar_bd()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cursor.execute('''
+            INSERT INTO lotes (medicamento_id, numero_lote, fabricante, validade, quantidade)
+            VALUES (%s, %s, %s, %s, %s) RETURNING id
+        ''', (med_id, numero, fabricante, validade, quantidade))
+        new_id = cursor.fetchone()['id']
+        conn.commit()
+        return jsonify({"success": True, "id": new_id}), 201
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# Registrar Entrada de Insumo Correlato
+@app.route('/api/pharmacy/insumos', methods=['POST'])
+def add_insumo():
+    data = request.json or {}
+    cnpj = data.get("empresa_cnpj")
+    nome = data.get("nome")
+    especificacao = data.get("especificacao")
+    unidade = data.get("unidade_medida")
+    quantidade = int(data.get("quantidade", 0))
+
+    conn = conectar_bd()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cursor.execute('''
+            INSERT INTO insumos (empresa_cnpj, nome, especificacao, unidade_medida, quantidade)
+            VALUES (%s, %s, %s, %s, %s) RETURNING id
+        ''', (cnpj, nome, especificacao, unidade, quantidade))
+        new_id = cursor.fetchone()['id']
+        conn.commit()
+        return jsonify({"success": True, "id": new_id}), 201
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# Registrar Baixa/Dispensação por Lote ou Insumo
+@app.route('/api/pharmacy/dispensar', methods=['POST'])
+def register_dispensa():
+    data = request.json or {}
+    cnpj = data.get("empresa_cnpj")
+    tipo = data.get("tipo")  # "MED" ou "INS"
+    id_item = data.get("id_item")  # lote_id se MED, insumo_id se INS
+    qtd_saida = int(data.get("qtd", 0))
+    paciente = data.get("paciente")
+    setor = data.get("setor")
+    responsavel = data.get("responsavel", "Operador Geral")
+
+    conn = conectar_bd()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    try:
+        if tipo == "MED":
+            # Puxa o lote
+            cursor.execute("SELECT quantidade, medicamento_id FROM lotes WHERE id = %s", (id_item,))
+            lote = cursor.fetchone()
+            if not lote or lote['quantidade'] < qtd_saida:
+                return jsonify({"success": False, "message": "Estoque de lote insuficiente!"}), 400
+
+            # Atualiza o saldo do Lote
+            cursor.execute("UPDATE lotes SET quantidade = quantidade - %s WHERE id = %s", (qtd_saida, id_item))
+
+            # Captura nome do medicamento
+            cursor.execute("SELECT nome FROM medicamentos WHERE id = %s", (lote['medicamento_id'],))
+            med = cursor.fetchone()
+            item_nome = med['nome']
+        else:
+            # Puxa o Insumo
+            cursor.execute("SELECT quantidade, nome FROM insumos WHERE id = %s", (id_item,))
+            ins = cursor.fetchone()
+            if not ins or ins['quantidade'] < qtd_saida:
+                return jsonify({"success": False, "message": "Estoque de insumos insuficiente!"}), 400
+
+            # Atualiza o saldo do Insumo
+            cursor.execute("UPDATE insumos SET quantidade = quantidade - %s WHERE id = %s", (qtd_saida, id_item))
+            item_nome = ins['nome']
+
+        # Grava na tabela de Movimentações
+        data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        cursor.execute('''
+            INSERT INTO movimentacoes (empresa_cnpj, tipo, item_nome, quantidade, setor_destino, paciente_nome, responsavel, data_movimentacao)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        ''', (cnpj, f"SAÍDA {tipo}", item_nome, qtd_saida, setor, paciente, responsavel, data_atual))
+
+        conn.commit()
+        return jsonify({"success": True}), 200
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# Registrar Ocorrência de Tecnovigilância
+@app.route('/api/pharmacy/tecnovigilancia', methods=['POST'])
+def add_tecnovigilancia():
+    data = request.json or {}
+    cnpj = data.get("empresa_cnpj")
+    lote_texto = data.get("lote_texto")
+    tipo_ocorrencia = data.get("tipo_ocorrencia")
+    gravidade = data.get("gravidade")
+    descricao = data.get("descricao")
+    conduta = data.get("conduta")
+    data_registro = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+    conn = conectar_bd()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cursor.execute('''
+            INSERT INTO tecnovigilancia (empresa_cnpj, lote_texto, tipo_ocorrencia, gravidade, descricao, conduta, data_registro)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        ''', (cnpj, lote_texto, tipo_ocorrencia, gravidade, descricao, conduta, data_registro))
+        conn.commit()
+        return jsonify({"success": True}), 201
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
 
 
 @app.route('/')
