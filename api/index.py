@@ -185,7 +185,7 @@ def manage_companies():
         email = data.get("email")
         telefone = data.get("telefone")
         plano = data.get("plano")
-        status = data.get("status", "Ativa")
+        status = data.get("status", "Ativo")
         senha_gerada = gerar_senha_aleatoria()
 
         try:
@@ -312,11 +312,12 @@ def employee_login():
         conn.close()
         return jsonify({"success": False, "message": "Colaborador ou crachá não localizado no sistema."}), 401
 
-    if colab["status"] != "Ativa":
+   # Flexibilizamos para aceitar Ativo ou Ativa
+    if colab["status"] not in ["Ativa", "Ativo", "ATIVO", "ATIVA"]:
         cursor.close()
         conn.close()
         return jsonify({"success": False, "message": "Acesso Suspenso. Por favor, consulte a Administração."}), 403
-
+        
     # Registra Log de Login
     cursor.execute('''
         INSERT INTO logs_acesso (colaborador_cpf, data_hora, ip, tipo, acao)
