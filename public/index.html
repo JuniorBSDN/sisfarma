@@ -4,580 +4,88 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>sisFarma - Central de Dispensação e Rastreabilidade</title>
-
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         /* ==========================================
-           1. VARIÁVEIS DE DESIGN & RESET
+           VARIÁVEIS DE DESIGN & RESET
            ========================================== */
         :root {
-            --primary: #10b981;
-            --primary-dark: #059669;
-            --secondary: #1e3d59;
-            --bg-body: #f4f6f9;
-            --bg-card: #ffffff;
-            --text-main: #2d3748;
-            --text-muted: #718096;
-            --border-color: #e2e8f0;
-            --success: #22c55e;
-            --danger: #ef4444;
-            --sidebar-width: 260px;
-            --transition: all 0.3s ease;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* ==========================================
-           2. TELA DE LOGIN (ACESSO PÚBLICO)
-           ========================================== */
-        .login-screen {
-            display: flex;
-            width: 100%;
-            height: 100vh;
-            background-color: #0f172a;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 9999;
-            transition: var(--transition);
-        }
-
-        .login-banner {
-            flex: 1;
-            background: linear-gradient(135deg, #1e3d59 0%, #112233 100%);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 60px;
-            color: #ffffff;
-        }
-
-        .login-banner h1 {
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin-bottom: 12px;
-            letter-spacing: -0.5px;
-        }
-
-        .login-banner h1 span {
-            color: var(--primary);
-        }
-
-        .login-banner p {
-            font-size: 1.1rem;
-            color: #94a3b8;
-            line-height: 1.6;
-        }
-
-        .login-box-container {
-            width: 460px;
-            background-color: #1e293b;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 48px;
-            border-left: 1px solid #334155;
-        }
-
-        .login-header {
-            margin-bottom: 32px;
-            text-align: center;
-        }
-
-        .login-header h2 {
-            color: #ffffff;
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 6px;
-        }
-
-        .login-header p {
-            color: #94a3b8;
-            font-size: 0.85rem;
-        }
-
-        /* Scanner de Webcam Simulado/Real */
-        .scanner-view {
-            width: 100%;
-            height: 220px;
-            background-color: #020617;
-            border-radius: 12px;
-            border: 2px solid var(--primary);
-            position: relative;
-            overflow: hidden;
-            margin-bottom: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .scanner-view video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .scanner-laser {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background-color: var(--primary);
-            box-shadow: 0 0 12px var(--primary);
-            animation: scanning 2s linear infinite;
-        }
-
-        @keyframes scanning {
-            0% { top: 0%; }
-            50% { top: 100%; }
-            100% { top: 0%; }
-        }
-
-        .scanner-placeholder {
-            position: absolute;
-            color: #64748b;
-            font-size: 0.8rem;
-            text-align: center;
-            pointer-events: none;
-        }
-
-        /* Campos de Entrada Alternativa */
-        .divider {
-            display: flex;
-            align-items: center;
-            text-align: center;
-            color: #475569;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            font-weight: 600;
-            margin: 20px 0;
-        }
-
-        .divider::before, .divider::after {
-            content: '';
-            flex: 1;
-            border-bottom: 1px solid #334155;
-        }
-
-        .divider:not(:empty)::before { margin-right: .5em; }
-        .divider:not(:empty)::after { margin-left: .5em; }
-
-        .login-input {
-            width: 100%;
-            padding: 12px 16px;
-            background-color: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            color: #ffffff;
-            font-size: 0.95rem;
-            outline: none;
-            transition: var(--transition);
-            margin-bottom: 16px;
-        }
-
-        .login-input:focus {
-            border-color: var(--primary);
-        }
-
-        .btn-login-submit {
-            width: 100%;
-            background-color: var(--primary);
-            color: #ffffff;
-            border: none;
-            padding: 14px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .btn-login-submit:hover {
-            background-color: var(--primary-dark);
-        }
-
-        /* ==========================================
-           3. SISTEMA OPERACIONAL (PÓS-LOGIN)
-           ========================================== */
-        .app-container {
-            display: none; /* Revelado após login */
-            width: 100%;
-            height: 100vh;
-        }
-
-        /* Sidebar Lateral */
-        .sidebar {
-            width: var(--sidebar-width);
-            background-color: var(--secondary);
-            color: #ffffff;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 20px 14px;
-            z-index: 10;
-        }
-
-        .sidebar-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .brand-logo {
-            background-color: var(--primary);
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 1.1rem;
-            color: #ffffff;
-        }
-
-        .brand-name {
-            font-size: 1.1rem;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        }
-
-        .brand-name span {
-            color: var(--primary);
-            font-size: 0.75rem;
-            display: block;
-            font-weight: 400;
-        }
-
-        .sidebar-menu-wrapper {
-            flex-grow: 1;
-            overflow-y: auto;
-            margin-top: 16px;
-        }
-
-        .menu-section-title {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            color: #718096;
-            font-weight: 700;
-            margin: 14px 0 6px 8px;
-            letter-spacing: 0.5px;
-        }
-
-        .sidebar-menu {
-            list-style: none;
-        }
-
-        .menu-item {
-            margin-bottom: 4px;
-        }
-
-        .menu-link {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px;
-            color: #a0aec0;
-            text-decoration: none;
-            border-radius: 6px;
-            font-weight: 500;
-            font-size: 0.85rem;
-            transition: var(--transition);
-            cursor: pointer;
-        }
-
-        .menu-link:hover, .menu-link.active {
-            color: #ffffff;
-            background-color: rgba(255, 255, 255, 0.06);
-        }
-
-        .menu-link.active {
-            border-left: 3px solid var(--primary);
-            background-color: rgba(255, 255, 255, 0.08);
-            padding-left: 7px;
-        }
-
-        .sidebar-footer {
-            padding-top: 12px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .btn-logout {
-            background: none;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: #ef4444;
-            width: 100%;
-            padding: 10px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .btn-logout:hover {
-            background-color: #ef4444;
-            color: white;
-            border-color: #ef4444;
-        }
-
-        /* Área de Conteúdo Principal */
-        .main-content {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-        }
-
-        /* Topbar */
-        .topbar {
-            background-color: #ffffff;
-            border-bottom: 1px solid var(--border-color);
-            min-height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 24px;
-        }
-
-        .page-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--secondary);
-        }
-
-        .user-profile {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            background-color: var(--primary);
-            color: #ffffff;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .user-info h4 {
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        .user-info p {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-
-        /* Content Body */
-        .content-body {
-            padding: 24px;
-            max-width: 1300px;
-            width: 100%;
-            margin: 0 auto;
-        }
-
-        .page-section {
-            display: none;
-            animation: fadeIn 0.4s ease-in-out forwards;
-        }
-
-        .page-section.active {
-            display: block;
-        }
-
-        /* ==========================================
-           4. STYLES OPERACIONAIS (FORMULÁRIOS E TABELAS)
-           ========================================== */
-        .grid-forms {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            margin-bottom: 24px;
-        }
-
-        .box-container {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
-        }
-
-        .box-title {
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--secondary);
-            margin-bottom: 16px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 8px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            margin-bottom: 16px;
-        }
-
-        .form-label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--text-main);
-        }
-
-        .form-input, .form-select, .form-textarea {
-            padding: 10px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 0.85rem;
-            outline: none;
-            transition: var(--transition);
-            background-color: #f8fafc;
-        }
-
-        .form-input:focus, .form-select:focus, .form-textarea:focus {
-            border-color: var(--primary);
-            background-color: #ffffff;
-        }
-
-        .btn-action-primary {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: var(--transition);
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .btn-action-primary:hover {
-            background-color: var(--primary-dark);
-        }
-
-        .btn-orange {
-            background-color: #e67e22;
-        }
-        .btn-orange:hover { background-color: #d35400; }
-
-        .btn-red {
-            background-color: var(--danger);
-        }
-        .btn-red:hover { background-color: #c0392b; }
-
-        /* TABELAS OPERACIONAIS */
-        .table-wrapper {
-            margin-top: 20px;
-            overflow-x: auto;
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.85rem;
-            text-align: left;
-        }
-
-        .data-table th {
-            background-color: #f8fafc;
-            padding: 12px 16px;
-            font-weight: 600;
-            color: var(--text-muted);
-            border-bottom: 1px solid var(--border-color);
-            font-size: 0.75rem;
-            text-transform: uppercase;
-        }
-
-        .data-table td {
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .data-table tr:last-child td { border-bottom: none; }
-
-        /* Alertas e Badges */
-        .badge-ctrl {
-            background-color: #fee2e2;
-            color: #991b1b;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: 700;
-        }
-
-        .badge-active {
-            background-color: #def7ec;
-            color: #03543f;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: 700;
-        }
-
-        .alert-box {
-            background-color: #fef2f2;
-            border: 1px solid #fee2e2;
-            border-radius: 8px;
-            padding: 16px;
-            color: #991b1b;
-            margin-bottom: 20px;
-        }
-
-        /* GRADES DE ETIQUETAS */
-        .label-grid {
-            display: grid;
-            gap: 12px;
-            margin-top: 20px;
-        }
-
-        .label-card-p {
-            border: 1px solid #000;
-            background-color: white;
-            padding: 10px;
-            font-size: 0.75rem;
-            color: #000;
-            text-align: left;
-        }
-
-        .sidebar-alert-dot {
-            width: 8px;
-            height: 8px;
-            background-color: var(--danger);
-            border-radius: 50%;
-            display: inline-block;
-            margin-left: auto;
-        }
+            --primary: #10b981; --primary-dark: #059669; --secondary: #1e3d59; 
+            --bg-body: #f4f6f9; --bg-card: #ffffff; --text-main: #2d3748;
+            --text-muted: #718096; --border-color: #e2e8f0; --success: #22c55e;
+            --danger: #ef4444; --sidebar-width: 260px; --transition: all 0.3s ease;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-body); color: var(--text-main); height: 100vh; overflow: hidden; }
+
+        /* TELA DE LOGIN */
+        .login-screen { display: flex; width: 100%; height: 100vh; background-color: #0f172a; position: fixed; top: 0; left: 0; z-index: 9999; transition: var(--transition); }
+        .login-banner { flex: 1; background: linear-gradient(135deg, #1e3d59 0%, #112233 100%); display: flex; flex-direction: column; justify-content: center; padding: 60px; color: #ffffff; }
+        .login-banner h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 12px; }
+        .login-banner h1 span { color: var(--primary); }
+        .login-banner p { font-size: 1.1rem; color: #94a3b8; line-height: 1.6; }
+        .login-box-container { width: 460px; background-color: #1e293b; display: flex; flex-direction: column; justify-content: center; padding: 48px; border-left: 1px solid #334155; }
+        .login-header { margin-bottom: 32px; text-align: center; }
+        .login-header h2 { color: #ffffff; font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; }
+        .login-header p { color: #94a3b8; font-size: 0.85rem; }
+        .scanner-view { width: 100%; height: 220px; background-color: #020617; border-radius: 12px; border: 2px solid var(--primary); position: relative; overflow: hidden; margin-bottom: 24px; display: flex; align-items: center; justify-content: center; }
+        .scanner-view video { width: 100%; height: 100%; object-fit: cover; }
+        .scanner-laser { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background-color: var(--primary); box-shadow: 0 0 12px var(--primary); animation: scanning 2s linear infinite; }
+        @keyframes scanning { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
+        .scanner-placeholder { position: absolute; color: #64748b; font-size: 0.8rem; text-align: center; pointer-events: none; }
+        .login-input { width: 100%; padding: 12px 16px; background-color: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #ffffff; font-size: 0.95rem; outline: none; margin-bottom: 16px; }
+        .login-input:focus { border-color: var(--primary); }
+        .btn-login-submit { width: 100%; background-color: var(--primary); color: #ffffff; border: none; padding: 14px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .btn-login-submit:hover { background-color: var(--primary-dark); }
+        .divider { display: flex; align-items: center; text-align: center; color: #475569; font-size: 0.75rem; text-transform: uppercase; font-weight: 600; margin: 20px 0; }
+        .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #334155; }
+        .divider:not(:empty)::before { margin-right: .5em; } .divider:not(:empty)::after { margin-left: .5em; }
+
+        /* SISTEMA PÓS-LOGIN (MANTIDO COMPACTADO PARA O CSS) */
+        .app-container { display: none; width: 100%; height: 100vh; }
+        .sidebar { width: var(--sidebar-width); background-color: var(--secondary); color: #ffffff; display: flex; flex-direction: column; padding: 20px 14px; }
+        .sidebar-brand { display: flex; align-items: center; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .brand-logo { background-color: var(--primary); width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; color: #ffffff; }
+        .brand-name { font-size: 1.1rem; font-weight: 700; }
+        .brand-name span { color: var(--primary); font-size: 0.75rem; display: block; font-weight: 400; }
+        .sidebar-menu-wrapper { flex-grow: 1; overflow-y: auto; margin-top: 16px; }
+        .menu-section-title { font-size: 0.7rem; text-transform: uppercase; color: #718096; font-weight: 700; margin: 14px 0 6px 8px; }
+        .sidebar-menu { list-style: none; }
+        .menu-link { display: flex; align-items: center; gap: 10px; padding: 10px; color: #a0aec0; text-decoration: none; border-radius: 6px; font-weight: 500; font-size: 0.85rem; cursor: pointer; margin-bottom: 4px; }
+        .menu-link:hover, .menu-link.active { color: #ffffff; background-color: rgba(255, 255, 255, 0.08); }
+        .menu-link.active { border-left: 3px solid var(--primary); background-color: rgba(255, 255, 255, 0.1); padding-left: 7px; }
+        .sidebar-footer { padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+        .btn-logout { background: none; border: 1px solid rgba(255, 255, 255, 0.15); color: #ef4444; width: 100%; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        .topbar { background-color: #ffffff; border-bottom: 1px solid var(--border-color); min-height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+        .page-title { font-size: 1.1rem; font-weight: 600; color: var(--secondary); }
+        .user-profile { display: flex; align-items: center; gap: 12px; }
+        .user-avatar { width: 36px; height: 36px; background-color: var(--primary); color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+        .user-info h4 { font-size: 0.85rem; font-weight: 600; }
+        .user-info p { font-size: 0.75rem; color: var(--text-muted); }
+        .content-body { padding: 24px; max-width: 1300px; width: 100%; margin: 0 auto; }
+        .page-section { display: none; }
+        .page-section.active { display: block; animation: fadeIn 0.4s ease; }
+        .grid-forms { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 24px; }
+        .box-container { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 24px; }
+        .box-title { font-size: 1rem; font-weight: 700; color: var(--secondary); margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        .form-label { font-size: 0.8rem; font-weight: 600; color: var(--text-main); }
+        .form-input, .form-select, .form-textarea { padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.85rem; outline: none; background-color: #f8fafc; }
+        .btn-action-primary { background-color: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: 600; font-size: 0.85rem; cursor: pointer; }
+        .btn-orange { background-color: #e67e22; } .btn-red { background-color: var(--danger); }
+        .table-wrapper { margin-top: 20px; overflow-x: auto; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; }
+        .data-table th { background-color: #f8fafc; padding: 12px 16px; color: var(--text-muted); border-bottom: 1px solid var(--border-color); font-size: 0.75rem; text-transform: uppercase; }
+        .data-table td { padding: 12px 16px; border-bottom: 1px solid var(--border-color); }
+        .badge-ctrl { background-color: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
+        .sidebar-alert-dot { width: 8px; height: 8px; background-color: var(--danger); border-radius: 50%; display: inline-block; margin-left: auto; }
+        .label-grid { display: grid; gap: 12px; margin-top: 20px; }
+        .label-card-p { border: 1px solid #000; background-color: white; padding: 10px; font-size: 0.75rem; color: #000; text-align: left; }
     </style>
 </head>
 <body>
@@ -587,35 +95,25 @@
             <h1>SISTEMA <span>sisFarma</span></h1>
             <p>Unidade Central & Rastreabilidade Biocriptográfica (RDC 430/2020).</p>
             <div style="margin-top: 40px; font-size: 0.85rem; color: #64748b;">
-                Dispositivos de Crachá compatíveis com Webcams Integradas e Scanners Biométricos Estacionários.
+                Compatível com Leitores Físicos de Código de Barras/QR Code via USB.<br>
+                Basta clicar no campo abaixo e "bipar" o crachá gerado no painel administrativo.
             </div>
         </div>
 
         <div class="login-box-container">
             <div class="login-header">
                 <h2>🔐 Identificação do Operador</h2>
-                <p>Apresente o seu Crachá ou digite sua credencial para desbloquear</p>
+                <p>Apresente o seu Crachá ao leitor ou digite seu CPF</p>
             </div>
 
             <div class="scanner-view">
                 <div class="scanner-laser"></div>
                 <video id="webcam" autoplay playsinline muted></video>
-                <div class="scanner-placeholder" id="scannerMsg">Aguardando Crachá na Câmera...</div>
+                <div class="scanner-placeholder" id="scannerMsg">Aguardando Leitura...</div>
             </div>
 
-            <div style="margin-bottom: 20px;">
-                <label style="color: #94a3b8; font-size: 0.75rem; font-weight: 600; display: block; margin-bottom: 6px;">Simulador de Crachá (Teste de Desenvolvimento):</label>
-                <select class="form-select" id="quickSelectBadge" onchange="simulateBadgeScan(this.value)" style="width:100%; background-color:#0f172a; color:white; border-color:#334155;">
-                    <option value="">-- Selecione um Crachá de Teste --</option>
-                    <option value="12345678901">Crachá: Carlos Alberto (Suporte de TI)</option>
-                    <option value="98765432100">Crachá: Roberta Vasconcelos (Farmacêutica)</option>
-                </select>
-            </div>
-
-            <div class="divider">Ou login manual</div>
-
-            <input type="text" class="login-input" id="cpfInput" maxlength="11" placeholder="Digite seu CPF (11 dígitos)">
-            <button class="btn-login-submit" onclick="attemptManualLogin()">Autenticar Operador</button>
+            <input type="text" class="login-input" id="cpfInput" maxlength="11" placeholder="Clique aqui e passe o Crachá no leitor" onkeypress="handleKeyPress(event)">
+            <button class="btn-login-submit" onclick="attemptManualLogin()" id="btnLoginSubmit">Autenticar Operador</button>
         </div>
     </div>
 
@@ -624,31 +122,27 @@
             <div>
                 <div class="sidebar-brand">
                     <div class="brand-logo">sF</div>
-                    <div class="brand-name">
-                        sisFarma / YANA
-                        <span>Central CAF</span>
-                    </div>
+                    <div class="brand-name">sisFarma / YANA<span>Central CAF</span></div>
                 </div>
 
                 <div class="sidebar-menu-wrapper">
                     <div class="menu-section-title">Operações de Estoque</div>
                     <ul class="sidebar-menu">
-                        <li class="menu-item"><a onclick="switchTab('dispensar')" id="nav-dispensar" class="menu-link active">⚡ Dispensar Itens</a></li>
-                        <li class="menu-item"><a onclick="switchTab('catalogo')" id="nav-catalogo" class="menu-link">💊 Catálogo Base</a></li>
-                        <li class="menu-item"><a onclick="switchTab('lotes')" id="nav-lotes" class="menu-link">📦 Entrada de Lotes</a></li>
-                        <li class="menu-item"><a onclick="switchTab('insumos')" id="nav-insumos" class="menu-link">💉 Cadastro Insumos</a></li>
+                        <li><a onclick="switchTab('dispensar')" id="nav-dispensar" class="menu-link active">⚡ Dispensar Itens</a></li>
+                        <li><a onclick="switchTab('catalogo')" id="nav-catalogo" class="menu-link">💊 Catálogo Base</a></li>
+                        <li><a onclick="switchTab('lotes')" id="nav-lotes" class="menu-link">📦 Entrada de Lotes</a></li>
+                        <li><a onclick="switchTab('insumos')" id="nav-insumos" class="menu-link">💉 Cadastro Insumos</a></li>
                     </ul>
 
                     <div class="menu-section-title">Serviços & Auditoria</div>
                     <ul class="sidebar-menu">
-                        <li class="menu-item"><a onclick="switchTab('etiquetas')" id="nav-etiquetas" class="menu-link">🏷️ Gerar Etiquetas</a></li>
-                        <li class="menu-item"><a onclick="switchTab('rastreio')" id="nav-rastreio" class="menu-link">🔍 Rastreabilidade</a></li>
-                        <li class="menu-item"><a onclick="switchTab('alertas')" id="nav-alertas" class="menu-link">⚠️ Alertas Clínicos <span class="sidebar-alert-dot" id="alertDot" style="display:none;"></span></a></li>
-                        <li class="menu-item"><a onclick="switchTab('tecno')" id="nav-tecno" class="menu-link">🚩 Tecnovigilância</a></li>
+                        <li><a onclick="switchTab('etiquetas')" id="nav-etiquetas" class="menu-link">🏷️ Gerar Etiquetas</a></li>
+                        <li><a onclick="switchTab('rastreio')" id="nav-rastreio" class="menu-link">🔍 Rastreabilidade</a></li>
+                        <li><a onclick="switchTab('alertas')" id="nav-alertas" class="menu-link">⚠️ Alertas Clínicos <span class="sidebar-alert-dot" id="alertDot" style="display:none;"></span></a></li>
+                        <li><a onclick="switchTab('tecno')" id="nav-tecno" class="menu-link">🚩 Tecnovigilância</a></li>
                     </ul>
                 </div>
             </div>
-
             <div class="sidebar-footer">
                 <button class="btn-logout" onclick="logout()">Encerrar Turno (Sair)</button>
             </div>
@@ -658,82 +152,42 @@
             <header class="topbar">
                 <div class="page-title" id="page-current-title">Dispensação e Saídas</div>
                 <div class="user-profile">
-                    <div class="user-avatar" id="headerAvatar">ADM</div>
+                    <div class="user-avatar" id="headerAvatar">--</div>
                     <div class="user-info">
-                        <h4 id="headerUserName">Roberta Vasconcelos</h4>
-                        <p id="headerUserRole">Farmacêutica Chefe</p>
+                        <h4 id="headerUserName">Carregando...</h4>
+                        <p id="headerUserRole">...</p>
                     </div>
                 </div>
             </header>
 
             <div class="content-body">
-
+                
                 <section id="sec-dispensar" class="page-section active">
                     <div class="grid-forms">
                         <div class="box-container">
-                            <div class="box-title">⚡ Processar Dispensação de Lotes</div>
+                            <div class="box-title">⚡ Processar Dispensação</div>
                             <form id="dispensaForm" onsubmit="handleDispensa(event)">
                                 <div class="form-group">
                                     <label class="form-label">Tipo de Material</label>
-                                    <div style="display: flex; gap: 20px; padding: 6px 0;">
-                                        <label style="font-size: 0.85rem;"><input type="radio" name="tipo_material" value="MED" checked onchange="syncDispensarDropdown()"> Medicamentos</label>
-                                        <label style="font-size: 0.85rem;"><input type="radio" name="tipo_material" value="INS" onchange="syncDispensarDropdown()"> Insumos / Materiais</label>
+                                    <div style="display: flex; gap: 20px;">
+                                        <label><input type="radio" name="tipo_material" value="MED" checked onchange="syncDispensarDropdown()"> Medicamentos</label>
+                                        <label><input type="radio" name="tipo_material" value="INS" onchange="syncDispensarDropdown()"> Insumos</label>
                                     </div>
                                 </div>
-
-                                <div class="form-group">
-                                    <label class="form-label">Selecionar Lote Disponível (Filtro Estoque Ativo)</label>
-                                    <select class="form-select" id="disp_lote_id" required>
-                                        </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="form-label">Paciente / Uso Geral</label>
-                                    <input type="text" class="form-input" id="disp_paciente" placeholder="Nome Completo do Paciente" required>
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="form-label">Nº Prescrição / Requisição</label>
-                                    <input type="text" class="form-input" id="disp_prescricao" placeholder="Controle Nº" required>
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="form-label">Setor Requisitante</label>
-                                    <select class="form-select" id="disp_setor">
-                                        <option value="Clínica Médica">Clínica Médica</option>
-                                        <option value="UTI Adulto">UTI Adulto</option>
-                                        <option value="Pediatria">Pediatria</option>
-                                        <option value="Centro Cirúrgico">Centro Cirúrgico</option>
-                                        <option value="Pronto Socorro">Pronto Socorro</option>
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="form-label">Quantidade Requerida</label>
-                                    <input type="number" class="form-input" id="disp_qtd" min="1" required>
-                                </div>
-
-                                <button type="submit" class="btn-action-primary btn-orange">⚡ Sincronizar Baixa no Estoque</button>
+                                <div class="form-group"><label class="form-label">Lote Disponível</label><select class="form-select" id="disp_lote_id" required></select></div>
+                                <div class="form-group"><label class="form-label">Paciente</label><input type="text" class="form-input" id="disp_paciente" required></div>
+                                <div class="form-group"><label class="form-label">Setor Destino</label><select class="form-select" id="disp_setor"><option>UTI Adulto</option><option>Clínica Médica</option></select></div>
+                                <div class="form-group"><label class="form-label">Quantidade</label><input type="number" class="form-input" id="disp_qtd" min="1" required></div>
+                                <button type="submit" class="btn-action-primary btn-orange">Baixar Estoque</button>
                             </form>
                         </div>
-
-                        <div class="box-container" style="display: flex; flex-direction: column; justify-content: space-between;">
-                            <div>
-                                <div class="box-title">Histórico de Últimas Saídas (Tempo Real)</div>
-                                <div class="table-wrapper">
-                                    <table class="data-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Tipo</th>
-                                                <th>Qtd</th>
-                                                <th>Destino/Paciente</th>
-                                                <th>Horário</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="disp_movs_body">
-                                            </tbody>
-                                    </table>
-                                </div>
+                        <div class="box-container">
+                            <div class="box-title">Histórico de Saídas Local</div>
+                            <div class="table-wrapper">
+                                <table class="data-table">
+                                    <thead><tr><th>Tipo</th><th>Qtd</th><th>Destino/Paciente</th><th>Data</th></tr></thead>
+                                    <tbody id="disp_movs_body"></tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -742,49 +196,20 @@
                 <section id="sec-catalogo" class="page-section">
                     <div class="grid-forms">
                         <div class="box-container">
-                            <div class="box-title">➕ Ficha Cadastral do Fármaco</div>
+                            <div class="box-title">➕ Novo Fármaco</div>
                             <form id="medForm" onsubmit="handleMedSubmit(event)">
-                                <div class="form-group">
-                                    <label class="form-label">Nome Comercial</label>
-                                    <input type="text" class="form-input" id="med_nome" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Princípio Ativo</label>
-                                    <input type="text" class="form-input" id="med_principio" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Categoria Terapêutica</label>
-                                    <select class="form-select" id="med_categoria">
-                                        <option value="Antimicrobiano">Antimicrobiano</option>
-                                        <option value="Opioide">Opioide</option>
-                                        <option value="Anestésico">Anestésico</option>
-                                        <option value="Psicotrópico">Psicotrópico</option>
-                                        <option value="Injetável Comum">Injetável Comum</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Código de Barras (EAN)</label>
-                                    <input type="text" class="form-input" id="med_ean" placeholder="Leitura ótica...">
-                                </div>
-                                <div class="form-group">
-                                    <label style="font-size:0.85rem;"><input type="checkbox" id="med_controlado"> Medicamento Controlado (Portaria 344)</label>
-                                </div>
+                                <div class="form-group"><label class="form-label">Nome</label><input type="text" class="form-input" id="med_nome" required></div>
+                                <div class="form-group"><label class="form-label">Princípio Ativo</label><input type="text" class="form-input" id="med_principio" required></div>
+                                <div class="form-group"><label class="form-label">Categoria</label><select class="form-select" id="med_categoria"><option>Antimicrobiano</option><option>Opioide</option><option>Comum</option></select></div>
+                                <div class="form-group"><label><input type="checkbox" id="med_controlado"> Controlado Port. 344</label></div>
                                 <button type="submit" class="btn-action-primary">Salvar no Catálogo Base</button>
                             </form>
                         </div>
-
                         <div class="box-container">
-                            <div class="box-title">Medicamentos Cadastrados</div>
+                            <div class="box-title">Catálogo Base</div>
                             <div class="table-wrapper">
                                 <table class="data-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Nome</th>
-                                            <th>Princípio Ativo</th>
-                                            <th>Categoria</th>
-                                            <th>Controle</th>
-                                        </tr>
-                                    </thead>
+                                    <thead><tr><th>Nome</th><th>Ativo</th><th>Categoria</th></tr></thead>
                                     <tbody id="med_table_body"></tbody>
                                 </table>
                             </div>
@@ -795,44 +220,20 @@
                 <section id="sec-lotes" class="page-section">
                     <div class="grid-forms">
                         <div class="box-container">
-                            <div class="box-title">📥 Registrar Recebimento de Lotes (Medicamentos)</div>
+                            <div class="box-title">📥 Entrada de Lote</div>
                             <form id="loteForm" onsubmit="handleLoteSubmit(event)">
-                                <div class="form-group">
-                                    <label class="form-label">Medicamento</label>
-                                    <select class="form-select" id="lote_med_id" required></select>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Número do Lote</label>
-                                    <input type="text" class="form-input" id="lote_numero" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Fabricante</label>
-                                    <input type="text" class="form-input" id="lote_fabricante" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Data de Validade (AAAA-MM-DD)</label>
-                                    <input type="date" class="form-input" id="lote_validade" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Quantidade de Entrada</label>
-                                    <input type="number" class="form-input" id="lote_quantidade" min="1" required>
-                                </div>
-                                <button type="submit" class="btn-action-primary">Dar Entrada de Lote</button>
+                                <div class="form-group"><label class="form-label">Fármaco</label><select class="form-select" id="lote_med_id" required></select></div>
+                                <div class="form-group"><label class="form-label">Número do Lote</label><input type="text" class="form-input" id="lote_numero" required></div>
+                                <div class="form-group"><label class="form-label">Validade (AAAA-MM-DD)</label><input type="date" class="form-input" id="lote_validade" required></div>
+                                <div class="form-group"><label class="form-label">Qtd</label><input type="number" class="form-input" id="lote_quantidade" required></div>
+                                <button type="submit" class="btn-action-primary">Registar Lote</button>
                             </form>
                         </div>
-
                         <div class="box-container">
-                            <div class="box-title">Inventário de Lotes em Estoque</div>
+                            <div class="box-title">Inventário de Lotes</div>
                             <div class="table-wrapper">
                                 <table class="data-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Medicamento</th>
-                                            <th>Lote</th>
-                                            <th>Validade</th>
-                                            <th>Qtd Estoque</th>
-                                        </tr>
-                                    </thead>
+                                    <thead><tr><th>Fármaco</th><th>Lote</th><th>Validade</th><th>Qtd</th></tr></thead>
                                     <tbody id="lote_table_body"></tbody>
                                 </table>
                             </div>
@@ -843,45 +244,19 @@
                 <section id="sec-insumos" class="page-section">
                     <div class="grid-forms">
                         <div class="box-container">
-                            <div class="box-title">💉 Cadastro Geral de Insumos & Correlatos</div>
+                            <div class="box-title">💉 Cadastro Insumo</div>
                             <form id="insForm" onsubmit="handleInsumoSubmit(event)">
-                                <div class="form-group">
-                                    <label class="form-label">Nome do Insumo</label>
-                                    <input type="text" class="form-input" id="ins_nome" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Especificação Técnica</label>
-                                    <input type="text" class="form-input" id="ins_especificacao" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Unidade de Medida</label>
-                                    <select class="form-select" id="ins_unidade">
-                                        <option value="Unidade">Unidade</option>
-                                        <option value="Frasco">Frasco</option>
-                                        <option value="Caixa">Caixa</option>
-                                        <option value="Rolo">Rolo</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Entrada de Quantidade (Lote Único Inicial)</label>
-                                    <input type="number" class="form-input" id="ins_qtd_lote" min="1" required>
-                                </div>
-                                <button type="submit" class="btn-action-primary">Cadastrar Material</button>
+                                <div class="form-group"><label class="form-label">Nome</label><input type="text" class="form-input" id="ins_nome" required></div>
+                                <div class="form-group"><label class="form-label">Especificação</label><input type="text" class="form-input" id="ins_especificacao" required></div>
+                                <div class="form-group"><label class="form-label">Qtd Entrada</label><input type="number" class="form-input" id="ins_qtd_lote" required></div>
+                                <button type="submit" class="btn-action-primary">Salvar Insumo</button>
                             </form>
                         </div>
-
                         <div class="box-container">
-                            <div class="box-title">Lista de Insumos em Estoque</div>
+                            <div class="box-title">Insumos em Estoque</div>
                             <div class="table-wrapper">
                                 <table class="data-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Insumo</th>
-                                            <th>Especificação</th>
-                                            <th>Unidade</th>
-                                            <th>Saldo</th>
-                                        </tr>
-                                    </thead>
+                                    <thead><tr><th>Nome</th><th>Especificação</th><th>Saldo</th></tr></thead>
                                     <tbody id="ins_table_body"></tbody>
                                 </table>
                             </div>
@@ -889,203 +264,84 @@
                     </div>
                 </section>
 
-                <section id="sec-etiquetas" class="page-section">
-                    <div class="grid-forms">
-                        <div class="box-container" style="max-width: 320px;">
-                            <div class="box-title">Configurar Etiquetas</div>
-                            <div class="form-group">
-                                <label class="form-label">Modelo de Unitarização</label>
-                                <select class="form-select" id="lbl_modelo" onchange="switchLabelFields(this.value)">
-                                    <option value="P">1. Paciente / Leito</option>
-                                    <option value="L">2. Líquidos / Fracionados</option>
-                                    <option value="C">3. Comprimidos</option>
-                                </select>
-                            </div>
-                            <div id="dynamic_label_fields">
-                                <div class="form-group">
-                                    <label class="form-label">Nome do Paciente</label>
-                                    <input type="text" class="form-input" id="lbl_field_1" value="Roberta Vasconcelos">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Leito</label>
-                                    <input type="text" class="form-input" id="lbl_field_2" value="UTI - 04">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Linhas para Gerar</label>
-                                <input type="number" class="form-input" id="lbl_rows" value="4" min="1">
-                            </div>
-                            <button class="btn-action-primary" onclick="generateLabels()">Gerar Grade de Impressão</button>
-                        </div>
-
-                        <div class="box-container">
-                            <div class="box-title">Pré-visualização da Folha de Etiquetas</div>
-                            <div class="label-grid" id="labelOutput">
-                                </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="sec-rastreio" class="page-section">
-                    <div class="box-container">
-                        <div class="box-title">Histórico de Rastreabilidade Extensa</div>
-                        <div class="table-wrapper">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Operação</th>
-                                        <th>Qtd</th>
-                                        <th>Setor Destino</th>
-                                        <th>Paciente</th>
-                                        <th>Nº Doc</th>
-                                        <th>Operador Responsável</th>
-                                        <th>Data/Hora Sinc.</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="rastreio_table_body"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="sec-alertas" class="page-section">
-                    <div class="box-container">
-                        <div class="box-title">Validação de Bloqueio Sanitário Automático</div>
-                        <div id="alertContainer">
-                            </div>
-                    </div>
-                </section>
-
-                <section id="sec-tecno" class="page-section">
-                    <div class="grid-forms">
-                        <div class="box-container">
-                            <div class="box-title">🚩 Registro de Ocorrência Técnica / Desvio</div>
-                            <form id="tecForm" onsubmit="handleTecnovigilanciaSubmit(event)">
-                                <div class="form-group">
-                                    <label class="form-label">Lote / Item Suspeito</label>
-                                    <input type="text" class="form-input" id="tec_lote" placeholder="Ex: Ambroxol Lote: LOT2411" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Tipo de Ocorrência</label>
-                                    <select class="form-select" id="tec_tipo">
-                                        <option value="Desvio de Qualidade">Desvio de Qualidade</option>
-                                        <option value="Queixa Técnica">Queixa Técnica</option>
-                                        <option value="Efeito Adverso">Efeito Adverso</option>
-                                        <option value="Embalagem Violada">Embalagem Violada</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Gravidade</label>
-                                    <select class="form-select" id="tec_gravidade">
-                                        <option value="Baixa">Baixa</option>
-                                        <option value="Moderada">Moderada</option>
-                                        <option value="Alta / Crítica">Alta / Crítica</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Descrição Detalhada do Evento</label>
-                                    <textarea class="form-textarea" id="tec_descricao" rows="3" required></textarea>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Conduta Imediata Realizada</label>
-                                    <input type="text" class="form-input" id="tec_conduta" placeholder="Ex: Lote recolhido e segregado na quarentena" required>
-                                </div>
-                                <button type="submit" class="btn-action-primary btn-red">🚩 Notificar Evento Sanitário</button>
-                            </form>
-                        </div>
-
-                        <div class="box-container">
-                            <div class="box-title">Histórico de Eventos de Tecnovigilância Registrados</div>
-                            <div class="table-wrapper">
-                                <table class="data-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Item/Lote</th>
-                                            <th>Tipo</th>
-                                            <th>Gravidade</th>
-                                            <th>Conduta</th>
-                                            <th>Data Notificação</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tec_table_body"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+                <section id="sec-etiquetas" class="page-section"><div class="box-container">EM CONSTRUÇÃO</div></section>
+                <section id="sec-rastreio" class="page-section"><div class="box-container">EM CONSTRUÇÃO</div></section>
+                <section id="sec-alertas" class="page-section"><div class="box-container">EM CONSTRUÇÃO</div></section>
+                <section id="sec-tecno" class="page-section"><div class="box-container">EM CONSTRUÇÃO</div></section>
 
             </div>
         </main>
     </div>
 
     <script>
-        // --- 9.1 BANCO DE DADOS EM MEMÓRIA (MOCK DATA COMPATÍVEL COM O PRD) ---
         let currentUser = null;
-
-        const localTeam = [
-            { cpf: "12345678901", nome: "Carlos Alberto Ferreira", cargo: "Suporte de TI / Gestor" },
-            { cpf: "98765432100", nome: "Roberta Vasconcelos", cargo: "Farmacêutico(a) Chefe" }
-        ];
-
+        
+        // Memória local APENAS para os dados operacionais (Fármacos, Lotes, etc) até termos rotas pra eles
         let database = {
-            medicamentos: [
-                { id: 1, nome: "Ambroxol Xarope", principio: "Cloridrato de Ambroxol", categoria: "Injetável Comum", controlado: false, ean: "7896006311021" },
-                { id: 2, nome: "Morfina Solução", principio: "Sulfato de Morfina", categoria: "Opioide", controlado: true, ean: "7891234567890" }
-            ],
-            lotes: [
-                { id: 1, med_id: 1, numero: "LOT2411", fabricante: "Medley", validade: "2027-12-31", quantidade: 140 },
-                { id: 2, med_id: 2, numero: "MORF889", fabricante: "Cristália", validade: "2026-05-10", quantidade: 32 } // Lote Vencido para Alertas
-            ],
-            insumos: [
-                { id: 1, nome: "Seringa Descartável", especificacao: "Luer Lock 5ml", unidade: "Unidade", quantidade: 350 },
-                { id: 2, nome: "Agulha Hipodérmica", especificacao: "25 x 0,7mm", unidade: "Unidade", quantidade: 500 }
-            ],
-            movimentacoes: [
-                { id: 1, tipo: "ENTRADA LOTE", quantidade: 140, destino: "CAF Central", paciente: "Estoque Inicial", responsavel: "Carlos Alberto", data: "15/07/2026 09:12" }
-            ],
-            tecnovigilancia: [
-                { id: 1, lote: "LOT2411", tipo: "Embalagem Violada", descricao: "Rasgo no lacre protetor externo do lote.", gravidade: "Moderada", conduta: "Separado e colocado sob quarentena.", data: "15/07/2026 10:00" }
-            ]
+            medicamentos: [],
+            lotes: [],
+            insumos: [],
+            movimentacoes: []
         };
 
-        // --- 9.2 FLUXO DE LOGIN (CRACHÁ OU CPF) ---
-        function attemptManualLogin() {
-            const cpf = document.getElementById('cpfInput').value.trim();
-            login(cpf);
-        }
-
-        function simulateBadgeScan(cpf) {
-            if(cpf) {
-                document.getElementById('scannerMsg').innerText = "✓ Crachá Identificado!";
-                document.getElementById('scannerMsg').style.color = "#10b981";
-                setTimeout(() => {
-                    login(cpf);
-                    document.getElementById('quickSelectBadge').value = ""; // Reseta simulador
-                }, 1000);
+        // --- INTEGRAÇÃO REAL DO LOGIN ---
+        // Permite que um leitor físico USB dê enter e faça o login na hora
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') {
+                attemptManualLogin();
             }
         }
 
-        function login(cpf) {
-            const user = localTeam.find(u => u.cpf === cpf);
-            if (user) {
-                currentUser = user;
+        async function attemptManualLogin() {
+            const cpfInput = document.getElementById('cpfInput');
+            const btn = document.getElementById('btnLoginSubmit');
+            const msg = document.getElementById('scannerMsg');
+            const cpf = cpfInput.value.replace(/\D/g, ''); // Limpa traços e pontos
 
-                // Configura Header
-                document.getElementById('headerUserName').innerText = user.nome;
-                document.getElementById('headerUserRole').innerText = user.cargo;
-                document.getElementById('headerAvatar').innerText = user.nome.charAt(0).toUpperCase();
+            if (cpf.length !== 11) {
+                alert("Por favor, digite ou leia um CPF válido de 11 dígitos.");
+                return;
+            }
 
-                // Libera a tela
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('appContainer').style.display = 'flex';
+            btn.innerText = "A validar...";
+            btn.disabled = true;
 
-                // Inicializa Operações em background
-                checkSanitaryAlerts();
-                updateAllTables();
-                syncDispensarDropdown();
-            } else {
-                alert("Erro de Segurança: Credencial ou Crachá inválido. Acesso Negado.");
+            try {
+                // REQUISIÇÃO PARA O BACKEND PYTHON (VERCEL/NEON)
+                const response = await fetch('/api/pharmacy/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cpf: cpf })
+                });
+                
+                const data = await response.json();
+
+                if (data.success) {
+                    msg.innerText = "✓ Identidade Confirmada!";
+                    msg.style.color = "#10b981";
+                    
+                    currentUser = data.colaborador;
+                    
+                    // Configura Interface
+                    document.getElementById('headerUserName').innerText = currentUser.nome;
+                    document.getElementById('headerUserRole').innerText = currentUser.cargo;
+                    document.getElementById('headerAvatar').innerText = currentUser.nome.charAt(0).toUpperCase();
+
+                    setTimeout(() => {
+                        document.getElementById('loginScreen').style.display = 'none';
+                        document.getElementById('appContainer').style.display = 'flex';
+                        updateAllTables();
+                    }, 500);
+                } else {
+                    alert("Acesso Negado: " + data.message);
+                    cpfInput.value = "";
+                    cpfInput.focus();
+                }
+            } catch (error) {
+                alert("Erro ao comunicar com a Base de Dados. Tente novamente.");
+            } finally {
+                btn.innerText = "Autenticar Operador";
+                btn.disabled = false;
             }
         }
 
@@ -1093,437 +349,141 @@
             currentUser = null;
             document.getElementById('loginScreen').style.display = 'flex';
             document.getElementById('appContainer').style.display = 'none';
-            document.getElementById('scannerMsg').innerText = "Aguardando Crachá na Câmera...";
+            document.getElementById('cpfInput').value = "";
+            document.getElementById('scannerMsg').innerText = "Aguardando Leitura...";
             document.getElementById('scannerMsg').style.color = "#64748b";
         }
 
-        // --- 9.3 PROCESSADOR DE ABAS (SPA) ---
+        // --- SISTEMA OPERACIONAL (SIMULADO NA MEMÓRIA POR ENQUANTO) ---
+        
         function switchTab(tabId) {
             document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
             document.querySelectorAll('.menu-link').forEach(link => link.classList.remove('active'));
-
-            const targetSection = document.getElementById('sec-' + tabId);
-            const targetNavLink = document.getElementById('nav-' + tabId);
-
-            if (targetSection && targetNavLink) {
-                targetSection.classList.add('active');
-                targetNavLink.classList.add('active');
-            }
-
-            // Atualiza Topbar
-            const titleElement = document.getElementById('page-current-title');
-            if (tabId === 'dispensar') titleElement.innerText = "Dispensação e Saídas";
-            else if (tabId === 'catalogo') titleElement.innerText = "Catálogo Base de Fármacos";
-            else if (tabId === 'lotes') titleElement.innerText = "Inventário & Entrada de Lotes";
-            else if (tabId === 'insumos') titleElement.innerText = "Cadastro de Insumos & Correlatos";
-            else if (tabId === 'etiquetas') {
-                titleElement.innerText = "Gerador de Etiquetas de Unitarização";
-                generateLabels();
-            }
-            else if (tabId === 'rastreio') titleElement.innerText = "Rastreabilidade Extensa (RDC 430/2020)";
-            else if (tabId === 'alertas') titleElement.innerText = "Alertas Clínicos & Validação Crítica";
-            else if (tabId === 'tecno') titleElement.innerText = "Vigilância Sanitária (POP.FARM.019)";
+            document.getElementById('sec-' + tabId).classList.add('active');
+            document.getElementById('nav-' + tabId).classList.add('active');
+            
+            const titles = { 'dispensar': 'Dispensação e Saídas', 'catalogo': 'Catálogo Base', 'lotes': 'Entrada de Lotes', 'insumos': 'Cadastro de Insumos', 'etiquetas': 'Etiquetas', 'rastreio': 'Rastreabilidade', 'alertas': 'Alertas', 'tecno': 'Tecnovigilância' };
+            document.getElementById('page-current-title').innerText = titles[tabId];
         }
 
-        // --- 9.4 FUNÇÕES DE ESTOQUE, CADASTROS E DISPENSAÇÃO ---
-
-        // Cadastro de Medicamento
-        function handleMedSubmit(event) {
-            event.preventDefault();
-            const nome = document.getElementById('med_nome').value.trim();
-            const principio = document.getElementById('med_principio').value.trim();
-            const categoria = document.getElementById('med_categoria').value;
-            const ean = document.getElementById('med_ean').value.trim() || "Nenhum";
-            const controlado = document.getElementById('med_controlado').checked;
-
+        function handleMedSubmit(e) {
+            e.preventDefault();
             const id = database.medicamentos.length + 1;
-            database.medicamentos.push({ id, nome, principio, categoria, controlado, ean });
-
-            alert(`Medicamento "${nome}" adicionado com sucesso!`);
+            const nome = document.getElementById('med_nome').value;
+            const principio = document.getElementById('med_principio').value;
+            const categoria = document.getElementById('med_categoria').value;
+            database.medicamentos.push({ id, nome, principio, categoria });
             document.getElementById('medForm').reset();
             updateAllTables();
         }
 
-        // Entrada de Lote (Medicamento)
-        function handleLoteSubmit(event) {
-            event.preventDefault();
+        function handleLoteSubmit(e) {
+            e.preventDefault();
+            const id = database.lotes.length + 1;
             const med_id = parseInt(document.getElementById('lote_med_id').value);
-            const numero = document.getElementById('lote_numero').value.trim();
-            const fabricante = document.getElementById('lote_fabricante').value.trim();
+            const numero = document.getElementById('lote_numero').value;
             const validade = document.getElementById('lote_validade').value;
             const quantidade = parseInt(document.getElementById('lote_quantidade').value);
-
-            const id = database.lotes.length + 1;
-            database.lotes.push({ id, med_id, numero, fabricante, validade, quantidade });
-
-            // Gera log
-            const med = database.medicamentos.find(m => m.id === med_id);
-            database.movimentacoes.push({
-                id: database.movimentacoes.length + 1,
-                tipo: "ENTRADA LOTE",
-                quantidade,
-                destino: "CAF Central",
-                paciente: `Lote ${numero} de ${med.nome}`,
-                responsavel: currentUser.nome,
-                data: new Date().toLocaleString('pt-BR').substring(0, 16)
-            });
-
-            alert("Entrada de lote sincronizada!");
+            database.lotes.push({ id, med_id, numero, validade, quantidade });
             document.getElementById('loteForm').reset();
-            checkSanitaryAlerts();
             updateAllTables();
         }
 
-        // Cadastro de Insumo
-        function handleInsumoSubmit(event) {
-            event.preventDefault();
-            const nome = document.getElementById('ins_nome').value.trim();
-            const especificacao = document.getElementById('ins_especificacao').value.trim();
-            const unidade = document.getElementById('ins_unidade').value;
-            const quantidade = parseInt(document.getElementById('ins_qtd_lote').value);
-
+        function handleInsumoSubmit(e) {
+            e.preventDefault();
             const id = database.insumos.length + 1;
-            database.insumos.push({ id, nome, especificacao, unidade, quantidade });
-
-            database.movimentacoes.push({
-                id: database.movimentacoes.length + 1,
-                tipo: "ENTRADA INSUMO",
-                quantidade,
-                destino: "Estoque Central",
-                paciente: `${nome} (${especificacao})`,
-                responsavel: currentUser.nome,
-                data: new Date().toLocaleString('pt-BR').substring(0, 16)
-            });
-
-            alert("Insumo cadastrado e estoque abastecido!");
+            const nome = document.getElementById('ins_nome').value;
+            const especificacao = document.getElementById('ins_especificacao').value;
+            const quantidade = parseInt(document.getElementById('ins_qtd_lote').value);
+            database.insumos.push({ id, nome, especificacao, quantidade });
             document.getElementById('insForm').reset();
             updateAllTables();
         }
 
-        // DISPENSAÇÃO (Regra Crítica de Baixa e Bloqueio)
-        function handleDispensa(event) {
-            event.preventDefault();
+        function syncDispensarDropdown() {
             const tipo = document.querySelector('input[name="tipo_material"]:checked').value;
-            const id_selecionado = parseInt(document.getElementById('disp_lote_id').value);
-            const paciente = document.getElementById('disp_paciente').value.trim();
-            const prescricao = document.getElementById('disp_prescricao').value.trim();
+            const sel = document.getElementById('disp_lote_id');
+            sel.innerHTML = "";
+            if (tipo === "MED") {
+                database.lotes.filter(l => l.quantidade > 0).forEach(l => {
+                    const m = database.medicamentos.find(x => x.id === l.med_id);
+                    sel.innerHTML += `<option value="${l.id}">${m.nome} | Lote: ${l.numero} (Qtd: ${l.quantidade})</option>`;
+                });
+            } else {
+                database.insumos.filter(i => i.quantidade > 0).forEach(i => {
+                    sel.innerHTML += `<option value="${i.id}">${i.nome} | Espec: ${i.especificacao} (Qtd: ${i.quantidade})</option>`;
+                });
+            }
+        }
+
+        function handleDispensa(e) {
+            e.preventDefault();
+            const tipo = document.querySelector('input[name="tipo_material"]:checked').value;
+            const id = parseInt(document.getElementById('disp_lote_id').value);
+            const paciente = document.getElementById('disp_paciente').value;
             const setor = document.getElementById('disp_setor').value;
             const qtd = parseInt(document.getElementById('disp_qtd').value);
 
+            let itemName = "";
             if (tipo === "MED") {
-                const lote = database.lotes.find(l => l.id === id_selecionado);
-                const med = database.medicamentos.find(m => m.id === lote.med_id);
-
-                // Bloqueio de validade crítico
-                const dataHoje = new Date().toISOString().split('T')[0];
-                if (lote.validade <= dataHoje) {
-                    alert("BLOQUEIO SANITÁRIO IMEDIATO: Não é permitido dispensar medicamentos vencidos!");
-                    return;
-                }
-
-                // Bloqueio de Estoque
-                if (qtd > lote.quantidade) {
-                    alert(`Inconsistência: Saldo insuficiente. Estoque disponível: ${lote.quantidade}`);
-                    return;
-                }
-
+                const lote = database.lotes.find(l => l.id === id);
+                if (qtd > lote.quantidade) return alert("Saldo insuficiente.");
                 lote.quantidade -= qtd;
-                database.movimentacoes.push({
-                    id: database.movimentacoes.length + 1,
-                    tipo: "SAÍDA MEDICAMENTO",
-                    quantidade: qtd,
-                    destino: setor,
-                    paciente: paciente,
-                    responsavel: currentUser.nome,
-                    data: new Date().toLocaleString('pt-BR').substring(0, 16)
-                });
+                itemName = database.medicamentos.find(m => m.id === lote.med_id).nome;
             } else {
-                const insumo = database.insumos.find(i => i.id === id_selecionado);
-                if (qtd > insumo.quantidade) {
-                    alert(`Inconsistência: Saldo insuficiente do insumo. Disponível: ${insumo.quantidade}`);
-                    return;
-                }
-
+                const insumo = database.insumos.find(i => i.id === id);
+                if (qtd > insumo.quantidade) return alert("Saldo insuficiente.");
                 insumo.quantidade -= qtd;
-                database.movimentacoes.push({
-                    id: database.movimentacoes.length + 1,
-                    tipo: "SAÍDA INSUMO",
-                    quantidade: qtd,
-                    destino: setor,
-                    paciente: paciente,
-                    responsavel: currentUser.nome,
-                    data: new Date().toLocaleString('pt-BR').substring(0, 16)
-                });
+                itemName = insumo.nome;
             }
 
-            alert("Baixa de material sincronizada com absoluto sucesso!");
+            database.movimentacoes.push({
+                tipo: tipo === "MED" ? "SAÍDA MED" : "SAÍDA INS",
+                quantidade: qtd, paciente, destino: setor, data: new Date().toLocaleTimeString()
+            });
+
             document.getElementById('dispensaForm').reset();
             updateAllTables();
         }
 
-        // Submissão Tecnovigilância
-        function handleTecnovigilanciaSubmit(event) {
-            event.preventDefault();
-            const lote = document.getElementById('tec_lote').value.trim();
-            const tipo = document.getElementById('tec_tipo').value;
-            const gravidade = document.getElementById('tec_gravidade').value;
-            const descricao = document.getElementById('tec_descricao').value.trim();
-            const conduta = document.getElementById('tec_conduta').value.trim();
-
-            database.tecnovigilancia.push({
-                id: database.tecnovigilancia.length + 1,
-                lote, tipo, gravidade, descricao, conduta,
-                data: new Date().toLocaleString('pt-BR').substring(0, 16)
-            });
-
-            alert("Notificação sanitária registrada e enviada para a área de Quarentena!");
-            document.getElementById('tecForm').reset();
-            updateAllTables();
-        }
-
-        // Sincronizar Dropdown de Dispensação baseado no Tipo Escolhido (MED/INS)
-        function syncDispensarDropdown() {
-            const tipo = document.querySelector('input[name="tipo_material"]:checked').value;
-            const select = document.getElementById('disp_lote_id');
-            select.innerHTML = "";
-
-            if (tipo === "MED") {
-                // Apenas lotes com quantidade > 0
-                const lotesAtivos = database.lotes.filter(l => l.quantidade > 0);
-                lotesAtivos.forEach(l => {
-                    const med = database.medicamentos.find(m => m.id === l.med_id);
-                    const opt = document.createElement('option');
-                    opt.value = l.id;
-                    opt.innerText = `💊 ${med.nome} | Lote: ${l.numero} (Qtd: ${l.quantidade})`;
-                    select.appendChild(opt);
-                });
-            } else {
-                const insumosAtivos = database.insumos.filter(i => i.quantidade > 0);
-                insumosAtivos.forEach(i => {
-                    const opt = document.createElement('option');
-                    opt.value = i.id;
-                    opt.innerText = `💉 ${i.nome} | Espec: ${i.especificacao} (Qtd: ${i.quantidade})`;
-                    select.appendChild(opt);
-                });
-            }
-        }
-
-        // --- 9.5 ALERTA SANITÁRIO AUTOMÁTICO (VENCIMENTOS) ---
-        function checkSanitaryAlerts() {
-            const dataHoje = new Date().toISOString().split('T')[0];
-            const alertDot = document.getElementById('alertDot');
-            const container = document.getElementById('alertContainer');
-            container.innerHTML = "";
-
-            let vencidos = [];
-
-            database.lotes.forEach(l => {
-                if (l.validade <= dataHoje && l.quantidade > 0) {
-                    const med = database.medicamentos.find(m => m.id === l.med_id);
-                    vencidos.push(`💊 MEDICAMENTO: ${med.nome} | Lote: ${l.numero} | Vencimento: ${l.validade} (Estoque: ${l.quantidade} un)`);
-                }
-            });
-
-            if (vencidos.length > 0) {
-                alertDot.style.display = "inline-block"; // Acende ponto vermelho na barra lateral
-
-                let listHtml = `<div class="alert-box"><strong>⚠️ BLOQUEIO SANITÁRIO IMEDIATO - PRODUTOS VENCIDOS EM ESTOQUE:</strong><br><br>`;
-                vencidos.forEach(item => {
-                    listHtml += `<div style="margin-bottom:8px;">• ${item}</div>`;
-                });
-                listHtml += `</div>`;
-                container.innerHTML = listHtml;
-            } else {
-                alertDot.style.display = "none";
-                container.innerHTML = `<div style="color:#22c55e; font-weight:700;">✅ Nenhum produto vencido detectado no estoque. Sistema Limpo!</div>`;
-            }
-        }
-
-        // --- 9.6 GERADOR DE ETIQUETAS DE UNITARIZAÇÃO ---
-        function switchLabelFields(val) {
-            const container = document.getElementById('dynamic_label_fields');
-            container.innerHTML = "";
-
-            if (val === "P") {
-                container.innerHTML = `
-                    <div class="form-group"><label class="form-label">Paciente</label><input type="text" class="form-input" id="lbl_field_1" value="CARLOS SILVA"></div>
-                    <div class="form-group"><label class="form-label">Leito</label><input type="text" class="form-input" id="lbl_field_2" value="UTI - 04"></div>
-                `;
-            } else if (val === "L") {
-                container.innerHTML = `
-                    <div class="form-group"><label class="form-label">Medicamento</label><input type="text" class="form-input" id="lbl_field_1" value="AMBROXOL"></div>
-                    <div class="form-group"><label class="form-label">Concentração</label><input type="text" class="form-input" id="lbl_field_2" value="30MG/ML"></div>
-                `;
-            } else {
-                container.innerHTML = `
-                    <div class="form-group"><label class="form-label">Nome Comprimido</label><input type="text" class="form-input" id="lbl_field_1" value="Captopril"></div>
-                    <div class="form-group"><label class="form-label">Dosagem</label><input type="text" class="form-input" id="lbl_field_2" value="25mg"></div>
-                `;
-            }
-        }
-
-        function generateLabels() {
-            const modelo = document.getElementById('lbl_modelo').value;
-            const rows = parseInt(document.getElementById('lbl_rows').value);
-            const val1 = document.getElementById('lbl_field_1').value.toUpperCase();
-            const val2 = document.getElementById('lbl_field_2').value.toUpperCase();
-
-            const output = document.getElementById('labelOutput');
-            output.innerHTML = "";
-
-            if (modelo === "P") {
-                output.style.gridTemplateColumns = "repeat(3, 1fr)";
-                for (let r = 0; r < rows * 3; r++) {
-                    output.innerHTML += `
-                        <div class="label-card-p">
-                            <strong>Leito: ${val2}</strong><br>
-                            Paciente: ${val1}<br>
-                            <span style="font-size:0.65rem;">Lote Unit: sF_${Math.floor(100000 + Math.random() * 900000)}</span>
-                        </div>
-                    `;
-                }
-            } else if (modelo === "L") {
-                output.style.gridTemplateColumns = "repeat(6, 1fr)";
-                for (let r = 0; r < rows * 6; r++) {
-                    output.innerHTML += `
-                        <div class="label-card-p" style="font-size: 0.65rem; border-color: #3b82f6;">
-                            <strong>${val1}</strong><br>
-                            Conc: ${val2}<br>
-                            VPA: 15 DIAS
-                        </div>
-                    `;
-                }
-            } else {
-                output.style.gridTemplateColumns = "repeat(8, 1fr)";
-                for (let r = 0; r < rows * 8; r++) {
-                    output.innerHTML += `
-                        <div class="label-card-p" style="font-size: 0.6rem; border-color: #10b981; text-align: center;">
-                            <strong>${val1}</strong><br>
-                            ${val2}
-                        </div>
-                    `;
-                }
-            }
-        }
-
-        // --- 9.7 RENDERIZADORES DE TABELAS ---
         function updateAllTables() {
-            // Medicamento Catálogo Base
-            const medBody = document.getElementById('med_table_body');
-            medBody.innerHTML = "";
-            database.medicamentos.forEach(m => {
-                medBody.innerHTML += `
-                    <tr>
-                        <td><strong>${m.nome}</strong></td>
-                        <td>${m.principio}</td>
-                        <td>${m.categoria}</td>
-                        <td>${m.controlado ? '<span class="badge-ctrl">Port. 344</span>' : 'Comum'}</td>
-                    </tr>
-                `;
-            });
+            const medBody = document.getElementById('med_table_body'); medBody.innerHTML = "";
+            database.medicamentos.forEach(m => { medBody.innerHTML += `<tr><td>${m.nome}</td><td>${m.principio}</td><td>${m.categoria}</td></tr>`; });
 
-            // Lotes tabela
-            const loteBody = document.getElementById('lote_table_body');
-            loteBody.innerHTML = "";
+            const loteBody = document.getElementById('lote_table_body'); loteBody.innerHTML = "";
             database.lotes.forEach(l => {
-                const med = database.medicamentos.find(m => m.id === l.med_id);
-                loteBody.innerHTML += `
-                    <tr>
-                        <td><strong>${med.nome}</strong></td>
-                        <td>${l.numero}</td>
-                        <td>${l.validade}</td>
-                        <td>${l.quantidade}</td>
-                    </tr>
-                `;
+                const m = database.medicamentos.find(x => x.id === l.med_id);
+                loteBody.innerHTML += `<tr><td>${m.nome}</td><td>${l.numero}</td><td>${l.validade}</td><td>${l.quantidade}</td></tr>`;
             });
 
-            // Insumos tabela
-            const insBody = document.getElementById('ins_table_body');
-            insBody.innerHTML = "";
-            database.insumos.forEach(i => {
-                insBody.innerHTML += `
-                    <tr>
-                        <td><strong>${i.nome}</strong></td>
-                        <td>${i.especificacao}</td>
-                        <td>${i.unidade}</td>
-                        <td>${i.quantidade}</td>
-                    </tr>
-                `;
-            });
+            const insBody = document.getElementById('ins_table_body'); insBody.innerHTML = "";
+            database.insumos.forEach(i => { insBody.innerHTML += `<tr><td>${i.nome}</td><td>${i.especificacao}</td><td>${i.quantidade}</td></tr>`; });
 
-            // Movimentações Recentes (Dispensação)
-            const movsBody = document.getElementById('disp_movs_body');
-            movsBody.innerHTML = "";
-            const ultimas = database.movimentacoes.slice(-5).reverse();
-            ultimas.forEach(m => {
-                movsBody.innerHTML += `
-                    <tr>
-                        <td><strong>${m.tipo}</strong></td>
-                        <td>${m.quantidade}</td>
-                        <td>${m.paciente} (${m.destino})</td>
-                        <td>${m.data}</td>
-                    </tr>
-                `;
-            });
-
-            // Rastreabilidade Tabela
-            const rasBody = document.getElementById('rastreio_table_body');
-            rasBody.innerHTML = "";
+            const movsBody = document.getElementById('disp_movs_body'); movsBody.innerHTML = "";
             database.movimentacoes.slice().reverse().forEach(m => {
-                rasBody.innerHTML += `
-                    <tr>
-                        <td>#${m.id}</td>
-                        <td><strong>${m.tipo}</strong></td>
-                        <td>${m.quantidade}</td>
-                        <td>${m.destino}</td>
-                        <td>${m.paciente}</td>
-                        <td>Autogerado</td>
-                        <td>${m.responsavel}</td>
-                        <td>${m.data}</td>
-                    </tr>
-                `;
+                movsBody.innerHTML += `<tr><td>${m.tipo}</td><td>${m.quantidade}</td><td>${m.paciente} (${m.destino})</td><td>${m.data}</td></tr>`;
             });
 
-            // Tecnovigilância
-            const tecBody = document.getElementById('tec_table_body');
-            tecBody.innerHTML = "";
-            database.tecnovigilancia.slice().reverse().forEach(t => {
-                tecBody.innerHTML += `
-                    <tr>
-                        <td><strong>${t.lote}</strong></td>
-                        <td>${t.tipo}</td>
-                        <td>${t.gravidade}</td>
-                        <td>${t.conduta}</td>
-                        <td>${t.data}</td>
-                    </tr>
-                `;
-            });
+            const medSelect = document.getElementById('lote_med_id'); medSelect.innerHTML = "";
+            database.medicamentos.forEach(m => { medSelect.innerHTML += `<option value="${m.id}">${m.nome}</option>`; });
 
-            // Sincroniza formulário Lote com medicamentos do catálogo
-            const medSelect = document.getElementById('lote_med_id');
-            medSelect.innerHTML = "";
-            database.medicamentos.forEach(m => {
-                medSelect.innerHTML += `<option value="${m.id}">${m.nome} (${m.principio})</option>`;
-            });
-
-            // Sincroniza listas de dispensação
             syncDispensarDropdown();
         }
 
-        // --- 9.8 ATIVAÇÃO DE CÂMERA (WEB STREAM INTEGRADO) ---
+        // INICIAR WEBCAM DE FORMA PASSIVA
         async function startWebcam() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-                const video = document.getElementById('webcam');
-                video.srcObject = stream;
+                document.getElementById('webcam').srcObject = stream;
             } catch (err) {
-                // Caso não haja permissão ou câmera, mantém imagem estática de mira
-                document.getElementById('scannerMsg').innerText = "Webcam desativada ou não encontrada. Use o simulador de crachá abaixo.";
+                console.log("Webcam não suportada ou permissão negada.");
             }
         }
 
         window.onload = function() {
             startWebcam();
+            // Focar no input automaticamente para quem usar leitor USB
+            document.getElementById('cpfInput').focus();
         };
     </script>
 </body>
