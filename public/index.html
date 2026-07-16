@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
+    <!-- BIBLIOTECA DE LEITURA DE QR CODE -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
     <style>
@@ -103,11 +104,11 @@
         
         /* Banner de Alertas Ativos */
         .alert-banner { display: flex; align-items: center; gap: 12px; padding: 14px; background-color: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; color: #b45309; margin-bottom: 20px; font-size: 0.85rem; font-weight: 500; }
-        .btn-action-sm { background: none; border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; }
     </style>
 </head>
 <body>
 
+    <!-- A. TELA DE LOGIN (PORTAL DE ACESSO) -->
     <div class="login-screen" id="loginScreen">
         <div class="login-banner">
             <h1>SISTEMA <span>sisFarma</span></h1>
@@ -126,6 +127,7 @@
                 <p>Apresente o seu Crachá à câmara ou digite o seu CPF</p>
             </div>
 
+            <!-- LEITOR DE QR CODE -->
             <div class="scanner-view">
                 <div id="reader"></div>
                 <div class="scanner-placeholder" id="scannerMsg">A inicializar câmara...</div>
@@ -138,7 +140,9 @@
         </div>
     </div>
 
+    <!-- B. SISTEMA OPERACIONAL (ÁREA LOGADA) -->
     <div class="app-container" id="appContainer">
+        <!-- SIDEBAR -->
         <aside class="sidebar">
             <div>
                 <div class="sidebar-brand">
@@ -169,6 +173,7 @@
             </div>
         </aside>
 
+        <!-- MAIN WINDOW -->
         <main class="main-content">
             <header class="topbar">
                 <div class="page-title" id="page-current-title">Dispensação e Saídas</div>
@@ -183,6 +188,7 @@
 
             <div class="content-body">
                 
+                <!-- 1. ABA DISPENSAÇÃO -->
                 <section id="sec-dispensar" class="page-section active">
                     <div class="alert-banner" id="dispenseAlertBanner" style="display: none;">
                         <span>⚠️ Existem lotes no sistema com prazo de validade expirado ou inferior a 30 dias. Verifique a aba de Alertas!</span>
@@ -227,6 +233,7 @@
                     </div>
                 </section>
 
+                <!-- 2. ABA CATÁLOGO MEDICAMENTOS -->
                 <section id="sec-catalogo" class="page-section">
                     <div class="grid-forms">
                         <div class="box-container">
@@ -260,6 +267,7 @@
                     </div>
                 </section>
 
+                <!-- 3. ABA ENTRADA DE LOTES -->
                 <section id="sec-lotes" class="page-section">
                     <div class="grid-forms">
                         <div class="box-container">
@@ -285,6 +293,7 @@
                     </div>
                 </section>
 
+                <!-- 4. ABA CADASTRO DE INSUMOS -->
                 <section id="sec-insumos" class="page-section">
                     <div class="grid-forms">
                         <div class="box-container">
@@ -316,6 +325,7 @@
                     </div>
                 </section>
 
+                <!-- 5. ABA GERAR ETIQUETAS DE FRACIONAMENTO -->
                 <section id="sec-etiquetas" class="page-section">
                     <div class="box-container" style="max-width: 100%;">
                         <div class="box-title">🏷️ Central de Etiquetas e Código de Barras (Fracionamento Beira-Leito)</div>
@@ -338,6 +348,7 @@
                     </div>
                 </section>
 
+                <!-- 6. ABA RASTREABILIDADE (AUDITORIA) -->
                 <section id="sec-rastreio" class="page-section">
                     <div class="box-container" style="max-width: 100%;">
                         <div class="box-title">
@@ -353,6 +364,7 @@
                     </div>
                 </section>
 
+                <!-- 7. ABA ALERTAS CLÍNICOS -->
                 <section id="sec-alertas" class="page-section">
                     <div class="grid-forms" style="grid-template-columns: 1fr;">
                         <div class="box-container">
@@ -376,6 +388,7 @@
                     </div>
                 </section>
 
+                <!-- 8. ABA TECNOVIGILÂNCIA -->
                 <section id="sec-tecno" class="page-section">
                     <div class="grid-forms">
                         <div class="box-container">
@@ -424,27 +437,17 @@
         let currentUser = null;
         let html5QrCode = null;
         
-        // Banco de Dados Operacional (Carregado na memória e simulado na interface até criar as rotas correspondentes no Neon)
+        // Banco de Dados Operacional (Inicia VAZIO para produção)
         let database = { 
-            medicamentos: [
-                { id: 1, nome: "Dipirona Sódica 500mg/ml Injetável", principio: "Dipirona", categoria: "Analgésico / Antitérmico", controlado: false },
-                { id: 2, nome: "Morfina 10mg/ml Injetável", principio: "Sulfato de Morfina", categoria: "Opioide / Psicotrópico", controlado: true }
-            ], 
-            lotes: [
-                { id: 1, med_id: 1, numero: "LT234A", fabricante: "Teuto", validade: "2026-09-30", quantidade: 350 },
-                { id: 2, med_id: 2, numero: "MO542C", fabricante: "Cristália", validade: "2026-04-15", quantidade: 120 }
-            ], 
-            insumos: [
-                { id: 1, nome: "Seringa Descartável 5ml", especificacao: "Luer Slip sem Agulha", unidade: "Unidade", quantidade: 800 }
-            ], 
-            movimentacoes: [
-                { id: 1, tipo: "SAÍDA MED", item_nome: "Dipirona Sódica 500mg/ml", quantidade: 10, paciente: "Pedro Alencar", destino: "Clínica Médica", data: "2026-07-10 14:20" }
-            ],
+            medicamentos: [], 
+            lotes: [], 
+            insumos: [], 
+            movimentacoes: [],
             tecnovigilancia: []
         };
 
         // =========================================
-        // LEITOR BIOCRIPTOGRÁFICO DE QR CODE (COMPLETO)
+        // LEITOR BIOCRIPTOGRÁFICO DE QR CODE
         // =========================================
         function startQrScanner() {
             html5QrCode = new Html5Qrcode("reader");
@@ -560,7 +563,7 @@
         }
 
         // =========================================
-        // NAVEGAÇÃO SPA (ESTRUTURA COMPLETA)
+        // NAVEGAÇÃO SPA
         // =========================================
         function switchTab(tabId) {
             document.querySelectorAll('.page-section, .menu-link').forEach(el => el.classList.remove('active'));
