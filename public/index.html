@@ -123,17 +123,44 @@
         .receipt-card { border: 1px solid #cbd5e1; background-color: #f8fafc; padding: 20px; border-radius: 8px; text-align: left; margin: 20px 0; font-family: monospace; font-size: 0.8rem; color: #0f172a; line-height: 1.5; }
         .receipt-card hr { border: 0; border-top: 1px dashed #cbd5e1; margin: 10px 0; }
 
+        /* Div invisível de apoio que recebe os dados para impressão */
+        #printArea { display: none; }
+
+        /* ==========================================================
+           REGRAS CORRIGIDAS PARA IMPRESSÃO EM BRANCO (MUITO IMPORTANTE!)
+           ========================================================== */
         @media print {
-            body * { visibility: hidden; }
-            #printArea, #printArea * { visibility: visible; }
-            #printArea { position: absolute; left: 0; top: 0; width: 100%; }
-            .modal-overlay { display: none !important; }
+            /* Desativa a rolagem travada e o tamanho estrito da tela */
+            body, html { 
+                height: auto !important; 
+                overflow: visible !important; 
+                background: #fff !important; 
+                color: #000 !important;
+            }
+            /* Oculta toda a estrutura do sistema administrativo para não sair no papel */
+            .login-screen, .app-container, .modal-overlay, aside.sidebar, main.main-content, header.topbar, .content-body { 
+                display: none !important; 
+            }
+            /* Torna a área de impressão ativa e visível no fluxo do papel */
+            #printArea { 
+                display: block !important; 
+                visibility: visible !important; 
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                height: auto !important;
+            }
+            /* Caso estejamos imprimindo etiquetas na tela de etiquetas */
+            #etiquetasContainer, #etiquetasContainer * {
+                visibility: visible !important;
+            }
         }
     </style>
 </head>
 <body>
 
-    <div id="printArea" style="display: none; padding: 30px; font-family: sans-serif;"></div>
+    <div id="printArea"></div>
 
     <div class="login-screen" id="loginScreen">
         <div class="login-banner">
@@ -691,7 +718,6 @@
                 if(result.success) {
                     document.getElementById('dispensaForm').reset();
                     
-                    // Configura os dados do recibo
                     lastDispensaData = {
                         tipo: tipo_mat === "MED" ? "MEDICAMENTO" : "INSUMO",
                         item: itemNomeLog,
@@ -704,7 +730,7 @@
                     };
 
                     await syncDatabase();
-                    showReceipt(lastDispensaData); // Dispara modal de comprovante de saída
+                    showReceipt(lastDispensaData); 
                 } else alert(result.message);
             } catch(error) { alert("Erro ao comunicar com o servidor."); }
         }
@@ -880,15 +906,15 @@
             });
 
             // Rastreabilidade Integrada
-            const rastreioBody = document.getElementById('rastreio_table_body'); rastreioBody.innerHTML = "";
+            const rstrBody = document.getElementById('rastreio_table_body'); rstrBody.innerHTML = "";
             database.movimentacoes.forEach(m => {
-                rastreioBody.innerHTML += `<tr><td><span class="badge-comum">${m.tipo}</span></td><td>${m.paciente_nome} / ${m.setor_destino}</td><td><strong>${m.item_nome}</strong></td><td>${m.quantidade}</td><td>${m.data_movimentacao} (${m.responsavel})</td></tr>`;
+                rstrBody.innerHTML += `<tr><td><span class="badge-comum">${m.tipo}</span></td><td>${m.paciente_nome} / ${m.setor_destino}</td><td><strong>${m.item_nome}</strong></td><td>${m.quantidade}</td><td>${m.data_movimentacao} (${m.responsavel})</td></tr>`;
             });
 
             // Tecnovigilância
-            const tecnoBody = document.getElementById('tecno_table_body'); tecnoBody.innerHTML = "";
+            const tcBody = document.getElementById('tecno_table_body'); tcBody.innerHTML = "";
             database.tecnovigilancia.forEach(t => {
-                tecnoBody.innerHTML += `<tr><td><strong>${t.lote_texto}</strong></td><td>${t.tipo_ocorrencia}</td><td><span class="badge-ctrl">${t.gravidade}</span></td><td>${t.data_registro}</td></tr>`;
+                tcBody.innerHTML += `<tr><td><strong>${t.lote_texto}</strong></td><td>${t.tipo_ocorrencia}</td><td><span class="badge-ctrl">${t.gravidade}</span></td><td>${t.data_registro}</td></tr>`;
             });
 
             // Alertas Inteligentes
@@ -959,12 +985,16 @@
 
         function printSingleReceipt() {
             const printContent = document.getElementById('printArea');
+            // Alimenta a div ativa de impressão com o recibo formatado
             printContent.innerHTML = `
                 <div style="width: 280px; padding: 15px; border: 1px solid #000; font-family: monospace; font-size: 11px; line-height: 1.4; color: #000; background-color: #fff;">
                     ${document.getElementById('printReceiptArea').innerHTML}
                 </div>
             `;
-            window.print();
+            // Espera o render e dispara a folha do navegador de forma limpa
+            setTimeout(() => {
+                window.print();
+            }, 50);
         }
 
         // ==========================================================
@@ -973,12 +1003,10 @@
         function printPortaria344Report() {
             const printContent = document.getElementById('printArea');
             
-            // Filtra o catálogo pelos controlados (controlado === 1)
             const medsControladosIds = database.medicamentos
                 .filter(m => m.controlado == 1)
                 .map(m => m.nome.toLowerCase());
 
-            // Filtra as movimentações de medicamentos que estão na lista de controlados
             const movsControladas = database.movimentacoes.filter(m => {
                 return medsControladosIds.some(nome => m.item_nome.toLowerCase().includes(nome));
             });
@@ -1034,7 +1062,9 @@
                     </div>
                 </div>
             `;
-            window.print();
+            setTimeout(() => {
+                window.print();
+            }, 50);
         }
 
         // ==========================================================
@@ -1139,7 +1169,9 @@
                     </table>
                 </div>
             `;
-            window.print();
+            setTimeout(() => {
+                window.print();
+            }, 50);
         }
 
         window.onload = function() {
