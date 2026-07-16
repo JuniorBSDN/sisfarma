@@ -292,6 +292,38 @@ def manage_employees():
     return jsonify(employees), 200
 
 
+# NOVA ROTA: Atualizar status do colaborador de forma definitiva por CPF
+@app.route('/api/admin/employees/<cpf>/status', methods=['PUT'])
+def toggle_employee_status(cpf):
+    cnpj_header = request.headers.get("X-Company-CNPJ")
+    if not cnpj_header:
+        return jsonify({"success": False, "message": "Identificação corporativa ausente."}), 400
+
+    conn = conectar_bd()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    # 1. Busca o status atual do colaborador
+    cursor.execute("SELECT status FROM colaboradores WHERE cpf = %s AND empresa_cnpj = %s", (cpf, cnpj_header))
+    row = cursor.fetchone()
+
+    if not row:
+        cursor.close()
+        conn.close()
+        return jsonify({"success": False, "message": "Colaborador não localizado."}), 404
+
+    # 2. Alterna o status de forma inteligente
+    novo_status = "Inativo" if row["status"] in ["Ativa", "Ativo", "ATIVO", "ATIVA"] else "Ativo"
+    
+    # 3. Executa o UPDATE real no banco de dados
+    cursor.execute("UPDATE colaboradores SET status = %s WHERE cpf = %s AND empresa_cnpj = %s", (novo_status, cpf, cnpj_header))
+    conn.commit()
+    
+    cursor.close()
+    conn.close()
+    
+    return jsonify({"success": True, "new_status": novo_status}), 200
+
+
 # =========================================================================
 # ROTAS DA OPERAÇÃO DE FARMÁCIA (index.html) - SEGURA POR CNPJ
 # =========================================================================
