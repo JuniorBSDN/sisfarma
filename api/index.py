@@ -147,6 +147,110 @@ if DATABASE_URL:
     except Exception as e:
         print(f"Erro ao inicializar banco Neon: {e}")
 
+# =========================================================================
+# ROTAS OPERACIONAIS (SISFARMA - DISPENSAÇÃO E ESTOQUE)
+# =========================================================================
+
+def inicializar_tabelas_operacionais():
+    conn = conectar_bd()
+    cursor = conn.cursor()
+    # Tabela de Catálogo de Medicamentos
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS medicamentos (
+        id SERIAL PRIMARY KEY,
+        codigo_barras TEXT UNIQUE,
+        nome TEXT NOT NULL,
+        principio TEXT,
+        categoria TEXT,
+        controlado BOOLEAN
+    )''')
+    # Tabela de Lotes
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS lotes (
+        id SERIAL PRIMARY KEY,
+        med_id INTEGER REFERENCES medicamentos(id),
+        numero TEXT NOT NULL,
+        fabricante TEXT,
+        validade DATE,
+        quantidade INTEGER
+    )''')
+    # Tabela de Movimentações (Rastreabilidade)
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS movimentacoes (
+        id SERIAL PRIMARY KEY,
+        tipo TEXT,
+        item_nome TEXT,
+        quantidade INTEGER,
+        paciente TEXT,
+        destino TEXT,
+        data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )''')
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+# Rota para sincronizar todos os dados do painel logado
+@app.route('/api/pharmacy/sync', methods=['GET'])
+def sync_pharmacy_data():
+    conn = conectar_bd()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    
+    cursor.execute("SELECT * FROM medicamentos")
+    meds = cursor.fetchall()
+    
+    cursor.execute("SELECT * FROM lotes")
+    lotes = cursor.fetchall()
+    
+    cursor.execute("SELECT * FROM movimentacoes ORDER BY data_hora DESC LIMIT 100")
+    movs = cursor.fetchall()
+    
+    cursor.close()
+    conn.close()
+    
+    # Formata datas para envio
+    for l in lotes:
+        if l.get('validade'):
+            l['validade'] = l['validade'].strftime("%Y-%m-%d")
+    for m in movs:
+        if m.get('data_hora'):
+            m['data_hora'] = m['data_hora'].strftime("%d/%m/%Y %H:%M:%S")
+
+    return jsonify({"success": True, "medicamentos": meds, "lotes": lotes, "movimentacoes": movs})
+
+# Rota para registrar uma dispensação (Baixa de Estoque)
+@app.route('/api/pharmacy/dispensar', methods=['POST'])
+def register_dispensa():
+    data = request.json
+    lote_id = data.get('lote_id')
+    qtd_saida = int(data.get('qtd'))
+    
+    conn = conectar_bd()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    
+    # Verifica Saldo
+    cursor.execute("SELECT quantidade, med_id FROM lotes WHERE id = %s", (lote_id,))
+    lote = cursor.fetchone()
+    
+    if not lote or lote['quantidade'] < qtd_saida:
+        return jsonify({"success": False, "message": "Estoque insuficiente!"})
+        
+    # Dá baixa no estoque
+    cursor.execute("UPDATE lotes SET quantidade = quantidade - %s WHERE id = %s", (qtd_saida, lote_id))
+    
+    # Registra movimentação
+    cursor.execute("SELECT nome FROM medicamentos WHERE id = %s", (lote['med_id'],))
+    med = cursor.fetchone()
+    
+    cursor.execute('''
+        INSERT INTO movimentacoes (tipo, item_nome, quantidade, paciente, destino)
+        VALUES (%s, %s, %s, %s, %s)
+    ''', ("SAÍDA MED", med['nome'], qtd_saida, data.get('paciente'), data.get('setor')))
+    
+    conn.commit()
+    cursor.close()
+    conn.close()
+    
+    return jsonify({"success": True})
 
 # =========================================================================
 # FUNÇÕES AUXILIARES
