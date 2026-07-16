@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
     <style>
         /* ==========================================
@@ -32,11 +34,12 @@
         .login-header { margin-bottom: 32px; text-align: center; }
         .login-header h2 { color: #ffffff; font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; }
         .login-header p { color: #94a3b8; font-size: 0.85rem; }
-        .scanner-view { width: 100%; height: 220px; background-color: #020617; border-radius: 12px; border: 2px solid var(--primary); position: relative; overflow: hidden; margin-bottom: 24px; display: flex; align-items: center; justify-content: center; }
-        .scanner-view video { width: 100%; height: 100%; object-fit: cover; }
-        .scanner-laser { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background-color: var(--primary); box-shadow: 0 0 12px var(--primary); animation: scanning 2s linear infinite; }
-        @keyframes scanning { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
-        .scanner-placeholder { position: absolute; color: #64748b; font-size: 0.8rem; text-align: center; pointer-events: none; }
+        
+        .scanner-view { width: 100%; min-height: 250px; background-color: #020617; border-radius: 12px; border: 2px solid var(--primary); position: relative; overflow: hidden; margin-bottom: 24px; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        #reader { width: 100%; height: 100%; }
+        #reader video { object-fit: cover; }
+        .scanner-placeholder { color: #64748b; font-size: 0.85rem; text-align: center; margin-top: 10px; font-weight: 600;}
+        
         .login-input { width: 100%; padding: 12px 16px; background-color: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #ffffff; font-size: 0.95rem; outline: none; margin-bottom: 16px; }
         .login-input:focus { border-color: var(--primary); }
         .btn-login-submit { width: 100%; background-color: var(--primary); color: #ffffff; border: none; padding: 14px; border-radius: 8px; font-weight: 600; cursor: pointer; }
@@ -45,7 +48,7 @@
         .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #334155; }
         .divider:not(:empty)::before { margin-right: .5em; } .divider:not(:empty)::after { margin-left: .5em; }
 
-        /* SISTEMA PÓS-LOGIN (MANTIDO COMPACTADO PARA O CSS) */
+        /* SISTEMA PÓS-LOGIN (MANTIDO COMPACTADO) */
         .app-container { display: none; width: 100%; height: 100vh; }
         .sidebar { width: var(--sidebar-width); background-color: var(--secondary); color: #ffffff; display: flex; flex-direction: column; padding: 20px 14px; }
         .sidebar-brand { display: flex; align-items: center; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
@@ -82,10 +85,6 @@
         .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; }
         .data-table th { background-color: #f8fafc; padding: 12px 16px; color: var(--text-muted); border-bottom: 1px solid var(--border-color); font-size: 0.75rem; text-transform: uppercase; }
         .data-table td { padding: 12px 16px; border-bottom: 1px solid var(--border-color); }
-        .badge-ctrl { background-color: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
-        .sidebar-alert-dot { width: 8px; height: 8px; background-color: var(--danger); border-radius: 50%; display: inline-block; margin-left: auto; }
-        .label-grid { display: grid; gap: 12px; margin-top: 20px; }
-        .label-card-p { border: 1px solid #000; background-color: white; padding: 10px; font-size: 0.75rem; color: #000; text-align: left; }
     </style>
 </head>
 <body>
@@ -95,24 +94,24 @@
             <h1>SISTEMA <span>sisFarma</span></h1>
             <p>Unidade Central & Rastreabilidade Biocriptográfica (RDC 430/2020).</p>
             <div style="margin-top: 40px; font-size: 0.85rem; color: #64748b;">
-                Compatível com Leitores Físicos de Código de Barras/QR Code via USB.<br>
-                Basta clicar no campo abaixo e "bipar" o crachá gerado no painel administrativo.
+                O sistema irá ativar a câmara. Aponte o QR Code do seu crachá para iniciar a sessão de forma segura.
             </div>
         </div>
 
         <div class="login-box-container">
             <div class="login-header">
-                <h2>🔐 Identificação do Operador</h2>
-                <p>Apresente o seu Crachá ao leitor ou digite seu CPF</p>
+                <h2>🔐 Identificação</h2>
+                <p>Apresente o seu Crachá à câmara ou digite o seu CPF</p>
             </div>
 
             <div class="scanner-view">
-                <div class="scanner-laser"></div>
-                <video id="webcam" autoplay playsinline muted></video>
-                <div class="scanner-placeholder" id="scannerMsg">Aguardando Leitura...</div>
+                <div id="reader"></div>
+                <div class="scanner-placeholder" id="scannerMsg">A inicializar câmara...</div>
             </div>
 
-            <input type="text" class="login-input" id="cpfInput" maxlength="11" placeholder="Clique aqui e passe o Crachá no leitor" onkeypress="handleKeyPress(event)">
+            <div class="divider">Ou login manual</div>
+
+            <input type="text" class="login-input" id="cpfInput" maxlength="11" placeholder="Introduza o CPF (apenas números)" onkeypress="handleKeyPress(event)">
             <button class="btn-login-submit" onclick="attemptManualLogin()" id="btnLoginSubmit">Autenticar Operador</button>
         </div>
     </div>
@@ -133,14 +132,6 @@
                         <li><a onclick="switchTab('lotes')" id="nav-lotes" class="menu-link">📦 Entrada de Lotes</a></li>
                         <li><a onclick="switchTab('insumos')" id="nav-insumos" class="menu-link">💉 Cadastro Insumos</a></li>
                     </ul>
-
-                    <div class="menu-section-title">Serviços & Auditoria</div>
-                    <ul class="sidebar-menu">
-                        <li><a onclick="switchTab('etiquetas')" id="nav-etiquetas" class="menu-link">🏷️ Gerar Etiquetas</a></li>
-                        <li><a onclick="switchTab('rastreio')" id="nav-rastreio" class="menu-link">🔍 Rastreabilidade</a></li>
-                        <li><a onclick="switchTab('alertas')" id="nav-alertas" class="menu-link">⚠️ Alertas Clínicos <span class="sidebar-alert-dot" id="alertDot" style="display:none;"></span></a></li>
-                        <li><a onclick="switchTab('tecno')" id="nav-tecno" class="menu-link">🚩 Tecnovigilância</a></li>
-                    </ul>
                 </div>
             </div>
             <div class="sidebar-footer">
@@ -154,7 +145,7 @@
                 <div class="user-profile">
                     <div class="user-avatar" id="headerAvatar">--</div>
                     <div class="user-info">
-                        <h4 id="headerUserName">Carregando...</h4>
+                        <h4 id="headerUserName">A carregar...</h4>
                         <p id="headerUserRole">...</p>
                     </div>
                 </div>
@@ -264,28 +255,51 @@
                     </div>
                 </section>
 
-                <section id="sec-etiquetas" class="page-section"><div class="box-container">EM CONSTRUÇÃO</div></section>
-                <section id="sec-rastreio" class="page-section"><div class="box-container">EM CONSTRUÇÃO</div></section>
-                <section id="sec-alertas" class="page-section"><div class="box-container">EM CONSTRUÇÃO</div></section>
-                <section id="sec-tecno" class="page-section"><div class="box-container">EM CONSTRUÇÃO</div></section>
-
             </div>
         </main>
     </div>
 
     <script>
         let currentUser = null;
+        let html5QrCode = null; // Variável global do leitor de QR Code
         
-        // Memória local APENAS para os dados operacionais (Fármacos, Lotes, etc) até termos rotas pra eles
-        let database = {
-            medicamentos: [],
-            lotes: [],
-            insumos: [],
-            movimentacoes: []
-        };
+        // Memória local APENAS para operações de stock
+        let database = { medicamentos: [], lotes: [], insumos: [], movimentacoes: [] };
 
-        // --- INTEGRAÇÃO REAL DO LOGIN ---
-        // Permite que um leitor físico USB dê enter e faça o login na hora
+        // =========================================
+        // MOTOR DO LEITOR DE QR CODE
+        // =========================================
+        function startQrScanner() {
+            html5QrCode = new Html5Qrcode("reader");
+            
+            const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+                // Quando o QR Code for lido com sucesso:
+                document.getElementById('scannerMsg').innerText = "✓ Código Lido!";
+                document.getElementById('scannerMsg').style.color = "#10b981";
+                
+                // Preenche o input invisível e chama a função de login
+                document.getElementById('cpfInput').value = decodedText;
+                
+                html5QrCode.stop().then((ignore) => {
+                    attemptManualLogin();
+                }).catch((err) => {
+                    console.log("Erro ao parar a câmara.", err);
+                });
+            };
+
+            const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+
+            html5QrCode.start({ facingMode: "user" }, config, qrCodeSuccessCallback)
+            .then(() => {
+                document.getElementById('scannerMsg').innerText = "Mostre o crachá à câmara...";
+            })
+            .catch((err) => {
+                document.getElementById('scannerMsg').innerText = "Acesso à câmara negado ou não suportado.";
+                console.error(err);
+            });
+        }
+
+        // --- INTEGRAÇÃO REAL DO LOGIN NA API NEON ---
         function handleKeyPress(e) {
             if (e.key === 'Enter') {
                 attemptManualLogin();
@@ -296,10 +310,10 @@
             const cpfInput = document.getElementById('cpfInput');
             const btn = document.getElementById('btnLoginSubmit');
             const msg = document.getElementById('scannerMsg');
-            const cpf = cpfInput.value.replace(/\D/g, ''); // Limpa traços e pontos
+            const cpf = cpfInput.value.replace(/\D/g, ''); 
 
             if (cpf.length !== 11) {
-                alert("Por favor, digite ou leia um CPF válido de 11 dígitos.");
+                alert("Por favor, introduza um CPF válido de 11 dígitos.");
                 return;
             }
 
@@ -307,7 +321,7 @@
             btn.disabled = true;
 
             try {
-                // REQUISIÇÃO PARA O BACKEND PYTHON (VERCEL/NEON)
+                // Faz a chamada ao seu Backend na Vercel (PostgreSQL)
                 const response = await fetch('/api/pharmacy/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -322,7 +336,6 @@
                     
                     currentUser = data.colaborador;
                     
-                    // Configura Interface
                     document.getElementById('headerUserName').innerText = currentUser.nome;
                     document.getElementById('headerUserRole').innerText = currentUser.cargo;
                     document.getElementById('headerAvatar').innerText = currentUser.nome.charAt(0).toUpperCase();
@@ -330,12 +343,23 @@
                     setTimeout(() => {
                         document.getElementById('loginScreen').style.display = 'none';
                         document.getElementById('appContainer').style.display = 'flex';
+                        
+                        // Para o scanner se ainda estiver ligado
+                        if(html5QrCode && html5QrCode.isScanning) {
+                            html5QrCode.stop().catch(e => console.log(e));
+                        }
+                        
                         updateAllTables();
-                    }, 500);
+                    }, 800);
                 } else {
                     alert("Acesso Negado: " + data.message);
                     cpfInput.value = "";
                     cpfInput.focus();
+                    
+                    // Reinicia a câmara se falhar para tentar de novo
+                    if(html5QrCode && !html5QrCode.isScanning) {
+                        startQrScanner();
+                    }
                 }
             } catch (error) {
                 alert("Erro ao comunicar com a Base de Dados. Tente novamente.");
@@ -352,17 +376,16 @@
             document.getElementById('cpfInput').value = "";
             document.getElementById('scannerMsg').innerText = "Aguardando Leitura...";
             document.getElementById('scannerMsg').style.color = "#64748b";
+            startQrScanner(); // Religa a câmara para a próxima pessoa
         }
 
-        // --- SISTEMA OPERACIONAL (SIMULADO NA MEMÓRIA POR ENQUANTO) ---
-        
+        // --- SISTEMA OPERACIONAL DAS ABAS (MANTIDO) ---
         function switchTab(tabId) {
-            document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
-            document.querySelectorAll('.menu-link').forEach(link => link.classList.remove('active'));
+            document.querySelectorAll('.page-section, .menu-link').forEach(el => el.classList.remove('active'));
             document.getElementById('sec-' + tabId).classList.add('active');
             document.getElementById('nav-' + tabId).classList.add('active');
             
-            const titles = { 'dispensar': 'Dispensação e Saídas', 'catalogo': 'Catálogo Base', 'lotes': 'Entrada de Lotes', 'insumos': 'Cadastro de Insumos', 'etiquetas': 'Etiquetas', 'rastreio': 'Rastreabilidade', 'alertas': 'Alertas', 'tecno': 'Tecnovigilância' };
+            const titles = { 'dispensar': 'Dispensação e Saídas', 'catalogo': 'Catálogo Base', 'lotes': 'Entrada de Lotes', 'insumos': 'Cadastro de Insumos' };
             document.getElementById('page-current-title').innerText = titles[tabId];
         }
 
@@ -470,19 +493,9 @@
             syncDispensarDropdown();
         }
 
-        // INICIAR WEBCAM DE FORMA PASSIVA
-        async function startWebcam() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-                document.getElementById('webcam').srcObject = stream;
-            } catch (err) {
-                console.log("Webcam não suportada ou permissão negada.");
-            }
-        }
-
+        // Inicializa ao carregar a página
         window.onload = function() {
-            startWebcam();
-            // Focar no input automaticamente para quem usar leitor USB
+            startQrScanner();
             document.getElementById('cpfInput').focus();
         };
     </script>
