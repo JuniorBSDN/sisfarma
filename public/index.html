@@ -341,9 +341,45 @@
             }
         }
 
-        function logout() { 
+    function logout() { 
+            // Limpa as sessões do navegador para o encerramento seguro
+            sessionStorage.removeItem('colaborador');
+            sessionStorage.removeItem('ph_user');
             location.reload(); 
         }
+
+        // =========================================
+        // 4. INICIALIZAÇÃO INTELIGENTE DO WORKSPACE
+        // =========================================
+        window.onload = function() { 
+            // Busca se o operador já possui o crachá ativo no navegador
+            const sessaoExistente = sessionStorage.getItem('colaborador');
+
+            if (sessaoExistente) {
+                console.log("⚡ [T.I. Mode] Sessão já ativa identificada. Pulando tela de login.");
+                currentUser = JSON.parse(sessaoExistente);
+
+                // Garante a retrocompatibilidade duplicando para a chave antiga 'ph_user'
+                sessionStorage.setItem('ph_user', JSON.stringify(currentUser));
+
+                // Preenche dados do Topbar com a sessão restaurada
+                document.getElementById('headerUserName').innerText = currentUser.nome;
+                document.getElementById('headerUserRole').innerText = currentUser.cargo;
+                document.getElementById('headerAvatar').innerText = currentUser.nome.charAt(0).toUpperCase();
+
+                // Renderiza os módulos do usuário diretamente sem ligar a câmera
+                let modulosLiberados = currentUser.modulos || ['sisfarma', 'helpdesk', 'rat', 'ouvidoria', 'feedadmin'];
+                renderizarModulos(modulosLiberados);
+
+                // Transição visual instantânea
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'flex';
+            } else {
+                // Se não há sessão, inicia o fluxo operacional padrão da recepção
+                startWebcam(); 
+                document.getElementById('cpfInput').focus(); 
+            }
+        };
 
 
         function aplicarPermissoesHub() {
