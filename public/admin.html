@@ -222,6 +222,29 @@
     </div>
 
     <script>
+
+window.onload = function() {
+    const storedUser = sessionStorage.getItem('ph_user');
+    
+    if (!storedUser) {
+        // Se não tem ninguém logado, chuta pro Hub
+        window.location.href = 'index.html';
+        return;
+    }
+
+    const currentUser = JSON.parse(storedUser);
+    const cargo = currentUser.cargo.toLowerCase();
+
+    // Se o cargo NÃO for TI ou Administrador, expulsa a pessoa
+    if (!cargo.includes('t.i') && !cargo.includes('administrador')) {
+        alert("Acesso Restrito: Apenas a equipe de T.I. ou Gestão pode acessar o painel administrativo.");
+        window.location.href = 'index.html';
+        return;
+    }
+
+    // Se passou pela trava, carrega os dados normais do admin...
+};
+        
         let sessionCnpj = null;
         let sessionHospitalName = null;
         let employeesData = [];
