@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Hospitalar - Acesso Unificado</title>
+    <title>sisFarma - menu</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,10 +14,10 @@
 
     <style>
         /* ==========================================
-           VARIÁVEIS DE DESIGN & RESET (Herdado do sisFarma)
+           VARIÁVEIS DE DESIGN & RESET
            ========================================== */
         :root {
-            --primary: #0284c7; /* Azul padrão do Hospital para o Hub */
+            --primary: #0284c7; 
             --primary-dark: #0369a1; 
             --secondary: #0f172a; 
             --bg-body: #f4f6f9; --bg-card: #ffffff; --text-main: #2d3748;
@@ -50,11 +50,12 @@
         .login-input:focus { border-color: var(--primary); }
         .btn-login-submit { width: 100%; background-color: var(--primary); color: #ffffff; border: none; padding: 14px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: var(--transition); }
         .btn-login-submit:hover { background-color: var(--primary-dark); }
+        .btn-login-submit:disabled { background-color: #475569; cursor: not-allowed; }
         .divider { display: flex; align-items: center; text-align: center; color: #475569; font-size: 0.75rem; text-transform: uppercase; font-weight: 600; margin: 16px 0; }
         .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #334155; }
         .divider:not(:empty)::before { margin-right: .5em; } .divider:not(:empty)::after { margin-left: .5em; }
 
-        /* ESTRUTURA BASE DO PAINEL (HUB) */
+        /* PAINEL INTERNO (HUB) */
         .app-container { display: none; width: 100%; height: 100vh; }
         .sidebar { width: var(--sidebar-width); background-color: var(--secondary); color: #ffffff; display: flex; flex-direction: column; padding: 20px 14px; }
         .sidebar-brand { display: flex; align-items: center; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
@@ -95,8 +96,8 @@
     <!-- TELA DE LOGIN UNIFICADO -->
     <div class="login-screen" id="loginScreen">
         <div class="login-banner">
-            <h1>PORTAL <span>HOSPITALAR</span></h1>
-            <p>Acesso unificado aos sistemas de gestão, ouvidoria e T.I.</p>
+            <h1>sis <span>FARMA</span></h1>
+            <p>sistema para gestão hospitalalr</p>
             <div style="margin-top: 40px; font-size: 0.85rem; color: #64748b; line-height: 1.8;">
                 <strong>💡 INTEGRAÇÃO COM CRACHÁS:</strong><br>
                 Apresente o QR Code do seu crachá em frente à câmera para acessar o menu geral do sistema.
@@ -104,7 +105,7 @@
         </div>
         <div class="login-box-container">
             <div class="login-header">
-                <h2>🔐 Identificação</h2>
+                <h2>🔐 Identificação do Operador</h2>
                 <p>Apresente o seu Crachá ou digite o seu CPF</p>
             </div>
             <div class="scanner-view">
@@ -115,10 +116,6 @@
             <div class="divider">Ou login manual</div>
             <input type="text" class="login-input" id="cpfInput" maxlength="11" placeholder="Clique aqui e passe o Crachá..." onkeypress="handleKeyPress(event)">
             <button class="btn-login-submit" onclick="attemptManualLogin()" id="btnLoginSubmit">Autenticar Acesso</button>
-            
-            <div style="margin-top: 20px; font-size: 0.75rem; color: #475569; text-align: center;">
-                CPFs de Teste: 111 (Admin/TI), 222 (Farmácia)
-            </div>
         </div>
     </div>
 
@@ -167,7 +164,7 @@
 
     <script>
         // =========================================
-        // 1. DADOS DE MÓDULOS E PERMISSÕES (Mock DB)
+        // 1. REGISTRO GERAL DE MÓDULOS
         // =========================================
         const REGISTRO_MODULOS = {
             'sisfarma': { titulo: 'sisFarma CAF', desc: 'Central de Dispensação, Estoque e Rastreabilidade.', icon: '💊', color: '#10b981', url: 'sisfarma.html' },
@@ -177,16 +174,11 @@
             'feedadmin': { titulo: 'Feed Hospitalar', desc: 'Dashboard de indicadores e relatórios da Ouvidoria.', icon: '📊', color: '#8b5cf6', url: 'feedadmin.html' }
         };
 
-        const DB_USUARIOS = {
-            '111': { nome: 'João Administrador', cargo: 'Gestor Hospitalar / T.I', modulos: ['sisfarma', 'helpdesk', 'rat', 'ouvidoria', 'feedadmin'] },
-            '222': { nome: 'Maria Silva', cargo: 'Farmacêutica RT', modulos: ['sisfarma', 'helpdesk'] }
-        };
-
         let currentUser = null;
         let html5QrCode = null;
 
         // =========================================
-        // 2. WEBCAM E AUTENTICAÇÃO
+        // 2. WEBCAM E AUTENTICAÇÃO REAL (API)
         // =========================================
         function startWebcam() {
             html5QrCode = new Html5Qrcode("webcam-reader");
@@ -226,20 +218,27 @@
             const btn = document.getElementById('btnLoginSubmit');
             const cpf = cpfInput.value.replace(/\D/g, ''); 
             
-            if (cpf.length < 3) { 
-                alert("Insira um CPF válido."); 
+            if (cpf.length !== 11) { 
+                alert("Insira um CPF válido de 11 dígitos."); 
                 return; 
             }
 
             btn.innerText = "Verificando..."; 
             btn.disabled = true;
 
-            // Simulação de delay de rede
-            setTimeout(async () => {
-                const user = DB_USUARIOS[cpf];
+            try {
+                // Requisição direta para a API em produção
+                const response = await fetch('/api/pharmacy/login', {
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ cpf: cpf })
+                });
+                const data = await response.json();
 
-                if (user) {
-                    currentUser = user;
+                if (data.success) {
+                    currentUser = data.colaborador;
+                    
+                    // Preenche dados do Topbar
                     document.getElementById('headerUserName').innerText = currentUser.nome;
                     document.getElementById('headerUserRole').innerText = currentUser.cargo;
                     document.getElementById('headerAvatar').innerText = currentUser.nome.charAt(0).toUpperCase();
@@ -249,24 +248,32 @@
                         await html5QrCode.stop().catch(e => console.log(e));
                     }
 
-                    // Renderiza os módulos antes de transitar a tela
-                    renderizarModulos(currentUser.modulos);
+                    // Se o seu banco de dados atual não retornar a propriedade "modulos" para os usuários, 
+                    // o sistema aplica um Fallback liberando todos, para você não ficar travado.
+                    let modulosLiberados = currentUser.modulos || ['sisfarma', 'helpdesk', 'rat', 'ouvidoria', 'feedadmin'];
+                    
+                    renderizarModulos(modulosLiberados);
 
                     // Transição visual
                     document.getElementById('loginScreen').style.display = 'none';
                     document.getElementById('appContainer').style.display = 'flex';
                 } else {
-                    alert("Acesso Negado: Colaborador não encontrado na base de dados.");
+                    alert("Acesso Negado: " + data.message);
                     cpfInput.value = ""; 
                     cpfInput.focus();
                     if (html5QrCode && !html5QrCode.isScanning) {
                         startWebcam();
                     }
                 }
-                
+            } catch (error) {
+                alert("Falha de comunicação com o servidor."); 
+                if (html5QrCode && !html5QrCode.isScanning) {
+                    startWebcam();
+                }
+            } finally {
                 btn.innerText = "Autenticar Acesso"; 
                 btn.disabled = false; 
-            }, 600);
+            }
         }
 
         function logout() { 
