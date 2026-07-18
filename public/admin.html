@@ -222,33 +222,54 @@
     </div>
 
     <script>
-
-window.onload = function() {
-    const storedUser = sessionStorage.getItem('ph_user');
-    
-    if (!storedUser) {
-        // Se não tem ninguém logado, chuta pro Hub
-        window.location.href = 'index.html';
-        return;
-    }
-
-    const currentUser = JSON.parse(storedUser);
-    const cargo = currentUser.cargo.toLowerCase();
-
-    // Se o cargo NÃO for TI ou Administrador, expulsa a pessoa
-    if (!cargo.includes('t.i') && !cargo.includes('administrador')) {
-        alert("Acesso Restrito: Apenas a equipe de T.I. ou Gestão pode acessar o painel administrativo.");
-        window.location.href = 'index.html';
-        return;
-    }
-
-    // Se passou pela trava, carrega os dados normais do admin...
-};
-        
-        let sessionCnpj = null;
+let sessionCnpj = null;
         let sessionHospitalName = null;
         let employeesData = [];
 
+        // =========================================================================
+        // 1. GESTÃO DE SESSÃO UNIFICADA & TRAVA DE SEGURANÇA (RBAC)
+        // =========================================================================
+        window.onload = function() {
+            // Verifica o crachá unificado ('colaborador' ou o fallback 'ph_user')
+            const storedUser = sessionStorage.getItem('colaborador') || sessionStorage.getItem('ph_user');
+            
+            if (!storedUser) {
+                // Se não houver sessão ativa, mantém o overlay de login manual visível
+                console.log("Aguardando autenticação manual por CNPJ...");
+                return;
+            }
+
+            const currentUser = JSON.parse(storedUser);
+            const cargo = currentUser.cargo ? currentUser.cargo.toLowerCase() : "";
+
+            // Se o cargo NÃO for TI ou Administrador, expulsa para a Home de segurança
+            if (!cargo.includes('t.i') && !cargo.includes('administrador') && !cargo.includes('gestor')) {
+                alert("Acesso Restrito: Apenas a equipe de T.I. ou Gestão pode acessar o painel administrativo.");
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // 🚀 BYPASS AUTOMÁTICO DE T.I: Se a sessão for válida, pula o login manual!
+            console.log("⚡ [T.I. Mode] Sessão administrativa validada para:", currentUser.nome);
+            
+            sessionCnpj = currentUser.empresa_cnpj;
+            sessionHospitalName = currentUser.hospital_nome || "Unidade Hospitalar"; // Fallback visual
+            
+            // Injeta as informações de Tenant nas labels originais do seu HTML
+            document.getElementById('lblTopoHospital').innerText = "Unidade: " + sessionHospitalName;
+            document.getElementById('lblRodapeHospital').innerText = sessionHospitalName;
+            
+            // Remove a barreira e o desfoque visual
+            document.getElementById('adminLoginOverlay').style.display = 'none';
+            document.getElementById('mainApp').style.filter = 'none';
+            
+            // Dispara a busca de colaboradores direto no Neon PostgreSQL
+            loadEmployeesFromDB();
+        };
+
+        // =========================================================================
+        // 2. AUTENTICAÇÃO MANUAL (Se o administrador entrar direto por este link)
+        // =========================================================================
         async function authenticateAdmin() {
             const cnpj = document.getElementById('cnpjInput').value.trim();
             const senha = document.getElementById('passInput').value.trim();
@@ -266,6 +287,10 @@ window.onload = function() {
                     document.getElementById('lblRodapeHospital').innerText = sessionHospitalName;
                     document.getElementById('adminLoginOverlay').style.display = 'none';
                     document.getElementById('mainApp').style.filter = 'none';
+                    
+                    // Alimenta o sessionStorage para manter o estado unificado
+                    sessionStorage.setItem('ph_user', JSON.stringify({ nome: "Gestor Hospitalar", cargo: "Administrador", empresa_cnpj: sessionCnpj }));
+                    
                     loadEmployeesFromDB();
                 } else {
                     alert(data.message || "Credenciais incorretas.");
@@ -273,6 +298,9 @@ window.onload = function() {
             } catch(e) { alert("Erro ao conectar com a API."); }
         }
 
+        // =========================================================================
+        // 3. OPERAÇÕES DE DADOS (GET/POST/PUT) - CONEXÃO POSTGRESQL NEON
+        // =========================================================================
         async function loadEmployeesFromDB() {
             try {
                 const res = await fetch('/api/admin/employees', { headers: { 'X-Company-CNPJ': sessionCnpj } });
@@ -281,7 +309,7 @@ window.onload = function() {
                     updateMetrics();
                     renderTable();
                 }
-            } catch(e) { console.error(e); }
+            } catch(e) { console.error("Erro de comunicação com o banco Neon:", e); }
         }
 
         async function handleFormSubmit(event) {
@@ -299,9 +327,13 @@ window.onload = function() {
 
             if(payload.cpf.length !== 11) { alert("CPF inválido."); return; }
 
-            // Se for Cadastro Novo ou Edição (Ambos agora integram de forma real)
-            if (!isEdit) {
-                try {
+            const btn = document.getElementById('btn-submit-cad');
+            btn.innerText = "Processando...";
+            btn.disabled = true;
+
+            try {
+                if (!isEdit) {
+                    // Cadastrar Novo Colaborador (POST)
                     const res = await fetch('/api/admin/employees', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'X-Company-CNPJ': sessionCnpj },
@@ -311,38 +343,48 @@ window.onload = function() {
                     if(data.success) {
                         document.getElementById('cadastroForm').reset();
                         await loadEmployeesFromDB();
-                        showBadgeData(payload); // Mostra o crachá
+                        showBadgeData(payload); 
                         switchTab('usuarios');
                     } else { alert(data.message); }
-                } catch(e) { alert("Erro de conexão."); }
-            } 
-            else {
-                // Rota simulada na interface antes, agora também pode ser estendida de forma segura
-                const idx = employeesData.findIndex(u => u.cpf === originalCpf);
-                if (idx > -1) {
-                    employeesData[idx] = { ...employeesData[idx], ...payload };
-                    alert("Cadastro atualizado com sucesso!");
-                    cancelEdit();
-                    updateMetrics();
-                    renderTable();
-                    switchTab('usuarios');
+                } 
+                else {
+                    // 🚀 EDICÃO INTEGRADA (PUT): Agora salva permanentemente no banco de dados!
+                    const res = await fetch(`/api/admin/employees/${originalCpf}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'X-Company-CNPJ': sessionCnpj },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    if(data.success) {
+                        alert("Cadastro do colaborador atualizado com sucesso no Neon!");
+                        cancelEdit();
+                        await loadEmployeesFromDB();
+                        switchTab('usuarios');
+                    } else { alert(data.message); }
                 }
+            } catch(e) { 
+                alert("Erro de conexão com o servidor."); 
+            } finally {
+                btn.innerText = isEdit ? "Salvar Alterações" : "Cadastrar & Gerar QR Code";
+                btn.disabled = false;
             }
         }
 
+        // =========================================================================
+        // 4. METRICAS, INTERFACE & COMPONENTES VISUAIS
+        // =========================================================================
         function updateMetrics() {
             document.getElementById('metric-total').innerText = employeesData.length;
-            // Correção inteligente: Verifica se o status é "Ativa" ou "Ativo"
-            document.getElementById('metric-active').innerText = employeesData.filter(u => u.status === "Ativa" || u.status === "Ativo").length;
-            document.getElementById('metric-admin').innerText = employeesData.filter(u => u.cargo.includes("Administrativo") || u.cargo.includes("TI")).length;
+            document.getElementById('metric-active').innerText = employeesData.filter(u => u.status === "Ativa" || u.status === "Ativo" || u.status === "ATIVA").length;
+            document.getElementById('metric-admin').innerText = employeesData.filter(u => u.cargo.toLowerCase().includes("administrativo") || u.cargo.toLowerCase().includes("ti") || u.cargo.toLowerCase().includes("suporte")).length;
         }
 
         function renderTable() {
             const tbody = document.getElementById('usersTableBody');
+            if(!tbody) return;
             tbody.innerHTML = "";
-            employeesData.forEach((user, idx) => {
-                // Correção de Concordância do Status para não quebrar a estilização nem o login
-                const isUserActive = user.status === "Ativa" || user.status === "Ativo";
+            employeesData.forEach((user) => {
+                const isUserActive = user.status === "Ativa" || user.status === "Ativo" || user.status === "ATIVA";
                 const statusClass = isUserActive ? "active" : "inactive";
                 const toggleText = isUserActive ? "🚫 Bloquear" : "✅ Ativar";
 
@@ -365,7 +407,6 @@ window.onload = function() {
             });
         }
 
-        // AÇÕES DA TABELA
         function startEditUser(cpf) {
             const user = employeesData.find(u => u.cpf === cpf);
             if (!user) return;
@@ -392,42 +433,26 @@ window.onload = function() {
             document.getElementById('btn-cancel-edit').style.display = "none";
         }
 
-        // Correção de Persistência no Banco PostgreSQL (Neon)
-       // Correção de Persistência Permanente no Banco Neon PostgreSQL
         async function toggleUserStatus(cpf) {
             const user = employeesData.find(u => u.cpf === cpf);
-            if (user) {
-                const isCurrentlyActive = user.status === "Ativa" || user.status === "Ativo";
-                const newStatusValue = isCurrentlyActive ? "Inativo" : "Ativo";
-                
-                // 1. Atualização rápida na tela para excelente experiência do utilizador
-                user.status = newStatusValue;
-                updateMetrics();
-                renderTable();
-
-                // 2. Envia a requisição real de alteração de status para a rota PUT que criámos
+            if (!user) return;
+            
+            if (confirm(`Deseja alterar o status do colaborador ${user.nome}?`)) {
                 try {
                     const res = await fetch(`/api/admin/employees/${cpf}/status`, {
                         method: 'PUT',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'X-Company-CNPJ': sessionCnpj 
-                        }
+                        headers: { 'X-Company-CNPJ': sessionCnpj }
                     });
                     const data = await res.json();
-                    if (!data.success) {
-                        alert("Erro ao salvar alteração no servidor: " + data.message);
-                        loadEmployeesFromDB(); // Desfaz a alteração visual caso dê erro real no banco
-                    } else {
-                        // Sincroniza o status retornado pela API para garantir exatidão
+                    if (data.success) {
                         user.status = data.new_status;
                         updateMetrics();
                         renderTable();
+                    } else {
+                        alert("Erro: " + data.message);
                     }
                 } catch (err) {
-                    console.error("Falha ao comunicar com o servidor:", err);
-                    alert("Erro de rede. A alteração não foi salva permanentemente.");
-                    loadEmployeesFromDB(); // Desfaz alteração visual se o servidor estiver offline
+                    alert("Erro de rede ao atualizar status.");
                 }
             }
         }
@@ -442,11 +467,9 @@ window.onload = function() {
             document.getElementById('badgeModal').style.display = 'flex';
         }
 
-        // IMPRESSÃO DE LISTA DE USUÁRIOS
         function printEmployeesReport() {
             const printContent = document.getElementById('printArea');
             let rowsHtml = "";
-
             employeesData.forEach(user => {
                 rowsHtml += `
                     <tr>
@@ -458,7 +481,6 @@ window.onload = function() {
                     </tr>
                 `;
             });
-
             printContent.innerHTML = `
                 <div style="text-align: center; margin-bottom: 30px;">
                     <h2>SÍSFARMA - CONTROLE DE EQUIPE LOCAL</h2>
@@ -482,7 +504,6 @@ window.onload = function() {
             window.print();
         }
 
-        // IMPRESSÃO DO CRACHÁ INDIVIDUAL
         function simulateBadgePrint() {
             const printContent = document.getElementById('printArea');
             const nome = document.getElementById('badgeName').innerText;
