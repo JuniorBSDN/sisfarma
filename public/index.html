@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>sisFarma - menu</title>
+    <title>sisFarma - Acesso Unificado</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,12 +14,12 @@
 
     <style>
         /* ==========================================
-           VARIÁVEIS DE DESIGN & RESET
+           VARIÁVEIS DE DESIGN & RESET (Originais)
            ========================================== */
         :root {
-            --primary: #0284c7; 
-            --primary-dark: #0369a1; 
-            --secondary: #0f172a; 
+            --primary: #10b981; /* Verde esmeralda original */
+            --primary-dark: #059669; 
+            --secondary: #1e3d59; 
             --bg-body: #f4f6f9; --bg-card: #ffffff; --text-main: #2d3748;
             --text-muted: #718096; --border-color: #e2e8f0; --success: #22c55e;
             --danger: #ef4444; --warning: #f59e0b; --sidebar-width: 260px; --transition: all 0.3s ease;
@@ -29,7 +29,7 @@
 
         /* TELA DE LOGIN IDÊNTICA AO PRODUÇÃO */
         .login-screen { display: flex; width: 100%; height: 100vh; background-color: #0f172a; position: fixed; top: 0; left: 0; z-index: 9999; transition: var(--transition); }
-        .login-banner { flex: 1; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); display: flex; flex-direction: column; justify-content: center; padding: 60px; color: #ffffff; }
+        .login-banner { flex: 1; background: linear-gradient(135deg, #1e3d59 0%, #112233 100%); display: flex; flex-direction: column; justify-content: center; padding: 60px; color: #ffffff; }
         .login-banner h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 12px; }
         .login-banner h1 span { color: var(--primary); }
         .login-banner p { font-size: 1.1rem; color: #94a3b8; line-height: 1.6; }
@@ -79,28 +79,88 @@
         .user-avatar { width: 36px; height: 36px; background-color: var(--primary); color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; }
         .user-info h4 { font-size: 0.85rem; font-weight: 600; }
         .user-info p { font-size: 0.75rem; color: var(--text-muted); }
-        .content-body { padding: 24px; max-width: 1300px; width: 100%; margin: 0 auto; }
+        .content-body { padding: 32px 24px; max-width: 1300px; width: 100%; margin: 0 auto; }
         
-        /* GRID DE CARTÕES DO HUB */
-        .hub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; margin-top: 10px; }
-        .hub-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; align-items: flex-start; text-decoration: none; color: inherit; transition: var(--transition); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
-        .hub-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-color: var(--primary); }
-        .hub-icon-container { width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 16px; color: #ffffff; }
-        .hub-title { font-size: 1.1rem; font-weight: 700; color: var(--secondary); margin-bottom: 6px; }
-        .hub-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 20px; flex-grow: 1;}
-        .hub-action { font-size: 0.75rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 4px; }
+        /* ==========================================
+           MODERNIZAÇÃO DOS CARDS DO HUB
+           ========================================== */
+        .hub-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+            gap: 24px; 
+            margin-top: 24px; 
+        }
+        .hub-card { 
+            background: var(--bg-card); 
+            border: 1px solid var(--border-color); 
+            border-radius: 16px; 
+            padding: 24px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: flex-start; 
+            text-decoration: none; 
+            color: inherit; 
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); 
+            position: relative;
+        }
+        .hub-card:hover { 
+            transform: translateY(-6px); 
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05), 0 10px 10px -5px rgba(0,0,0,0.02); 
+            border-color: var(--border-color); /* Mantém sutil */
+        }
+        
+        /* Contêiner do Ícone com animação de escala */
+        .hub-icon-container { 
+            width: 54px; 
+            height: 54px; 
+            border-radius: 14px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 1.8rem; 
+            margin-bottom: 20px; 
+            color: #ffffff; 
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); 
+        }
+        .hub-card:hover .hub-icon-container {
+            transform: scale(1.1) rotate(3deg);
+        }
+
+        .hub-title { font-size: 1.15rem; font-weight: 700; color: var(--secondary); margin-bottom: 8px; }
+        .hub-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; flex-grow: 1; margin-bottom: 12px; }
+        
+        /* Botão Moderno com Seta que surge/desliza no Hover */
+        .hub-action-arrow {
+            align-self: flex-end;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        .hub-card:hover .hub-action-arrow {
+            background-color: var(--primary);
+            color: #ffffff;
+            transform: translateX(4px);
+        }
     </style>
 </head>
 <body>
 
-    <!-- TELA DE LOGIN UNIFICADO -->
+    <!-- TELA DE LOGIN -->
     <div class="login-screen" id="loginScreen">
         <div class="login-banner">
-            <h1>sis <span>FARMA</span></h1>
-            <p>sistema para gestão hospitalalr</p>
+            <h1>SISTEMA <span>sisFarma</span></h1>
+            <p>Acesso unificado aos sistemas de gestão, controle e T.I.</p>
             <div style="margin-top: 40px; font-size: 0.85rem; color: #64748b; line-height: 1.8;">
                 <strong>💡 INTEGRAÇÃO COM CRACHÁS:</strong><br>
-                Apresente o QR Code do seu crachá em frente à câmera para acessar o menu geral do sistema.
+                Apresente o QR Code do seu crachá em frente à câmera para efetuar o login instantâneo.
             </div>
         </div>
         <div class="login-box-container">
@@ -124,8 +184,9 @@
         <aside class="sidebar">
             <div>
                 <div class="sidebar-brand">
-                    <div class="brand-logo">PH</div>
-                    <div class="brand-name">Portal<span>Hospitalar</span></div>
+                    <!-- LOGO sF E COR ORIGINAIS RESTAURADOS -->
+                    <div class="brand-logo">sF</div>
+                    <div class="brand-name">sisFarma<span>Hub Integrado</span></div>
                 </div>
                 <div class="sidebar-menu-wrapper">
                     <div class="menu-section-title">Acesso Geral</div>
@@ -141,7 +202,7 @@
 
         <main class="main-content">
             <header class="topbar">
-                <div class="page-title">Hub Central de Sistemas</div>
+                <div class="page-title">Módulos do Sistema</div>
                 <div class="user-profile">
                     <div class="user-avatar" id="headerAvatar">--</div>
                     <div class="user-info">
@@ -152,8 +213,8 @@
             </header>
 
             <div class="content-body">
-                <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--secondary); margin-bottom: 4px;">Selecione o Módulo</h2>
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 24px;">Exibindo apenas os sistemas liberados para o seu perfil profissional.</p>
+                <h2 style="font-size: 1.4rem; font-weight: 700; color: var(--secondary); margin-bottom: 4px;">Bem-vindo ao Workspace</h2>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 12px;">Selecione abaixo o módulo que deseja acessar. Apenas os sistemas autorizados para o seu perfil estão visíveis.</p>
                 
                 <div class="hub-grid" id="modulesGrid">
                     <!-- Os módulos serão injetados dinamicamente via JS -->
@@ -167,11 +228,11 @@
         // 1. REGISTRO GERAL DE MÓDULOS
         // =========================================
         const REGISTRO_MODULOS = {
-            'sisfarma': { titulo: 'sisFarma CAF', desc: 'Central de Dispensação, Estoque e Rastreabilidade.', icon: '💊', color: '#10b981', url: 'sisfarma.html' },
-            'helpdesk': { titulo: 'HelpDesk T.I', desc: 'Abertura e acompanhamento de chamados técnicos.', icon: '🛠️', color: '#3b82f6', url: 'helpdesk.html' },
-            'rat': { titulo: 'Painel RAT', desc: 'Gestão de T.I, relatórios e atendimento em tempo real.', icon: '💻', color: '#6366f1', url: 'rat.html' },
-            'ouvidoria': { titulo: 'Ouvidoria Paciente', desc: 'Interface Totem para coleta de avaliações.', icon: '🗣️', color: '#06b6d4', url: 'ouvidoria.html' },
-            'feedadmin': { titulo: 'Feed Hospitalar', desc: 'Dashboard de indicadores e relatórios da Ouvidoria.', icon: '📊', color: '#8b5cf6', url: 'feedadmin.html' }
+            'sisfarma': { titulo: 'sisFarma CAF', desc: 'Central de Dispensação, Estoque e Rastreabilidade (RDC 430/2020).', icon: '💊', color: '#10b981', url: 'sisfarma.html' },
+            'helpdesk': { titulo: 'HelpDesk T.I', desc: 'Abertura de chamados, suporte e manutenção.', icon: '🛠️', color: '#0284c7', url: 'helpdesk.html' },
+            'rat': { titulo: 'Painel RAT', desc: 'Gestão de T.I, SLA e atendimento de chamados em tempo real.', icon: '💻', color: '#4f46e5', url: 'rat.html' },
+            'ouvidoria': { titulo: 'Ouvidoria Paciente', desc: 'Totem de autoatendimento para pesquisa de satisfação hospitalar.', icon: '🗣️', color: '#0891b2', url: 'ouvidoria.html' },
+            'feedadmin': { titulo: 'Feed Hospitalar', desc: 'Dashboard analítico, gráficos de notas e relatórios da Ouvidoria.', icon: '📊', color: '#8b5cf6', url: 'feedadmin.html' }
         };
 
         let currentUser = null;
@@ -248,8 +309,7 @@
                         await html5QrCode.stop().catch(e => console.log(e));
                     }
 
-                    // Se o seu banco de dados atual não retornar a propriedade "modulos" para os usuários, 
-                    // o sistema aplica um Fallback liberando todos, para você não ficar travado.
+                    // Lê os módulos do banco, ou libera todos por padrão (Fallback)
                     let modulosLiberados = currentUser.modulos || ['sisfarma', 'helpdesk', 'rat', 'ouvidoria', 'feedadmin'];
                     
                     renderizarModulos(modulosLiberados);
@@ -281,7 +341,7 @@
         }
 
         // =========================================
-        // 3. RENDERIZAÇÃO DOS MÓDULOS (HUB)
+        // 3. RENDERIZAÇÃO DOS MÓDULOS (HUB - MODERNIZADO)
         // =========================================
         function renderizarModulos(arrayDePermissoes) {
             const grid = document.getElementById('modulesGrid');
@@ -290,15 +350,18 @@
             arrayDePermissoes.forEach(modId => {
                 const mod = REGISTRO_MODULOS[modId];
                 if (mod) {
+                    // Monta o Card Moderno (Sem texto feio, apenas hover sutil e setinha)
                     grid.innerHTML += `
                         <a href="${mod.url}" class="hub-card">
-                            <div class="hub-icon-container" style="background-color: ${mod.color}">
+                            <div class="hub-icon-container" style="background-color: ${mod.color}; box-shadow: 0 8px 16px -4px ${mod.color}80;">
                                 ${mod.icon}
                             </div>
                             <h3 class="hub-title">${mod.titulo}</h3>
                             <p class="hub-desc">${mod.desc}</p>
-                            <div class="hub-action">
-                                ACESSAR MÓDULO <span>→</span>
+                            <div class="hub-action-arrow">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"></path>
+                                </svg>
                             </div>
                         </a>
                     `;
