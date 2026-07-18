@@ -296,14 +296,19 @@
                 });
                 const data = await response.json();
 
-                if (data.success) {
+               if (data.success) {
                     currentUser = data.colaborador;
+                    
+                    // 👇 A LINHA MÁGICA QUE FALTAVA! 👇
+                    // Grava os dados do colaborador no navegador para os outros módulos lerem
+                    sessionStorage.setItem('colaborador', JSON.stringify(currentUser));
                     
                     // Preenche dados do Topbar
                     document.getElementById('headerUserName').innerText = currentUser.nome;
                     document.getElementById('headerUserRole').innerText = currentUser.cargo;
                     document.getElementById('headerAvatar').innerText = currentUser.nome.charAt(0).toUpperCase();
 
+                    // Para a câmera se estiver rodando
                     // Para a câmera se estiver rodando
                     if (html5QrCode && html5QrCode.isScanning) {
                         await html5QrCode.stop().catch(e => console.log(e));
