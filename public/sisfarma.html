@@ -513,14 +513,11 @@
             const dataFim = document.getElementById('rastreioDataFim').value; 
 
             return database.movimentacoes.filter(m => {
-                // 1. Filtro de Texto
                 const textStr = `${m.tipo} ${m.item_nome} ${m.paciente_nome} ${m.setor_destino} ${m.responsavel} ${m.data_movimentacao}`.toLowerCase();
                 const matchText = textStr.includes(search);
 
-                // 2. Filtro de Datas
                 let matchDate = true;
                 if (m.data_movimentacao) {
-                    // Espera o formato "DD/MM/YYYY, HH:MM" que definimos no Python
                     const datePart = m.data_movimentacao.split(/[\s,]+/)[0]; 
                     const partesDaData = datePart.split('/');
                     
@@ -600,7 +597,6 @@
         async function attemptManualLogin() {
             const cpfInput = document.getElementById('cpfInput');
             const btn = document.getElementById('btnLoginSubmit');
-            const msg = document.getElementById('scannerMsg');
             const cpf = cpfInput.value.replace(/\D/g, ''); 
             
             if (cpf.length !== 11) { 
@@ -621,23 +617,14 @@
 
                 if (data.success) {
                     currentUser = data.colaborador;
-                    // Salva a sessão para não precisar logar de novo
                     sessionStorage.setItem('ph_user', JSON.stringify(currentUser));
-
-                    document.getElementById('headerUserName').innerText = currentUser.nome;
-                    document.getElementById('headerUserRole').innerText = currentUser.cargo;
-                    document.getElementById('headerAvatar').innerText = currentUser.nome.charAt(0).toUpperCase();
-
+                    
                     if (html5QrCode && html5QrCode.isScanning) {
                         await html5QrCode.stop().catch(e => console.log(e));
                     }
-
-                    setTimeout(() => {
-                        document.getElementById('loginScreen').style.display = 'none';
-                        document.getElementById('appContainer').style.display = 'flex';
-                        syncDatabase();
-                        setTimeout(() => document.getElementById('disp_scan_barcode').focus(), 500);
-                    }, 600);
+                    
+                    // Recarrega a página para aplicar as travas do window.onload
+                    window.location.reload();
                 } else {
                     alert("Acesso Negado: " + data.message);
                     cpfInput.value = ""; 
@@ -658,7 +645,6 @@
         }
 
         function logout() { 
-            // Limpa a memória e volta para o Hub
             sessionStorage.removeItem('ph_user');
             window.location.href = 'index.html'; 
         }
@@ -960,7 +946,6 @@
         }
 
         function updateAllTables() {
-            // Catálogo
             const medBody = document.getElementById('med_table_body'); 
             medBody.innerHTML = "";
             database.medicamentos.forEach(m => { 
@@ -968,7 +953,6 @@
                 medBody.innerHTML += `<tr><td style="font-family:monospace;">${m.codigo_barras || 'N/A'}</td><td><strong>${m.nome}</strong></td><td>${m.principio_ativo || m.principio}</td><td>${tagControlado}</td></tr>`; 
             });
 
-            // Lotes
             const loteBody = document.getElementById('lote_table_body'); 
             loteBody.innerHTML = "";
             database.lotes.forEach(l => { 
@@ -978,31 +962,26 @@
                 }
             });
 
-            // Insumos
             const insBody = document.getElementById('ins_table_body'); 
             insBody.innerHTML = "";
             database.insumos.forEach(i => { 
                 insBody.innerHTML += `<tr><td>${i.nome}</td><td>${i.especificacao}</td><td>${i.quantidade}</td></tr>`; 
             });
 
-            // Saídas
             const movsBody = document.getElementById('disp_movs_body'); 
             movsBody.innerHTML = "";
             database.movimentacoes.forEach(m => { 
                 movsBody.innerHTML += `<tr><td><strong>${m.tipo}</strong></td><td>${m.item_nome}</td><td>${m.quantidade}</td><td>${m.paciente_nome} (${m.setor_destino})</td><td>${m.data_movimentacao}</td></tr>`; 
             });
 
-            // Rastreio (Usando a inteligência de Filtro de Datas)
             updateRastreioTable();
 
-            // Tecnovigilância
             const tcBody = document.getElementById('tecno_table_body'); 
             tcBody.innerHTML = "";
             database.tecnovigilancia.forEach(t => { 
                 tcBody.innerHTML += `<tr><td><strong>${t.lote_texto}</strong></td><td>${t.tipo_ocorrencia}</td><td><span class="badge-ctrl">${t.gravidade}</span></td><td>${t.data_registro}</td></tr>`; 
             });
 
-            // Alertas Inteligentes
             const vencidosBody = document.getElementById('alerta_vencidos_body'); 
             vencidosBody.innerHTML = "";
             
@@ -1028,7 +1007,6 @@
             document.getElementById('alertDot').style.display = hasUrgentAlert ? "inline-block" : "none";
             document.getElementById('dispenseAlertBanner').style.display = hasUrgentAlert ? "flex" : "none";
 
-            // Sincroniza Dropdowns dos formulários
             const medSelect = document.getElementById('lote_med_id'); 
             medSelect.innerHTML = "";
             database.medicamentos.forEach(m => { 
@@ -1087,7 +1065,7 @@
         }
 
         // ==========================================================
-        // 8. IMPRESSÃO DE RELATÓRIOS (RESPEITANDO OS FILTROS)
+        // 8. IMPRESSÃO DE RELATÓRIOS
         // ==========================================================
         function getFilteredDataForPrint(tipo) {
             if (tipo === 'rastreio' || tipo === 'portaria344') {
@@ -1221,55 +1199,50 @@
         }
 
         // ==========================================================
-        // VERIFICAÇÃO AUTOMÁTICA DE SESSÃO DO HUB
+        // 9. VERIFICAÇÃO AUTOMÁTICA DE SESSÃO E FILTRO DE PERFIL (RBAC)
         // ==========================================================
-       window.onload = function() { 
-    const storedUser = sessionStorage.getItem('ph_user');
-    
-    if (storedUser) {
-        currentUser = JSON.parse(storedUser);
-        
-        // Proteção de Rota Master: Se um Administrativo tentar entrar digitando a URL direta, é expulso.
-        const cargo = currentUser.cargo.toLowerCase();
-        if (cargo.includes('administrativo')) {
-            alert("Acesso Negado. Seu perfil não tem permissão para acessar a Dispensação Clínica.");
-            window.location.href = 'index.html';
-            return;
-        }
-
-        // Atualiza a Topbar
-        document.getElementById('headerUserName').innerText = currentUser.nome;
-        document.getElementById('headerUserRole').innerText = currentUser.cargo;
-        document.getElementById('headerAvatar').innerText = currentUser.nome.charAt(0).toUpperCase();
-        
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('appContainer').style.display = 'flex';
-        
-        // ==========================================
-        // APLICAÇÃO DO FILTRO DE PERFIL (RBAC)
-        // ==========================================
-        if (cargo.includes('auxiliar')) {
-            // Auxiliar só pode Dispensar, ver Insumos e Gerar Etiquetas.
-            // Removemos os outros menus do HTML.
-            document.getElementById('nav-catalogo').parentElement.style.display = 'none';
-            document.getElementById('nav-lotes').parentElement.style.display = 'none';
-            document.getElementById('nav-rastreio').parentElement.style.display = 'none';
-            document.getElementById('nav-alertas').parentElement.style.display = 'none';
-            document.getElementById('nav-tecno').parentElement.style.display = 'none';
-        }
-
-        if (cargo.includes('farmacêutico')) {
-            // O Farmacêutico tem acesso a tudo do módulo, nenhuma aba é ocultada.
-            // (Não precisamos dar display: none em nada)
-        }
-        
-        syncDatabase();
-        setTimeout(() => document.getElementById('disp_scan_barcode').focus(), 500);
-    } else {
-        startWebcam(); 
-        document.getElementById('cpfInput').focus(); 
-    }
-};
+        window.onload = function() { 
+            const storedUser = sessionStorage.getItem('ph_user');
+            
+            if (storedUser) {
+                currentUser = JSON.parse(storedUser);
+                const cargo = currentUser.cargo.toLowerCase();
+                
+                // 1. TRAVA DE ROTA: Expulsa quem não é da Farmácia ou T.I.
+                if (cargo.includes('administrativo') || cargo.includes('diretor')) {
+                    alert("Acesso Negado: Seu perfil (" + currentUser.cargo + ") não tem permissão para acessar a Central de Dispensação.");
+                    window.location.href = 'index.html';
+                    return;
+                }
+                
+                // 2. Preenche os dados do usuário na barra superior
+                document.getElementById('headerUserName').innerText = currentUser.nome;
+                document.getElementById('headerUserRole').innerText = currentUser.cargo;
+                document.getElementById('headerAvatar').innerText = currentUser.nome.charAt(0).toUpperCase();
+                
+                // Libera a tela do painel e esconde o login
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'flex';
+                
+                // 3. APLICAÇÃO DE PERMISSÕES INTERNAS
+                if (cargo.includes('auxiliar')) {
+                    // Oculta abas que o Auxiliar de Farmácia não pode acessar
+                    document.getElementById('nav-catalogo').parentElement.style.display = 'none';
+                    document.getElementById('nav-lotes').parentElement.style.display = 'none';
+                    document.getElementById('nav-rastreio').parentElement.style.display = 'none';
+                    document.getElementById('nav-alertas').parentElement.style.display = 'none';
+                    document.getElementById('nav-tecno').parentElement.style.display = 'none';
+                }
+                
+                // Sincroniza o banco e foca no leitor de código de barras
+                syncDatabase();
+                setTimeout(() => document.getElementById('disp_scan_barcode').focus(), 500);
+            } else {
+                // Se não tem sessão salva, abre a webcam para login local
+                startWebcam(); 
+                document.getElementById('cpfInput').focus(); 
+            }
+        };
     </script>
 </body>
 </html>
