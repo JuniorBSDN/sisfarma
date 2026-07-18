@@ -1223,29 +1223,53 @@
         // ==========================================================
         // VERIFICAÇÃO AUTOMÁTICA DE SESSÃO DO HUB
         // ==========================================================
-        window.onload = function() { 
-            // Verifica se o usuário já fez login lá no Hub (index.html)
-            const storedUser = sessionStorage.getItem('ph_user');
-            
-            if (storedUser) {
-                // Se o crachá já foi passado no Hub, pula direto para o Painel
-                currentUser = JSON.parse(storedUser);
-                
-                document.getElementById('headerUserName').innerText = currentUser.nome;
-                document.getElementById('headerUserRole').innerText = currentUser.cargo;
-                document.getElementById('headerAvatar').innerText = currentUser.nome.charAt(0).toUpperCase();
-                
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('appContainer').style.display = 'flex';
-                
-                syncDatabase();
-                setTimeout(() => document.getElementById('disp_scan_barcode').focus(), 500);
-            } else {
-                // Se abriu a página diretamente (sem passar pelo hub), pede o login normal
-                startWebcam(); 
-                document.getElementById('cpfInput').focus(); 
-            }
-        };
+       window.onload = function() { 
+    const storedUser = sessionStorage.getItem('ph_user');
+    
+    if (storedUser) {
+        currentUser = JSON.parse(storedUser);
+        
+        // Proteção de Rota Master: Se um Administrativo tentar entrar digitando a URL direta, é expulso.
+        const cargo = currentUser.cargo.toLowerCase();
+        if (cargo.includes('administrativo')) {
+            alert("Acesso Negado. Seu perfil não tem permissão para acessar a Dispensação Clínica.");
+            window.location.href = 'index.html';
+            return;
+        }
+
+        // Atualiza a Topbar
+        document.getElementById('headerUserName').innerText = currentUser.nome;
+        document.getElementById('headerUserRole').innerText = currentUser.cargo;
+        document.getElementById('headerAvatar').innerText = currentUser.nome.charAt(0).toUpperCase();
+        
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appContainer').style.display = 'flex';
+        
+        // ==========================================
+        // APLICAÇÃO DO FILTRO DE PERFIL (RBAC)
+        // ==========================================
+        if (cargo.includes('auxiliar')) {
+            // Auxiliar só pode Dispensar, ver Insumos e Gerar Etiquetas.
+            // Removemos os outros menus do HTML.
+            document.getElementById('nav-catalogo').parentElement.style.display = 'none';
+            document.getElementById('nav-lotes').parentElement.style.display = 'none';
+            document.getElementById('nav-rastreio').parentElement.style.display = 'none';
+            document.getElementById('nav-alertas').parentElement.style.display = 'none';
+            document.getElementById('nav-tecno').parentElement.style.display = 'none';
+        }
+
+        if (cargo.includes('farmacêutico')) {
+            // O Farmacêutico tem acesso a tudo do módulo, nenhuma aba é ocultada.
+            // (Não precisamos dar display: none em nada)
+        }
+        
+        syncDatabase();
+        setTimeout(() => document.getElementById('disp_scan_barcode').focus(), 500);
+    } else {
+        startWebcam(); 
+        document.getElementById('cpfInput').focus(); 
+    }
+};
     </script>
 </body>
 </html>
