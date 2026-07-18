@@ -340,6 +340,41 @@
             location.reload(); 
         }
 
+
+        function aplicarPermissoesHub() {
+    const user = JSON.parse(sessionStorage.getItem('ph_user'));
+    if (!user) return;
+
+    // Converte o cargo para minúsculo para facilitar a comparação
+    const cargo = user.cargo.toLowerCase();
+
+    // IDs dos cartões no seu HTML (exemplo: id="card-admin", id="card-sisfarma")
+    const cardAdmin = document.getElementById('card-admin');
+    const cardFaturamento = document.getElementById('card-faturamento');
+    const cardSisFarma = document.getElementById('card-sisfarma');
+
+    // 1. Esconde tudo por padrão (segurança máxima)
+    if(cardAdmin) cardAdmin.style.display = 'none';
+    if(cardFaturamento) cardFaturamento.style.display = 'none';
+    if(cardSisFarma) cardSisFarma.style.display = 'none';
+
+    // 2. Libera conforme o cargo
+    if (cargo.includes('t.i') || cargo.includes('administrador')) {
+        // T.I. vê tudo
+        if(cardAdmin) cardAdmin.style.display = 'block';
+        if(cardFaturamento) cardFaturamento.style.display = 'block';
+        if(cardSisFarma) cardSisFarma.style.display = 'block';
+    } 
+    else if (cargo.includes('farmacêutico') || cargo.includes('auxiliar')) {
+        // Pessoal da Farmácia vê apenas o sisFarma
+        if(cardSisFarma) cardSisFarma.style.display = 'block';
+    } 
+    else if (cargo.includes('administrativo')) {
+        // Administrativo vê apenas Faturamento/Relatórios
+        if(cardFaturamento) cardFaturamento.style.display = 'block';
+    }
+}
+        
         // =========================================
         // 3. RENDERIZAÇÃO DOS MÓDULOS (HUB - MODERNIZADO)
         // =========================================
