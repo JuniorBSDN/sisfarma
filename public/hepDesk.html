@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help Desk - sisFarma</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #3b82f6; --secondary: #1e293b; --bg-body: #f8fafc; --bg-card: #ffffff; --text-main: #334155; --border-color: #cbd5e1; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-body); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+
+        /* Sidebar & Topbar */
+        .sidebar { width: 260px; background-color: var(--secondary); color: #fff; display: flex; flex-direction: column; padding: 20px 14px; }
+        .sidebar-brand { display: flex; align-items: center; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .brand-logo { background-color: var(--primary); width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .sidebar-menu { list-style: none; margin-top: 20px; flex-grow: 1; }
+        .menu-link { display: flex; align-items: center; gap: 10px; padding: 12px; color: #94a3b8; text-decoration: none; border-radius: 6px; cursor: pointer; margin-bottom: 4px; font-size: 0.9rem; }
+        .menu-link:hover, .menu-link.active { color: #fff; background-color: rgba(255,255,255,0.1); }
+        
+        .btn-hub { background: none; border: 1px solid var(--primary); color: #93c5fd; width: 100%; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; margin-bottom: 10px; }
+        .btn-logout { background: none; border: 1px solid rgba(255,255,255,0.15); color: #f87171; width: 100%; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        .topbar { background-color: #fff; border-bottom: 1px solid var(--border-color); min-height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+        .page-title { font-size: 1.1rem; font-weight: 600; color: var(--secondary); }
+        .user-profile { display: flex; align-items: center; gap: 12px; }
+        .user-avatar { width: 36px; height: 36px; background-color: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+        
+        .content-body { padding: 24px; max-width: 1000px; margin: 0 auto; width: 100%; }
+        .box-container { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 24px; margin-bottom: 24px; }
+        .box-title { font-size: 1.1rem; font-weight: 700; color: var(--secondary); margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
+        
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+        .form-input, .form-textarea, .form-select { padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.9rem; outline: none; }
+        .btn-submit { background-color: var(--primary); color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; width: 100%; }
+    </style>
+</head>
+<body style="display: none;" id="appBody">
+
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-logo">HD</div>
+            <div><strong style="display:block;">Help Desk</strong><span style="font-size:0.75rem; color:#93c5fd;">Suporte T.I.</span></div>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a class="menu-link active">📝 Abrir Chamado</a></li>
+            <li><a class="menu-link">📂 Meus Chamados</a></li>
+            <li id="menu-admin-ti" style="display: none;"><a class="menu-link" style="color: #fcd34d;">⚙️ Gestão de T.I.</a></li>
+        </ul>
+        <div>
+            <button class="btn-hub" onclick="window.location.href='index.html'">🔙 Voltar ao Hub</button>
+            <button class="btn-logout" onclick="logout()">Sair do Sistema</button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div class="page-title">Central de Suporte</div>
+            <div class="user-profile">
+                <div class="user-avatar" id="headerAvatar">--</div>
+                <div class="user-info">
+                    <h4 id="headerUserName">Carregando...</h4>
+                    <p id="headerUserRole">...</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="content-body">
+            <div class="box-container">
+                <div class="box-title">Registrar Novo Incidente ou Solicitação</div>
+                <form>
+                    <div class="form-group">
+                        <label>Assunto / Problema</label>
+                        <input type="text" class="form-input" placeholder="Ex: Impressora de etiquetas não funciona">
+                    </div>
+                    <div class="form-group">
+                        <label>Prioridade</label>
+                        <select class="form-select">
+                            <option>Baixa (Dúvida comum)</option>
+                            <option>Média (Atrapalha a rotina)</option>
+                            <option>Alta (Sistema parado)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Descrição Detalhada</label>
+                        <textarea class="form-textarea" rows="4" placeholder="Descreva o que está acontecendo..."></textarea>
+                    </div>
+                    <button type="button" class="btn-submit" onclick="alert('Chamado aberto com sucesso!')">Enviar Chamado para T.I.</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        window.onload = function() {
+            const storedUser = sessionStorage.getItem('ph_user');
+            
+            if (!storedUser) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const currentUser = JSON.parse(storedUser);
+            const cargo = currentUser.cargo.toLowerCase();
+
+            // Exibe a tela e atualiza dados
+            document.getElementById('appBody').style.display = 'flex';
+            document.getElementById('headerUserName').innerText = currentUser.nome;
+            document.getElementById('headerUserRole').innerText = currentUser.cargo;
+            document.getElementById('headerAvatar').innerText = currentUser.nome.charAt(0).toUpperCase();
+
+            // Lógica T.I.
+            if (cargo.includes('t.i')) {
+                document.getElementById('menu-admin-ti').style.display = 'block';
+            }
+        };
+
+        function logout() {
+            sessionStorage.removeItem('ph_user');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
