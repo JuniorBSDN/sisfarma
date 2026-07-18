@@ -1266,6 +1266,28 @@
                 document.getElementById('cpfInput').focus(); 
             }
         };
+        document.addEventListener('DOMContentLoaded', () => {
+    // 1. O módulo procura o "crachá" salvo pelo index.html
+    const sessaoAtiva = sessionStorage.getItem('colaborador');
+
+    if (sessaoAtiva) {
+        // 2. Se achou, oculta a tela de login imediatamente
+        const telaDeLogin = document.getElementById('loginScreen');
+        const painelPrincipal = document.getElementById('appContainer');
+
+        if (telaDeLogin) telaDeLogin.style.display = 'none';
+        if (painelPrincipal) painelPrincipal.style.display = 'flex'; // ou 'block', dependendo do seu CSS
+
+        // 3. (Opcional) Você pode usar os dados do usuário para preencher o topo da tela
+        const usuarioLogado = JSON.parse(sessaoAtiva);
+        console.log("Acesso automático liberado para:", usuarioLogado.nome);
+        
+    } else {
+        // 4. Se não tem crachá, significa que a pessoa não passou pelo index.html
+        alert("Sessão não iniciada. Por favor, faça login no Hub Central.");
+        window.location.href = 'index.html';
+    }
+});
     </script>
 </body>
 </html>
