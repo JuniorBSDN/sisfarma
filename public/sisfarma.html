@@ -621,6 +621,9 @@
 
                 if (data.success) {
                     currentUser = data.colaborador;
+                    // Salva a sessão para não precisar logar de novo
+                    sessionStorage.setItem('ph_user', JSON.stringify(currentUser));
+
                     document.getElementById('headerUserName').innerText = currentUser.nome;
                     document.getElementById('headerUserRole').innerText = currentUser.cargo;
                     document.getElementById('headerAvatar').innerText = currentUser.nome.charAt(0).toUpperCase();
@@ -655,7 +658,9 @@
         }
 
         function logout() { 
-            location.reload(); 
+            // Limpa a memória e volta para o Hub
+            sessionStorage.removeItem('ph_user');
+            window.location.href = 'index.html'; 
         }
 
         function switchTab(tabId) {
@@ -1215,9 +1220,31 @@
             setTimeout(() => window.print(), 50);
         }
 
+        // ==========================================================
+        // VERIFICAÇÃO AUTOMÁTICA DE SESSÃO DO HUB
+        // ==========================================================
         window.onload = function() { 
-            startWebcam(); 
-            document.getElementById('cpfInput').focus(); 
+            // Verifica se o usuário já fez login lá no Hub (index.html)
+            const storedUser = sessionStorage.getItem('ph_user');
+            
+            if (storedUser) {
+                // Se o crachá já foi passado no Hub, pula direto para o Painel
+                currentUser = JSON.parse(storedUser);
+                
+                document.getElementById('headerUserName').innerText = currentUser.nome;
+                document.getElementById('headerUserRole').innerText = currentUser.cargo;
+                document.getElementById('headerAvatar').innerText = currentUser.nome.charAt(0).toUpperCase();
+                
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'flex';
+                
+                syncDatabase();
+                setTimeout(() => document.getElementById('disp_scan_barcode').focus(), 500);
+            } else {
+                // Se abriu a página diretamente (sem passar pelo hub), pede o login normal
+                startWebcam(); 
+                document.getElementById('cpfInput').focus(); 
+            }
         };
     </script>
 </body>
