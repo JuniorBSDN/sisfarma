@@ -142,140 +142,334 @@
     </div>
 
     <script>
-        // Variáveis de Controle Global da Sessão da Unidade Hospitalar
-        let logedCNPJ = "";
-        let logedOperator = "";
+       // =========================================================================
+// 1. VARIÁVEIS DE CONTROLE GLOBAL & TENANT (Neon PostgreSQL)
+// =========================================================================
+let logedCNPJ = "";
+let logedOperator = "";
 
-        // =========================================================================
-        // PORTEIRO AUTOMÁTICO E INTEGRAÇÃO DE ACESSO MILIMÉTRICA
-        // =========================================================================
-        document.addEventListener('DOMContentLoaded', () => {
-            const sessaoAtiva = sessionStorage.getItem('colaborador');
+// =========================================================================
+// 2. PORTEIRO AUTOMÁTICO & PERSISTÊNCIA DE SESSÃO DO HUB
+// =========================================================================
+document.addEventListener('DOMContentLoaded', () => {
+    const sessaoAtiva = sessionStorage.getItem('colaborador');
 
-            if (sessaoAtiva) {
-                const usuarioLogado = JSON.parse(sessaoAtiva);
-                console.log("Acesso automático liberado para:", usuarioLogado.nome);
-                
-                // 1. Oculta a tela de bloqueio e libera o painel estrutural
-                const telaDeLogin = document.getElementById('loginScreen');
-                const painelPrincipal = document.getElementById('appContainer');
-                if (telaDeLogin) telaDeLogin.style.display = 'none';
-                if (painelPrincipal) painelPrincipal.style.display = 'flex';
+    if (sessaoAtiva) {
+        const usuarioLogado = JSON.parse(sessaoAtiva);
+        console.log("⚡ [T.I. Mode] Módulo CAF carregado para o usuário:", usuarioLogado.nome);
 
-                // 2. Mapeia as credenciais de auditoria e filtros com segurança baseada em Tenant
-                logedCNPJ = usuarioLogado.empresa_cnpj;
-                logedOperator = usuarioLogado.nome;
-
-                // 3. Renderiza os componentes de identificação na Topbar
-                document.getElementById('topbarNome').innerText = usuarioLogado.nome;
-                document.getElementById('topbarCargo').innerText = usuarioLogado.cargo;
-                document.getElementById('topbarAvatar').innerText = usuarioLogado.nome.charAt(0).toUpperCase();
-
-                // 4. Executa a sincronização direta com o PostgreSQL (Neon) enviando o CNPJ correto
-                sincronizarDadosCAF(logedCNPJ);
-                
-            } else {
-                alert("Sessão não iniciada. Por favor, faça login no Hub Central.");
-                window.location.href = 'index.html';
-            }
-        });
-
-        // =========================================================================
-        // COMUNICAÇÃO DE DADOS ASSÍNCRONA COM O BACK-END EM PYTHON
-        // =========================================================================
-        async function sincronizarDadosCAF(cnpj) {
-            try {
-                // Realiza a chamada exata para a rota do Flask parametrizada por CNPJ
-                const response = await fetch(`/api/pharmacy/sync?cnpj=${cnpj}`);
-                const data = await response.json();
-
-                if (data.success) {
-                    processarEExibirDados(data);
-                } else {
-                    console.error("Falha na sincronização da API:", data.message);
-                }
-            } catch (error) {
-                console.error("Erro crítico de rede ao contactar o servidor PostgreSQL (Neon):", error);
-            }
+        // Retrocompatibilidade garantida com códigos antigos
+        if (!sessionStorage.getItem('ph_user')) {
+            sessionStorage.setItem('ph_user', JSON.stringify(usuarioLogado));
         }
 
-        function processarEExibirDados(data) {
-            const tbodyEstoque = document.getElementById('tbodyEstoque');
-            const tbodyHistorico = document.getElementById('tbodyHistorico');
-            const alertasContainer = document.getElementById('alertasClinicosContainer');
-            
-            tbodyEstoque.innerHTML = "";
-            tbodyHistorico.innerHTML = "";
-            alertasContainer.innerHTML = "";
+        // Libera as telas originais do seu HTML
+        const telaDeLogin = document.getElementById('loginScreen');
+        const painelPrincipal = document.getElementById('appContainer');
+        if (telaDeLogin) telaDeLogin.style.display = 'none';
+        if (painelPrincipal) painelPrincipal.style.display = 'flex';
 
-            // 1. Renderiza a tabela de Estoque Cruzando os Lotes com seus Respectivos Medicamentos
-            if (data.lotes && data.lotes.length > 0) {
-                data.lotes.forEach(lote => {
-                    // Lógica de Alertas Clínicos em tempo de renderização
-                    verificarAlertasLote(lote, alertasContainer);
+        // Define as credenciais globais da unidade hospitalar
+        logedCNPJ = usuarioLogado.empresa_cnpj;
+        logedOperator = usuarioLogado.nome;
 
-                    tbodyEstoque.innerHTML += `
-                        <tr>
-                            <td><strong>${lote.med_nome || 'Item Não Mapeado'}</strong></td>
-                            <td>${lote.fabricante || 'Geral'}</td>
-                            <td><span style="font-family: monospace; font-weight:600;">${lote.numero_lote}</span></td>
-                            <td>${lote.fabricante}</td>
-                            <td>${lote.validade}</td>
-                            <td><span style="font-weight: 700; color: ${lote.quantidade < 150 ? 'var(--danger)' : 'inherit'}">${lote.quantidade} un</span></td>
-                        </tr>
-                    `;
-                });
-            } else {
-                tbodyEstoque.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Nenhum lote em estoque para esta unidade hospitalar.</td></tr>`;
-            }
+        // Atualiza a Topbar com os dados reais do operador
+        const topbarNome = document.getElementById('topbarNome') || document.getElementById('headerUserName');
+        const topbarCargo = document.getElementById('topbarCargo') || document.getElementById('headerUserRole');
+        const topbarAvatar = document.getElementById('topbarAvatar') || document.getElementById('headerAvatar');
 
-            // 2. Renderiza o histórico de Rastreabilidade (Movimentações)
-            if (data.movimentacoes && data.movimentacoes.length > 0) {
-                data.movimentacoes.forEach(mov => {
-                    tbodyHistorico.innerHTML += `
-                        <tr>
-                            <td>${mov.data_movimentacao}</td>
-                            <td><span style="color: ${mov.tipo.includes('SAÍDA') ? 'var(--danger)' : 'var(--success)'}; font-weight:600;">${mov.tipo}</span></td>
-                            <td>${mov.item_nome}</td>
-                            <td>${mov.quantidade}</td>
-                            <td>${mov.setor_destino}</td>
-                            <td>${mov.paciente_nome}</td>
-                            <td><small>${mov.responsavel}</small></td>
-                        </tr>
-                    `;
-                });
-            } else {
-                tbodyHistorico.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Nenhum registro de movimentação encontrado.</td></tr>`;
-            }
+        if (topbarNome) topbarNome.innerText = usuarioLogado.nome;
+        if (topbarCargo) topbarCargo.innerText = usuarioLogado.cargo;
+        if (topbarAvatar) topbarAvatar.innerText = usuarioLogado.nome.charAt(0).toUpperCase();
+
+        // Dispara a sincronização completa de dados do CAF
+        sincronizarDadosCAF(logedCNPJ);
+
+    } else {
+        alert("Sessão não iniciada. Por favor, faça login no Hub Central.");
+        window.location.href = 'index.html';
+    }
+});
+
+// =========================================================================
+// 3. BUSCA DE DADOS (GET) - SINCRONIZAÇÃO COMPLETA DO BANCO
+// =========================================================================
+async function sincronizarDadosCAF(cnpj) {
+    try {
+        const response = await fetch(`/api/pharmacy/sync?cnpj=${cnpj}`);
+        const data = await response.json();
+
+        if (data.success) {
+            renderizarEstoqueELotes(data);
+            renderizarInsumos(data.insumos);
+            renderizarRastreabilidade(data.movimentacoes);
+            renderizarTecnovigilancia(data.tecnovigilancia);
+            alimentarSelectsFormularios(data.medicamentos, data.lotes, data.insumos);
+        } else {
+            console.error("Erro na sincronização:", data.message);
         }
+    } catch (error) {
+        console.error("Erro de comunicação com o servidor Flask:", error);
+    }
+}
 
-        // Alertas Clínicos Inteligentes (Estoques Críticos e RDC 430/2020)
-        function verificarAlertasLote(lote, container) {
-            // Verificação de Estoque Crítico
-            if (lote.quantidade < 150) {
-                container.innerHTML += `
+// =========================================================================
+// 4. RENDERIZAÇÃO COMPLETA DAS TABELAS E ALERTAS CLÍNICOS (RDC 430/2020)
+// =========================================================================
+function renderizarEstoqueELotes(data) {
+    const tbody = document.getElementById('tbodyEstoque');
+    const alertasContainer = document.getElementById('alertasClinicosContainer');
+    if (!tbody) return;
+    
+    tbody.innerHTML = "";
+    if (alertasContainer) alertasContainer.innerHTML = "";
+
+    if (data.lotes && data.lotes.length > 0) {
+        data.lotes.forEach(lote => {
+            // Alertas de Estoque Baixo ou Validade próxima (Exemplo: menor que 150 unidades)
+            if (lote.quantidade < 150 && alertasContainer) {
+                alertasContainer.innerHTML += `
                     <div class="alert-box alert-danger">
-                        🚨 <strong>Estoque Crítico:</strong> O medicamento "${lote.med_nome}" (Lote: ${lote.numero_lote}) possui apenas ${lote.quantidade} unidades em saldo.
+                        🚨 <strong>Estoque Crítico:</strong> O item "${lote.med_nome || 'Medicamento'}" (Lote: ${lote.numero_lote}) possui apenas ${lote.quantidade} unidades em saldo.
                     </div>
                 `;
             }
-        }
 
-        // NAVEGAÇÃO DE ABAS INTERNAS INTERFACES SPA
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.menu-link').forEach(link => link.classList.remove('active'));
-            
-            document.getElementById(`tab-${tabId}`).classList.add('active');
-            event.target.classList.add('active');
-            
-            const titles = { 'estoque': 'Estoque Central de Medicamentos e Lotes', 'dispensacao': 'Central de Dispensação Automatizada', 'historico': 'Livro de Rastreabilidade Farmacêutica' };
-            document.getElementById('tabTitle').innerText = titles[tabId];
-        }
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${lote.med_nome || 'Medicamento'}</strong></td>
+                    <td><span class="badge-lote">${lote.numero_lote}</span></td>
+                    <td>${lote.fabricante}</td>
+                    <td>${lote.validade}</td>
+                    <td><span style="font-weight:700; color: ${lote.quantidade < 150 ? 'var(--danger)' : 'inherit'}">${lote.quantidade} un</span></td>
+                </tr>
+            `;
+        });
+    } else {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Nenhum medicamento ou lote cadastrado.</td></tr>`;
+    }
+}
 
-        function voltarAoHub() {
-            window.location.href = 'index.html';
-        }
+function renderizarInsumos(insumos) {
+    const tbody = document.getElementById('tbodyInsumos');
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    if (insumos && insumos.length > 0) {
+        insumos.forEach(ins => {
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${ins.nome}</strong></td>
+                    <td>${ins.especificacao}</td>
+                    <td>${ins.unidade_medida}</td>
+                    <td><span style="font-weight:700;">${ins.quantidade} un</span></td>
+                </tr>
+            `;
+        });
+    } else {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Nenhum insumo correlato em estoque.</td></tr>`;
+    }
+}
+
+function renderizarRastreabilidade(movimentacoes) {
+    const tbody = document.getElementById('tbodyHistorico');
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    if (movimentacoes && movimentacoes.length > 0) {
+        movimentacoes.forEach(mov => {
+            tbody.innerHTML += `
+                <tr>
+                    <td><small>${mov.data_movimentacao}</small></td>
+                    <td><span style="font-weight:600; color: ${mov.tipo.includes('SAÍDA') ? 'var(--danger)' : 'var(--success)'}">${mov.tipo}</span></td>
+                    <td>${mov.item_nome}</td>
+                    <td><strong>${mov.quantidade}</strong></td>
+                    <td>${mov.setor_destino}</td>
+                    <td>${mov.paciente_nome}</td>
+                    <td><small>${mov.responsavel}</small></td>
+                </tr>
+            `;
+        });
+    } else {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Nenhuma movimentação registrada no livro oficial.</td></tr>`;
+    }
+}
+
+function renderizarTecnovigilancia(ocorrencias) {
+    const tbody = document.getElementById('tbodyTecnovigilancia');
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    if (ocorrencias && ocorrencias.length > 0) {
+        ocorrencias.forEach(oc => {
+            tbody.innerHTML += `
+                <tr>
+                    <td><small>${oc.data_registro}</small></td>
+                    <td><span class="badge-lote">${oc.lote_texto}</span></td>
+                    <td><strong>${oc.tipo_ocorrencia}</strong></td>
+                    <td><span style="color: var(--danger); font-weight:600;">${oc.gravidade}</span></td>
+                    <td>${oc.descricao}</td>
+                    <td><small>${oc.conduta}</small></td>
+                </tr>
+            `;
+        });
+    } else {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Nenhuma intercorrência ou desvio de qualidade registrado.</td></tr>`;
+    }
+}
+
+// Preenche os seletores (<select>) dos formulários de Dispensação e Lotes para evitar digitação errada
+function alimentarSelectsFormularios(medicamentos, lotes, insumos) {
+    const selectMed = document.getElementById('formLoteMedicamentoId');
+    if (selectMed) {
+        selectMed.innerHTML = '<option value="">-- Selecione o Medicamento do Catálogo --</option>';
+        medicamentos.forEach(m => {
+            selectMed.innerHTML += `<option value="${m.id}">${m.nome} (${m.principio_ativo})</option>`;
+        });
+    }
+}
+
+// =========================================================================
+// 5. OPERAÇÕES DE LANÇAMENTO (POST) - CONEXÃO DIRETA COM O SEU FLASK/NEON
+// =========================================================================
+
+// A. Cadastrar Novo Medicamento no Catálogo
+async function handleCadastrarMedicamento(event) {
+    if(event) event.preventDefault();
+    
+    const payload = {
+        empresa_cnpj: logedCNPJ,
+        nome: document.getElementById('medNome').value,
+        principio_ativo: document.getElementById('medPrincipio').value,
+        categoria: document.getElementById('medCategoria').value,
+        controlado: document.getElementById('medControlado').checked ? 1 : 0,
+        codigo_barras: document.getElementById('medCodigoBarras').value
+    };
+
+    try {
+        const response = await fetch('/api/pharmacy/medicamentos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (data.success) {
+            alert("Medicamento incluído no catálogo com sucesso!");
+            sincronizarDadosCAF(logedCNPJ);
+            event.target.reset();
+        } else { alert("Erro: " + data.message); }
+    } catch (e) { console.error(e); }
+}
+
+// B. Dar Entrada em Lote
+async function handleCadastrarLote(event) {
+    if(event) event.preventDefault();
+
+    const payload = {
+        medicamento_id: document.getElementById('formLoteMedicamentoId').value,
+        numero_lote: document.getElementById('loteNumero').value,
+        fabricante: document.getElementById('loteFabricante').value,
+        validade: document.getElementById('loteValidade').value,
+        quantidade: document.getElementById('loteQuantidade').value
+    };
+
+    try {
+        const response = await fetch('/api/pharmacy/lotes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (data.success) {
+            alert("Entrada de lote registrada no estoque!");
+            sincronizarDadosCAF(logedCNPJ);
+            event.target.reset();
+        } else { alert("Erro: " + data.message); }
+    } catch (e) { console.error(e); }
+}
+
+// C. Lançar Dispensação/Saída de Item para Paciente/Setor
+async function handleRegistrarDispensa(event) {
+    if(event) event.preventDefault();
+
+    const payload = {
+        empresa_cnpj: logedCNPJ,
+        tipo: document.getElementById('dispensaTipo').value, // "MED" ou "INS"
+        id_item: document.getElementById('dispensaItemId').value, // ID do lote ou do insumo
+        qtd: document.getElementById('dispensaQtd').value,
+        paciente: document.getElementById('dispensaPaciente').value,
+        setor: document.getElementById('dispensaSetor').value,
+        responsavel: logedOperator
+    };
+
+    try {
+        const response = await fetch('/api/pharmacy/dispensar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (data.success) {
+            alert("Dispensação realizada e estoque atualizado!");
+            sincronizarDadosCAF(logedCNPJ);
+            event.target.reset();
+        } else { alert("Erro: " + data.message); }
+    } catch (e) { console.error(e); }
+}
+
+// D. Registrar Notificação de Tecnovigilância
+async function handleRegistrarTecnovigilancia(event) {
+    if(event) event.preventDefault();
+
+    const payload = {
+        empresa_cnpj: logedCNPJ,
+        lote_texto: document.getElementById('tecnoLote').value,
+        tipo_ocorrencia: document.getElementById('tecnoTipo').value,
+        gravidade: document.getElementById('tecnoGravidade').value,
+        descricao: document.getElementById('tecnoDescricao').value,
+        conduta: document.getElementById('tecnoConduta').value
+    };
+
+    try {
+        const response = await fetch('/api/pharmacy/tecnovigilancia', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (data.success) {
+            alert("Notificação de Tecnovigilância protocolada com sucesso!");
+            sincronizarDadosCAF(logedCNPJ);
+            event.target.reset();
+        } else { alert("Erro: " + data.message); }
+    } catch (e) { console.error(e); }
+}
+
+// =========================================================================
+// 6. FUNÇÕES DE NAVEGAÇÃO INTERNA (SPA)
+// =========================================================================
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.menu-link').forEach(link => link.classList.remove('active'));
+    
+    const targetTab = document.getElementById(`tab-${tabId}`);
+    if (targetTab) targetTab.classList.add('active');
+    if (event && event.target) event.target.classList.add('active');
+    
+    const titles = { 
+        'estoque': 'Estoque Central de Medicamentos e Lotes', 
+        'dispensacao': 'Central de Dispensação Automatizada', 
+        'historico': 'Livro de Rastreabilidade Farmacêutica',
+        'tecnovigilancia': 'Eventos Adversos e Queixas Técnicas'
+    };
+    
+    const tabTitle = document.getElementById('tabTitle');
+    if (tabTitle && titles[tabId]) tabTitle.innerText = titles[tabId];
+}
+
+function voltarAoHub() {
+    window.location.href = 'index.html';
+}
     </script>
 </body>
 </html>
