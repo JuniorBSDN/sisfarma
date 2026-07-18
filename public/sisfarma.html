@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>sisFarma - Central CAF</title>
+    <title>Central CAF</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -36,7 +36,7 @@
         .topbar { background-color: #ffffff; border-bottom: 1px solid var(--border-color); min-height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
         .content-body { padding: 24px; max-width: 1400px; width: 100%; margin: 0 auto; }
         
-        /* Tabelas e Abas (Resumo Estilizado) */
+        /* Tabelas e Abas */
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .data-table { width: 100%; border-collapse: collapse; margin-top: 16px; background: #fff; border-radius: 8px; overflow: hidden; }
@@ -56,7 +56,7 @@
 </head>
 <body>
 
-    <!-- FALLBACK/TELA DE LOGIN (Ocultada automaticamente pelo porteiro se houver sessão) -->
+    <!-- FALLBACK/TELA DE LOGIN -->
     <div class="login-screen" id="loginScreen">
         <div style="color: white; margin: auto; text-align: center;">
             <h2>Redirecionando para o Workspace...</h2>
@@ -72,8 +72,10 @@
             </div>
             <nav style="flex-grow: 1; margin-top: 20px;">
                 <a class="menu-link active" onclick="switchTab('estoque')">📦 Estoque Central</a>
+                <a class="menu-link" onclick="switchTab('insumos')">🧸 Insumos Correlatos</a>
                 <a class="menu-link" onclick="switchTab('dispensacao')">💊 Dispensação</a>
                 <a class="menu-link" onclick="switchTab('historico')">📜 Rastreabilidade</a>
+                <a class="menu-link" onclick="switchTab('tecnovigilancia')">⚠️ Tecnovigilância</a>
             </nav>
             <button onclick="voltarAoHub()" style="background: none; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 10px; border-radius: 6px; cursor: pointer; width: 100%;">↩ Voltar ao Hub</button>
         </aside>
@@ -100,7 +102,6 @@
                         <thead>
                             <tr>
                                 <th>Medicamento</th>
-                                <th>Princípio Ativo</th>
                                 <th>Lote</th>
                                 <th>Fabricante</th>
                                 <th>Validade</th>
@@ -108,14 +109,35 @@
                             </tr>
                         </thead>
                         <tbody id="tbodyEstoque">
-                            <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Buscando dados no banco de dados...</td></tr>
+                            <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Buscando dados no banco de dados...</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- ABA: INSUMOS -->
+                <section id="tab-insumos" class="tab-content">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Insumo</th>
+                                <th>Especificação</th>
+                                <th>Unidade de Medida</th>
+                                <th>Quantidade</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyInsumos">
+                            <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Nenhum insumo correlato carregado.</td></tr>
                         </tbody>
                     </table>
                 </section>
 
                 <!-- ABA: DISPENSAÇÃO -->
                 <section id="tab-dispensacao" class="tab-content">
-                    <p style="color: var(--text-muted);">Módulo de lançamento de saídas automatizado via API.</p>
+                    <p style="color: var(--text-muted); margin-bottom: 16px;">Módulo de lançamento de saídas automatizado via API.</p>
+                    <div style="background: #fff; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); max-width: 500px;">
+                        <h3 style="margin-bottom: 12px; font-size: 1rem;">Registrar Saída de Item</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-muted);">Os formulários operacionais completos podem ser acoplados nesta seção seguindo as IDs de integração.</p>
+                    </div>
                 </section>
 
                 <!-- ABA: HISTÓRICO -->
@@ -137,12 +159,31 @@
                         </tbody>
                     </table>
                 </section>
+
+                <!-- ABA: TECNOVIGILÂNCIA -->
+                <section id="tab-tecnovigilancia" class="tab-content">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Data de Registro</th>
+                                <th>Lote Ocorrência</th>
+                                <th>Tipo de Evento</th>
+                                <th>Gravidade</th>
+                                <th>Descrição</th>
+                                <th>Conduta Adotada</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyTecnovigilancia">
+                            <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Nenhuma intercorrência registrada.</td></tr>
+                        </tbody>
+                    </table>
+                </section>
             </div>
         </main>
     </div>
 
     <script>
-       // =========================================================================
+// =========================================================================
 // 1. VARIÁVEIS DE CONTROLE GLOBAL & TENANT (Neon PostgreSQL)
 // =========================================================================
 let logedCNPJ = "";
@@ -318,11 +359,12 @@ function renderizarTecnovigilancia(ocorrencias) {
     }
 }
 
-// Preenche os seletores (<select>) dos formulários de Dispensação e Lotes para evitar digitação errada
 function alimentarSelectsFormularios(medicamentos, lotes, insumos) {
     const selectMed = document.getElementById('formLoteMedicamentoId');
-    if (selectMed) {
-        selectMed.innerHTML = '<option value="">-- Selecione o Medicamento do Catálogo --</option>';
+    if (!selectMed) return; // Proteção contra elemento ausente no HTML
+    
+    selectMed.innerHTML = '<option value="">-- Selecione o Medicamento do Catálogo --</option>';
+    if (medicamentos) {
         medicamentos.forEach(m => {
             selectMed.innerHTML += `<option value="${m.id}">${m.nome} (${m.principio_ativo})</option>`;
         });
@@ -333,9 +375,9 @@ function alimentarSelectsFormularios(medicamentos, lotes, insumos) {
 // 5. OPERAÇÕES DE LANÇAMENTO (POST) - CONEXÃO DIRETA COM O SEU FLASK/NEON
 // =========================================================================
 
-// A. Cadastrar Novo Medicamento no Catálogo
 async function handleCadastrarMedicamento(event) {
     if(event) event.preventDefault();
+    if(!document.getElementById('medNome')) return;
     
     const payload = {
         empresa_cnpj: logedCNPJ,
@@ -361,9 +403,9 @@ async function handleCadastrarMedicamento(event) {
     } catch (e) { console.error(e); }
 }
 
-// B. Dar Entrada em Lote
 async function handleCadastrarLote(event) {
     if(event) event.preventDefault();
+    if(!document.getElementById('formLoteMedicamentoId')) return;
 
     const payload = {
         medicamento_id: document.getElementById('formLoteMedicamentoId').value,
@@ -388,14 +430,14 @@ async function handleCadastrarLote(event) {
     } catch (e) { console.error(e); }
 }
 
-// C. Lançar Dispensação/Saída de Item para Paciente/Setor
 async function handleRegistrarDispensa(event) {
     if(event) event.preventDefault();
+    if(!document.getElementById('dispensaTipo')) return;
 
     const payload = {
         empresa_cnpj: logedCNPJ,
-        tipo: document.getElementById('dispensaTipo').value, // "MED" ou "INS"
-        id_item: document.getElementById('dispensaItemId').value, // ID do lote ou do insumo
+        tipo: document.getElementById('dispensaTipo').value,
+        id_item: document.getElementById('dispensaItemId').value,
         qtd: document.getElementById('dispensaQtd').value,
         paciente: document.getElementById('dispensaPaciente').value,
         setor: document.getElementById('dispensaSetor').value,
@@ -410,16 +452,16 @@ async function handleRegistrarDispensa(event) {
         });
         const data = await response.json();
         if (data.success) {
-            alert("Dispensação realizada e estoque atualizado!");
+            alert("Dispensação realizada e estoque updated!");
             sincronizarDadosCAF(logedCNPJ);
             event.target.reset();
         } else { alert("Erro: " + data.message); }
     } catch (e) { console.error(e); }
 }
 
-// D. Registrar Notificação de Tecnovigilância
 async function handleRegistrarTecnovigilancia(event) {
     if(event) event.preventDefault();
+    if(!document.getElementById('tecnoLote')) return;
 
     const payload = {
         empresa_cnpj: logedCNPJ,
@@ -454,13 +496,18 @@ function switchTab(tabId) {
     
     const targetTab = document.getElementById(`tab-${tabId}`);
     if (targetTab) targetTab.classList.add('active');
-    if (event && event.target) event.target.classList.add('active');
+    
+    // Garante a ativação visual mesmo se disparado por clique direto
+    if (event && event.target) {
+        event.target.classList.add('active');
+    }
     
     const titles = { 
         'estoque': 'Estoque Central de Medicamentos e Lotes', 
+        'insumos': 'Estoque de Insumos e Correlatos',
         'dispensacao': 'Central de Dispensação Automatizada', 
         'historico': 'Livro de Rastreabilidade Farmacêutica',
-        'tecnovigilancia': 'Eventos Adversos e Queixas Técnicas'
+        'tecnovigilancia': 'Eventos Adversos e Queixas Técnicas (RDC 430/2020)'
     };
     
     const tabTitle = document.getElementById('tabTitle');
