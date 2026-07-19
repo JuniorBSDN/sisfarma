@@ -5,11 +5,8 @@ import random
 import string
 from datetime import datetime
 from flask import Flask, request, jsonify
-from flask import Flask, request, jsonify
-from flask_cors import CORS # <-- Adicionar esta linha
 
 app = Flask(__name__)
-CORS(app) # <-- Adicionar esta linha para liberar a comunicação com o HTML
 
 # A Vercel injeta automaticamente a variável DATABASE_URL se integrar o Neon pelo painel
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -599,10 +596,3 @@ def add_tecnovigilancia():
 @app.route('/')
 def home():
     return jsonify({"status": "sisFarma API on Neon PostgreSQL is online", "version": "1.0.0"}), 200
-
-# =========================================================================
-# INICIALIZAÇÃO LOCAL DO SERVIDOR
-# =========================================================================
-if __name__ == '__main__':
-    # Roda o servidor localmente na porta 5000
-    app.run(debug=True, port=5000)
