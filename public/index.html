@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>sisFarma - Central de Dispensação e Rastreabilidade</title>
-    
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
     <style>
@@ -16,7 +16,7 @@
            VARIÁVEIS DE DESIGN & RESET
            ========================================== */
         :root {
-            --primary: #10b981; --primary-dark: #059669; --secondary: #1e3d59; 
+            --primary: #10b981; --primary-dark: #059669; --secondary: #1e3d59;
             --bg-body: #f4f6f9; --bg-card: #ffffff; --text-main: #2d3748;
             --text-muted: #718096; --border-color: #e2e8f0; --success: #22c55e;
             --danger: #ef4444; --warning: #f59e0b; --sidebar-width: 260px; --transition: all 0.3s ease;
@@ -34,7 +34,7 @@
         .login-header { margin-bottom: 24px; text-align: center; }
         .login-header h2 { color: #ffffff; font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; }
         .login-header p { color: #94a3b8; font-size: 0.85rem; }
-        
+
         /* SCANNER DE WEBCAM */
         .scanner-view { width: 100%; height: 240px; background-color: #020617; border-radius: 12px; border: 2px solid var(--primary); position: relative; overflow: hidden; margin-bottom: 24px; display: flex; align-items: center; justify-content: center; }
         #webcam-reader { width: 100%; height: 100%; }
@@ -42,7 +42,7 @@
         .scanner-laser { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background-color: var(--primary); box-shadow: 0 0 12px var(--primary); animation: scanning 2s linear infinite; z-index: 10; pointer-events: none; }
         @keyframes scanning { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
         .scanner-placeholder { position: absolute; bottom: 12px; color: #ffffff; background-color: rgba(15, 23, 42, 0.85); padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; text-align: center; z-index: 15; font-weight: 600; pointer-events: none; border: 1px solid rgba(255, 255, 255, 0.1); }
-        
+
         .login-input { width: 100%; padding: 12px 16px; background-color: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #ffffff; font-size: 0.95rem; outline: none; margin-bottom: 16px; }
         .login-input:focus { border-color: var(--primary); }
         .btn-login-submit { width: 100%; background-color: var(--primary); color: #ffffff; border: none; padding: 14px; border-radius: 8px; font-weight: 600; cursor: pointer; }
@@ -66,7 +66,7 @@
         .menu-link.active { border-left: 3px solid var(--primary); background-color: rgba(255, 255, 255, 0.1); padding-left: 7px; }
         .sidebar-footer { padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
         .btn-logout { background: none; border: 1px solid rgba(255, 255, 255, 0.15); color: #ef4444; width: 100%; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; }
-        
+
         .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; }
         .topbar { background-color: #ffffff; border-bottom: 1px solid var(--border-color); min-height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
         .page-title { font-size: 1.1rem; font-weight: 600; color: var(--secondary); }
@@ -75,7 +75,7 @@
         .user-info h4 { font-size: 0.85rem; font-weight: 600; }
         .user-info p { font-size: 0.75rem; color: var(--text-muted); }
         .content-body { padding: 24px; max-width: 1300px; width: 100%; margin: 0 auto; }
-        
+
         .page-section { display: none; }
         .page-section.active { display: block; animation: fadeIn 0.4s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -87,7 +87,7 @@
         .form-label { font-size: 0.8rem; font-weight: 600; color: var(--text-main); }
         .form-input, .form-select, .form-textarea { padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.85rem; outline: none; background-color: #f8fafc; }
         .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--primary); background-color: #ffffff; }
-        
+
         .input-scan { border: 2px solid #a7f3d0; background-color: #ecfdf5; font-weight: 600; color: var(--primary-dark); }
         .input-scan:focus { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); }
 
@@ -95,7 +95,7 @@
         .btn-action-primary:hover { background-color: var(--primary-dark); }
         .btn-orange { background-color: #e67e22; } .btn-orange:hover { background-color: #d35400; }
         .btn-red { background-color: #ef4444; } .btn-red:hover { background-color: #dc2626; }
-        
+
         /* Controles de Filtro e Busca */
         .filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .search-input { width: 180px; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; outline: none; font-size: 0.8rem; background-color: #f8fafc; }
@@ -107,14 +107,14 @@
         .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; }
         .data-table th { background-color: #f8fafc; padding: 12px 16px; color: var(--text-muted); border-bottom: 1px solid var(--border-color); font-size: 0.75rem; text-transform: uppercase; position: sticky; top: 0; z-index: 2; }
         .data-table td { padding: 12px 16px; border-bottom: 1px solid var(--border-color); }
-        
+
         .badge-ctrl { background-color: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
         .badge-comum { background-color: #d1fae5; color: #065f46; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
         .sidebar-alert-dot { width: 8px; height: 8px; background-color: var(--danger); border-radius: 50%; display: inline-block; margin-left: auto; }
-        
+
         .label-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 20px; }
         .label-card-p { border: 2px dashed #000; background-color: white; padding: 16px; font-size: 0.75rem; color: #000; border-radius: 6px; position: relative; }
-        
+
         .alert-banner { display: flex; align-items: center; gap: 12px; padding: 14px; background-color: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; color: #b45309; margin-bottom: 20px; font-size: 0.85rem; font-weight: 500; }
 
         /* Modais de Impressão */
@@ -208,7 +208,7 @@
             </header>
 
             <div class="content-body">
-                
+
                 <!-- 1. DISPENSAÇÃO -->
                 <section id="sec-dispensar" class="page-section active">
                     <div class="alert-banner" id="dispenseAlertBanner" style="display: none;">
@@ -388,7 +388,7 @@
                                 <input type="date" id="rastreioDataInicio" class="form-input" style="padding: 6px; font-size: 0.75rem;" onchange="updateRastreioTable()">
                                 <span style="font-size: 0.75rem; color: var(--text-muted);">Até:</span>
                                 <input type="date" id="rastreioDataFim" class="form-input" style="padding: 6px; font-size: 0.75rem;" onchange="updateRastreioTable()">
-                                
+
                                 <input type="text" class="search-input" id="rastreioSearch" onkeyup="updateRastreioTable()" placeholder="Buscar Termo...">
                                 <button class="btn-print-mini" style="background-color: #fee2e2; border-color: #fca5a5; color: #991b1b;" onclick="printPortaria344Report()">📋 P. 344</button>
                                 <button class="btn-print-mini" onclick="printReport('rastreio')">🖨️ Imprimir</button>
@@ -468,9 +468,9 @@
 
     <script>
         let currentUser = null;
-        let html5QrCode = null; 
+        let html5QrCode = null;
         let database = { medicamentos: [], lotes: [], insumos: [], movimentacoes: [], tecnovigilancia: [] };
-        let lastDispensaData = null; 
+        let lastDispensaData = null;
 
         // =========================================
         // 1. SINCRONIZAÇÃO COM O POSTGRESQL (NEON)
@@ -488,8 +488,8 @@
                     database.tecnovigilancia = data.tecnovigilancia || [];
                     updateAllTables();
                 }
-            } catch (error) { 
-                console.error("Erro Sync:", error); 
+            } catch (error) {
+                console.error("Erro Sync:", error);
             }
         }
 
@@ -509,8 +509,8 @@
         // =========================================
         function getFilteredRastreioData() {
             const search = document.getElementById('rastreioSearch').value.toLowerCase();
-            const dataInicio = document.getElementById('rastreioDataInicio').value; 
-            const dataFim = document.getElementById('rastreioDataFim').value; 
+            const dataInicio = document.getElementById('rastreioDataInicio').value;
+            const dataFim = document.getElementById('rastreioDataFim').value;
 
             return database.movimentacoes.filter(m => {
                 // 1. Filtro de Texto
@@ -521,15 +521,15 @@
                 let matchDate = true;
                 if (m.data_movimentacao) {
                     // Espera o formato "DD/MM/YYYY, HH:MM" que definimos no Python
-                    const datePart = m.data_movimentacao.split(/[\s,]+/)[0]; 
+                    const datePart = m.data_movimentacao.split(/[\s,]+/)[0];
                     const partesDaData = datePart.split('/');
-                    
+
                     if (partesDaData.length === 3) {
                         const dia = partesDaData[0].padStart(2, '0');
                         const mes = partesDaData[1].padStart(2, '0');
                         const ano = partesDaData[2];
                         const isoStr = `${ano}-${mes}-${dia}`;
-                        
+
                         if (dataInicio && isoStr < dataInicio) matchDate = false;
                         if (dataFim && isoStr > dataFim) matchDate = false;
                     }
@@ -542,7 +542,7 @@
             const rstrBody = document.getElementById('rastreio_table_body');
             rstrBody.innerHTML = "";
             const dadosFiltrados = getFilteredRastreioData();
-            
+
             if(dadosFiltrados.length === 0) {
                 rstrBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px;">Nenhum registro encontrado no período selecionado.</td></tr>`;
                 return;
@@ -566,12 +566,12 @@
         // =========================================
         function startWebcam() {
             html5QrCode = new Html5Qrcode("webcam-reader");
-            
+
             const qrCodeSuccessCallback = (decodedText) => {
                 document.getElementById('scannerMsg').innerText = "✓ Crachá Identificado!";
                 document.getElementById('scannerMsg').style.color = "#10b981";
                 document.getElementById('cpfInput').value = decodedText.replace(/[^0-9]/g, '');
-                
+
                 if (html5QrCode.isScanning) {
                     html5QrCode.stop()
                         .then(() => attemptManualLogin())
@@ -580,9 +580,9 @@
                     attemptManualLogin();
                 }
             };
-            
+
             const config = { fps: 15, qrbox: { width: 180, height: 180 }, aspectRatio: 1.0 };
-            
+
             html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
                 .catch(() => {
                     html5QrCode.start({ facingMode: "user" }, config, qrCodeSuccessCallback).catch(() => {
@@ -591,30 +591,30 @@
                 });
         }
 
-        function handleKeyPress(e) { 
+        function handleKeyPress(e) {
             if (e.key === 'Enter') {
                 attemptManualLogin();
-            } 
+            }
         }
 
         async function attemptManualLogin() {
             const cpfInput = document.getElementById('cpfInput');
             const btn = document.getElementById('btnLoginSubmit');
             const msg = document.getElementById('scannerMsg');
-            const cpf = cpfInput.value.replace(/\D/g, ''); 
-            
-            if (cpf.length !== 11) { 
-                alert("Insira um CPF válido de 11 dígitos."); 
-                return; 
+            const cpf = cpfInput.value.replace(/\D/g, '');
+
+            if (cpf.length !== 11) {
+                alert("Insira um CPF válido de 11 dígitos.");
+                return;
             }
 
-            btn.innerText = "Verificando..."; 
+            btn.innerText = "Verificando...";
             btn.disabled = true;
 
             try {
                 const response = await fetch('/api/pharmacy/login', {
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ cpf: cpf })
                 });
                 const data = await response.json();
@@ -637,44 +637,44 @@
                     }, 600);
                 } else {
                     alert("Acesso Negado: " + data.message);
-                    cpfInput.value = ""; 
+                    cpfInput.value = "";
                     cpfInput.focus();
                     if (html5QrCode && !html5QrCode.isScanning) {
                         startWebcam();
                     }
                 }
-            } catch (error) { 
-                alert("Falha de comunicação com o servidor."); 
+            } catch (error) {
+                alert("Falha de comunicação com o servidor.");
                 if (html5QrCode && !html5QrCode.isScanning) {
                     startWebcam();
                 }
-            } finally { 
-                btn.innerText = "Autenticar Operador"; 
-                btn.disabled = false; 
+            } finally {
+                btn.innerText = "Autenticar Operador";
+                btn.disabled = false;
             }
         }
 
-        function logout() { 
-            location.reload(); 
+        function logout() {
+            location.reload();
         }
 
         function switchTab(tabId) {
             document.querySelectorAll('.page-section, .menu-link').forEach(el => el.classList.remove('active'));
             document.getElementById('sec-' + tabId).classList.add('active');
             document.getElementById('nav-' + tabId).classList.add('active');
-            
-            const titles = { 
-                'dispensar': 'Dispensação e Saídas', 
-                'catalogo': 'Catálogo Base', 
-                'lotes': 'Entrada de Lotes', 
-                'insumos': 'Cadastro de Insumos', 
-                'etiquetas': 'Etiquetas de Fracionamento', 
-                'rastreio': 'Auditoria de Rastreabilidade', 
-                'alertas': 'Alertas Clínicos Ativos', 
+
+            const titles = {
+                'dispensar': 'Dispensação e Saídas',
+                'catalogo': 'Catálogo Base',
+                'lotes': 'Entrada de Lotes',
+                'insumos': 'Cadastro de Insumos',
+                'etiquetas': 'Etiquetas de Fracionamento',
+                'rastreio': 'Auditoria de Rastreabilidade',
+                'alertas': 'Alertas Clínicos Ativos',
                 'tecno': 'Tecnovigilância'
             };
             document.getElementById('page-current-title').innerText = titles[tabId];
-            
+
             if(tabId === 'dispensar') {
                 setTimeout(() => document.getElementById('disp_scan_barcode').focus(), 100);
             }
@@ -685,9 +685,9 @@
                 e.preventDefault();
                 const barcodeInput = document.getElementById('disp_scan_barcode');
                 const barcode = barcodeInput.value.trim();
-                
+
                 if(!barcode) return;
-                
+
                 const medicamento = database.medicamentos.find(m => m.codigo_barras === barcode);
                 if (medicamento) {
                     const loteDisponivel = database.lotes.find(l => (l.medicamento_id === medicamento.id || l.med_id === medicamento.id) && l.quantidade > 0);
@@ -718,118 +718,118 @@
             const paciente = document.getElementById('disp_paciente').value;
             const setor = document.getElementById('disp_setor').value;
             const qtd = parseInt(document.getElementById('disp_qtd').value);
-            
+
             let itemNomeLog = "";
             let loteNumeroLog = "N/A";
 
             if (tipo_mat === "MED") {
                 const lote = database.lotes.find(l => l.id === id_item);
-                if (qtd > lote.quantidade) { 
-                    alert("Atenção: O estoque do lote selecionado é insuficiente."); 
-                    return; 
+                if (qtd > lote.quantidade) {
+                    alert("Atenção: O estoque do lote selecionado é insuficiente.");
+                    return;
                 }
                 const med = database.medicamentos.find(m => m.id === lote.medicamento_id || m.id === lote.med_id);
                 if (med && med.controlado == 1) {
                     const confirmacao = confirm("⚠️ ATENÇÃO: Medicamento Controlado (Port. 344/98).\nVocê confirma que reteve a receita médica física e preencheu os dados corretamente?");
                     if (!confirmacao) return;
                 }
-                itemNomeLog = med.nome; 
+                itemNomeLog = med.nome;
                 loteNumeroLog = lote.numero_lote || lote.numero;
             } else {
                 const insumo = database.insumos.find(i => i.id === id_item);
-                if (qtd > insumo.quantidade) { 
-                    alert("Atenção: O estoque do insumo selecionado é insuficiente."); 
-                    return; 
+                if (qtd > insumo.quantidade) {
+                    alert("Atenção: O estoque do insumo selecionado é insuficiente.");
+                    return;
                 }
                 itemNomeLog = insumo.nome;
             }
 
             try {
                 const res = await fetch('/api/pharmacy/dispensar', {
-                    method: 'POST', 
+                    method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        empresa_cnpj: currentUser.empresa_cnpj, 
-                        tipo: tipo_mat, 
-                        id_item: id_item, 
-                        paciente: paciente, 
-                        setor: setor, 
-                        qtd: qtd, 
-                        responsavel: currentUser.nome 
+                    body: JSON.stringify({
+                        empresa_cnpj: currentUser.empresa_cnpj,
+                        tipo: tipo_mat,
+                        id_item: id_item,
+                        paciente: paciente,
+                        setor: setor,
+                        qtd: qtd,
+                        responsavel: currentUser.nome
                     })
                 });
                 const result = await res.json();
-                
+
                 if(result.success) {
                     document.getElementById('dispensaForm').reset();
-                    lastDispensaData = { 
-                        tipo: tipo_mat === "MED" ? "MEDICAMENTO" : "INSUMO", 
-                        item: itemNomeLog, 
-                        lote: loteNumeroLog, 
-                        qtd: qtd, 
-                        paciente: paciente, 
-                        setor: setor, 
-                        responsavel: currentUser.nome, 
-                        data: new Date().toLocaleString('pt-BR') 
+                    lastDispensaData = {
+                        tipo: tipo_mat === "MED" ? "MEDICAMENTO" : "INSUMO",
+                        item: itemNomeLog,
+                        lote: loteNumeroLog,
+                        qtd: qtd,
+                        paciente: paciente,
+                        setor: setor,
+                        responsavel: currentUser.nome,
+                        data: new Date().toLocaleString('pt-BR')
                     };
                     await syncDatabase();
-                    showReceipt(lastDispensaData); 
+                    showReceipt(lastDispensaData);
                 } else {
                     alert("Falha ao registrar saída: " + result.message);
                 }
-            } catch(error) { 
-                alert("Erro de rede ao tentar processar a dispensação."); 
+            } catch(error) {
+                alert("Erro de rede ao tentar processar a dispensação.");
             }
         }
 
         async function handleMedSubmit(e) {
             e.preventDefault();
-            const payload = { 
-                empresa_cnpj: currentUser.empresa_cnpj, 
-                codigo_barras: document.getElementById('med_codigo_barras').value.trim(), 
-                nome: document.getElementById('med_nome').value, 
-                principio_ativo: document.getElementById('med_principio').value, 
-                categoria: document.getElementById('med_categoria').value, 
-                controlado: document.getElementById('med_controlado').checked ? 1 : 0 
+            const payload = {
+                empresa_cnpj: currentUser.empresa_cnpj,
+                codigo_barras: document.getElementById('med_codigo_barras').value.trim(),
+                nome: document.getElementById('med_nome').value,
+                principio_ativo: document.getElementById('med_principio').value,
+                categoria: document.getElementById('med_categoria').value,
+                controlado: document.getElementById('med_controlado').checked ? 1 : 0
             };
             try {
-                const res = await fetch('/api/pharmacy/medicamentos', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify(payload) 
+                const res = await fetch('/api/pharmacy/medicamentos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
                 });
                 const result = await res.json();
-                if(result.success) { 
-                    document.getElementById('medForm').reset(); 
-                    syncDatabase(); 
+                if(result.success) {
+                    document.getElementById('medForm').reset();
+                    syncDatabase();
                     alert("Fármaco guardado com sucesso na base de dados!");
                 } else {
                     alert("Erro ao cadastrar fármaco: " + result.message);
                 }
-            } catch(e) { 
-                alert("Erro de rede ao salvar o medicamento."); 
+            } catch(e) {
+                alert("Erro de rede ao salvar o medicamento.");
             }
         }
 
         async function handleLoteSubmit(e) {
             e.preventDefault();
-            const payload = { 
-                medicamento_id: parseInt(document.getElementById('lote_med_id').value), 
-                numero_lote: document.getElementById('lote_numero').value, 
-                fabricante: document.getElementById('lote_fabricante').value, 
-                validade: document.getElementById('lote_validade').value, 
-                quantidade: parseInt(document.getElementById('lote_quantidade').value) 
+            const payload = {
+                medicamento_id: parseInt(document.getElementById('lote_med_id').value),
+                numero_lote: document.getElementById('lote_numero').value,
+                fabricante: document.getElementById('lote_fabricante').value,
+                validade: document.getElementById('lote_validade').value,
+                quantidade: parseInt(document.getElementById('lote_quantidade').value)
             };
             try {
-                const res = await fetch('/api/pharmacy/lotes', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify(payload) 
+                const res = await fetch('/api/pharmacy/lotes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
                 });
                 const result = await res.json();
-                if(result.success) { 
-                    document.getElementById('loteForm').reset(); 
-                    syncDatabase(); 
+                if(result.success) {
+                    document.getElementById('loteForm').reset();
+                    syncDatabase();
                     alert("Lote inserido com sucesso no inventário!");
                 } else {
                     alert("Erro ao cadastrar lote: " + result.message);
@@ -841,23 +841,23 @@
 
         async function handleInsumoSubmit(e) {
             e.preventDefault();
-            const payload = { 
-                empresa_cnpj: currentUser.empresa_cnpj, 
-                nome: document.getElementById('ins_nome').value, 
-                especificacao: document.getElementById('ins_especificacao').value, 
-                unidade_medida: document.getElementById('ins_unidade').value, 
-                quantidade: parseInt(document.getElementById('ins_qtd').value) 
+            const payload = {
+                empresa_cnpj: currentUser.empresa_cnpj,
+                nome: document.getElementById('ins_nome').value,
+                especificacao: document.getElementById('ins_especificacao').value,
+                unidade_medida: document.getElementById('ins_unidade').value,
+                quantidade: parseInt(document.getElementById('ins_qtd').value)
             };
             try {
-                const res = await fetch('/api/pharmacy/insumos', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify(payload) 
+                const res = await fetch('/api/pharmacy/insumos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
                 });
                 const result = await res.json();
-                if(result.success) { 
-                    document.getElementById('insForm').reset(); 
-                    syncDatabase(); 
+                if(result.success) {
+                    document.getElementById('insForm').reset();
+                    syncDatabase();
                     alert("Entrada de insumo registrada com sucesso!");
                 } else {
                     alert("Erro ao registrar insumo: " + result.message);
@@ -869,25 +869,25 @@
 
         async function handleTecnoSubmit(e) {
             e.preventDefault();
-            const payload = { 
-                empresa_cnpj: currentUser.empresa_cnpj, 
-                lote_texto: document.getElementById('tecno_lote').value, 
-                tipo_ocorrencia: document.getElementById('tecno_tipo').value, 
-                gravidade: document.getElementById('tecno_gravidade').value, 
-                descricao: document.getElementById('tecno_descricao').value, 
-                conduta: document.getElementById('tecno_conduta').value 
+            const payload = {
+                empresa_cnpj: currentUser.empresa_cnpj,
+                lote_texto: document.getElementById('tecno_lote').value,
+                tipo_ocorrencia: document.getElementById('tecno_tipo').value,
+                gravidade: document.getElementById('tecno_gravidade').value,
+                descricao: document.getElementById('tecno_descricao').value,
+                conduta: document.getElementById('tecno_conduta').value
             };
             try {
-                const res = await fetch('/api/pharmacy/tecnovigilancia', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify(payload) 
+                const res = await fetch('/api/pharmacy/tecnovigilancia', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
                 });
                 const result = await res.json();
-                if(result.success) { 
-                    document.getElementById('tecnoForm').reset(); 
-                    syncDatabase(); 
-                    alert("Registro de Tecnovigilância submetido formalmente com sucesso!"); 
+                if(result.success) {
+                    document.getElementById('tecnoForm').reset();
+                    syncDatabase();
+                    alert("Registro de Tecnovigilância submetido formalmente com sucesso!");
                 } else {
                     alert("Falha ao submeter alerta: " + result.message);
                 }
@@ -903,17 +903,17 @@
             const tipo = document.querySelector('input[name="tipo_material"]:checked').value;
             const sel = document.getElementById('disp_lote_id');
             sel.innerHTML = "";
-            
+
             if (tipo === "MED") {
-                database.lotes.filter(l => l.quantidade > 0).forEach(l => { 
-                    const m = database.medicamentos.find(x => x.id === l.medicamento_id || x.id === l.med_id); 
+                database.lotes.filter(l => l.quantidade > 0).forEach(l => {
+                    const m = database.medicamentos.find(x => x.id === l.medicamento_id || x.id === l.med_id);
                     if(m) {
-                        sel.innerHTML += `<option value="${l.id}">${m.nome} | Lote: ${l.numero_lote || l.numero} (Saldo: ${l.quantidade})</option>`; 
+                        sel.innerHTML += `<option value="${l.id}">${m.nome} | Lote: ${l.numero_lote || l.numero} (Saldo: ${l.quantidade})</option>`;
                     }
                 });
             } else {
-                database.insumos.filter(i => i.quantidade > 0).forEach(i => { 
-                    sel.innerHTML += `<option value="${i.id}">${i.nome} | Espec: ${i.especificacao} (Saldo: ${i.quantidade})</option>`; 
+                database.insumos.filter(i => i.quantidade > 0).forEach(i => {
+                    sel.innerHTML += `<option value="${i.id}">${i.nome} | Espec: ${i.especificacao} (Saldo: ${i.quantidade})</option>`;
                 });
             }
         }
@@ -922,26 +922,26 @@
             const select = document.getElementById('etiqueta_lote_id');
             const vias = parseInt(document.getElementById('etiqueta_vias').value) || 1;
             const container = document.getElementById('etiquetasContainer');
-            
+
             container.innerHTML = "";
             if (!select.value) return;
-            
+
             const [type, id] = select.value.split('-');
             let nomeItem = "", loteItem = "", validadeItem = "";
-            
-            if (type === "MED") { 
-                const lote = database.lotes.find(l => l.id == id); 
-                const med = database.medicamentos.find(m => m.id == lote.medicamento_id || m.id == lote.med_id); 
-                nomeItem = med.nome; 
-                loteItem = lote.numero_lote || lote.numero; 
-                validadeItem = lote.validade; 
-            } else { 
-                const ins = database.insumos.find(i => i.id == id); 
-                nomeItem = ins.nome; 
-                loteItem = "INS-C"; 
-                validadeItem = "Não aplicável"; 
+
+            if (type === "MED") {
+                const lote = database.lotes.find(l => l.id == id);
+                const med = database.medicamentos.find(m => m.id == lote.medicamento_id || m.id == lote.med_id);
+                nomeItem = med.nome;
+                loteItem = lote.numero_lote || lote.numero;
+                validadeItem = lote.validade;
+            } else {
+                const ins = database.insumos.find(i => i.id == id);
+                nomeItem = ins.nome;
+                loteItem = "INS-C";
+                validadeItem = "Não aplicável";
             }
-            
+
             for (let i = 0; i < vias; i++) {
                 container.innerHTML += `
                     <div class="label-card-p">
@@ -956,90 +956,90 @@
 
         function updateAllTables() {
             // Catálogo
-            const medBody = document.getElementById('med_table_body'); 
+            const medBody = document.getElementById('med_table_body');
             medBody.innerHTML = "";
-            database.medicamentos.forEach(m => { 
+            database.medicamentos.forEach(m => {
                 const tagControlado = m.controlado == 1 ? "<span class='badge-ctrl'>Port. 344</span>" : "<span class='badge-comum'>Comum</span>";
-                medBody.innerHTML += `<tr><td style="font-family:monospace;">${m.codigo_barras || 'N/A'}</td><td><strong>${m.nome}</strong></td><td>${m.principio_ativo || m.principio}</td><td>${tagControlado}</td></tr>`; 
+                medBody.innerHTML += `<tr><td style="font-family:monospace;">${m.codigo_barras || 'N/A'}</td><td><strong>${m.nome}</strong></td><td>${m.principio_ativo || m.principio}</td><td>${tagControlado}</td></tr>`;
             });
 
             // Lotes
-            const loteBody = document.getElementById('lote_table_body'); 
+            const loteBody = document.getElementById('lote_table_body');
             loteBody.innerHTML = "";
-            database.lotes.forEach(l => { 
-                const m = database.medicamentos.find(x => x.id === l.medicamento_id || x.id === l.med_id); 
+            database.lotes.forEach(l => {
+                const m = database.medicamentos.find(x => x.id === l.medicamento_id || x.id === l.med_id);
                 if(m) {
-                    loteBody.innerHTML += `<tr><td>${m.nome}</td><td><strong>${l.numero_lote || l.numero}</strong></td><td>${l.validade}</td><td>${l.quantidade}</td></tr>`; 
+                    loteBody.innerHTML += `<tr><td>${m.nome}</td><td><strong>${l.numero_lote || l.numero}</strong></td><td>${l.validade}</td><td>${l.quantidade}</td></tr>`;
                 }
             });
 
             // Insumos
-            const insBody = document.getElementById('ins_table_body'); 
+            const insBody = document.getElementById('ins_table_body');
             insBody.innerHTML = "";
-            database.insumos.forEach(i => { 
-                insBody.innerHTML += `<tr><td>${i.nome}</td><td>${i.especificacao}</td><td>${i.quantidade}</td></tr>`; 
+            database.insumos.forEach(i => {
+                insBody.innerHTML += `<tr><td>${i.nome}</td><td>${i.especificacao}</td><td>${i.quantidade}</td></tr>`;
             });
 
             // Saídas
-            const movsBody = document.getElementById('disp_movs_body'); 
+            const movsBody = document.getElementById('disp_movs_body');
             movsBody.innerHTML = "";
-            database.movimentacoes.forEach(m => { 
-                movsBody.innerHTML += `<tr><td><strong>${m.tipo}</strong></td><td>${m.item_nome}</td><td>${m.quantidade}</td><td>${m.paciente_nome} (${m.setor_destino})</td><td>${m.data_movimentacao}</td></tr>`; 
+            database.movimentacoes.forEach(m => {
+                movsBody.innerHTML += `<tr><td><strong>${m.tipo}</strong></td><td>${m.item_nome}</td><td>${m.quantidade}</td><td>${m.paciente_nome} (${m.setor_destino})</td><td>${m.data_movimentacao}</td></tr>`;
             });
 
             // Rastreio (Usando a inteligência de Filtro de Datas)
             updateRastreioTable();
 
             // Tecnovigilância
-            const tcBody = document.getElementById('tecno_table_body'); 
+            const tcBody = document.getElementById('tecno_table_body');
             tcBody.innerHTML = "";
-            database.tecnovigilancia.forEach(t => { 
-                tcBody.innerHTML += `<tr><td><strong>${t.lote_texto}</strong></td><td>${t.tipo_ocorrencia}</td><td><span class="badge-ctrl">${t.gravidade}</span></td><td>${t.data_registro}</td></tr>`; 
+            database.tecnovigilancia.forEach(t => {
+                tcBody.innerHTML += `<tr><td><strong>${t.lote_texto}</strong></td><td>${t.tipo_ocorrencia}</td><td><span class="badge-ctrl">${t.gravidade}</span></td><td>${t.data_registro}</td></tr>`;
             });
 
             // Alertas Inteligentes
-            const vencidosBody = document.getElementById('alerta_vencidos_body'); 
+            const vencidosBody = document.getElementById('alerta_vencidos_body');
             vencidosBody.innerHTML = "";
-            
-            const estoqueBody = document.getElementById('alerta_estoque_body'); 
+
+            const estoqueBody = document.getElementById('alerta_estoque_body');
             estoqueBody.innerHTML = "";
-            
+
             let hasUrgentAlert = false;
-            
+
             database.lotes.forEach(l => {
                 const m = database.medicamentos.find(x => x.id === l.medicamento_id || x.id === l.med_id);
                 if(m && l.validade) {
                     const diasRestantes = Math.ceil((new Date(l.validade) - new Date()) / (1000 * 60 * 60 * 24));
-                    if (diasRestantes <= 30) { 
-                        hasUrgentAlert = true; 
-                        vencidosBody.innerHTML += `<tr style="background-color: #fef2f2;"><td><strong>${m.nome}</strong></td><td>${l.numero_lote || l.numero}</td><td>${l.fabricante}</td><td>${l.validade}</td><td style="color: var(--danger); font-weight:700;">${diasRestantes < 0 ? 'VENCIDO' : diasRestantes + ' dias'}</td></tr>`; 
+                    if (diasRestantes <= 30) {
+                        hasUrgentAlert = true;
+                        vencidosBody.innerHTML += `<tr style="background-color: #fef2f2;"><td><strong>${m.nome}</strong></td><td>${l.numero_lote || l.numero}</td><td>${l.fabricante}</td><td>${l.validade}</td><td style="color: var(--danger); font-weight:700;">${diasRestantes < 0 ? 'VENCIDO' : diasRestantes + ' dias'}</td></tr>`;
                     }
-                    if (l.quantidade <= 150) { 
-                        estoqueBody.innerHTML += `<tr><td>${m.nome}</td><td>Lote: ${l.numero_lote || l.numero}</td><td style="color: var(--warning); font-weight:700;">${l.quantidade} unidades</td><td><span class="badge-ctrl">Estoque Crítico</span></td></tr>`; 
+                    if (l.quantidade <= 150) {
+                        estoqueBody.innerHTML += `<tr><td>${m.nome}</td><td>Lote: ${l.numero_lote || l.numero}</td><td style="color: var(--warning); font-weight:700;">${l.quantidade} unidades</td><td><span class="badge-ctrl">Estoque Crítico</span></td></tr>`;
                     }
                 }
             });
-            
+
             document.getElementById('alertDot').style.display = hasUrgentAlert ? "inline-block" : "none";
             document.getElementById('dispenseAlertBanner').style.display = hasUrgentAlert ? "flex" : "none";
 
             // Sincroniza Dropdowns dos formulários
-            const medSelect = document.getElementById('lote_med_id'); 
+            const medSelect = document.getElementById('lote_med_id');
             medSelect.innerHTML = "";
-            database.medicamentos.forEach(m => { 
-                medSelect.innerHTML += `<option value="${m.id}">${m.nome}</option>`; 
+            database.medicamentos.forEach(m => {
+                medSelect.innerHTML += `<option value="${m.id}">${m.nome}</option>`;
             });
-            
-            const etiqSelect = document.getElementById('etiqueta_lote_id'); 
+
+            const etiqSelect = document.getElementById('etiqueta_lote_id');
             etiqSelect.innerHTML = "";
-            database.lotes.forEach(l => { 
-                const m = database.medicamentos.find(x => x.id === l.medicamento_id || x.id === l.med_id); 
+            database.lotes.forEach(l => {
+                const m = database.medicamentos.find(x => x.id === l.medicamento_id || x.id === l.med_id);
                 if(m) {
-                    etiqSelect.innerHTML += `<option value="MED-${l.id}">MED - ${m.nome} (Lote: ${l.numero_lote || l.numero})</option>`; 
+                    etiqSelect.innerHTML += `<option value="MED-${l.id}">MED - ${m.nome} (Lote: ${l.numero_lote || l.numero})</option>`;
                 }
             });
-            database.insumos.forEach(i => { 
-                etiqSelect.innerHTML += `<option value="INS-${i.id}">INS - ${i.nome} (Espec: ${i.especificacao})</option>`; 
+            database.insumos.forEach(i => {
+                etiqSelect.innerHTML += `<option value="INS-${i.id}">INS - ${i.nome} (Espec: ${i.especificacao})</option>`;
             });
 
             syncDispensarDropdown();
@@ -1071,7 +1071,7 @@
             `;
             document.getElementById('receiptModal').style.display = "flex";
         }
-        
+
         function printSingleReceipt() {
             document.getElementById('printArea').innerHTML = `
                 <div style="width: 280px; padding: 15px; border: 1px dashed #000; font-family: monospace; font-size: 11px; line-height: 1.4; color: #000; background-color: #fff;">
@@ -1086,9 +1086,9 @@
         // ==========================================================
         function getFilteredDataForPrint(tipo) {
             if (tipo === 'rastreio' || tipo === 'portaria344') {
-                return getFilteredRastreioData(); 
+                return getFilteredRastreioData();
             }
-            
+
             const tbodyMap = {
                 'dispensacoes': 'disp_movs_body',
                 'catalogo': 'med_table_body',
@@ -1096,7 +1096,7 @@
                 'insumos': 'ins_table_body',
                 'tecnovigilancia': 'tecno_table_body'
             };
-            
+
             const rows = document.getElementById(tbodyMap[tipo]).getElementsByTagName('tr');
             let htmlTrs = "";
             for (let i = 0; i < rows.length; i++) {
@@ -1174,30 +1174,30 @@
                 `).join("");
             } else {
                 rowsHtml = getFilteredDataForPrint(tipo);
-                if (tipo === 'dispensacoes') { 
-                    titulo = "HISTÓRICO DE DISPENSAÇÕES"; 
-                    colunas = ["Tipo", "Item", "Qtd", "Destinatário", "Data e Hora"]; 
+                if (tipo === 'dispensacoes') {
+                    titulo = "HISTÓRICO DE DISPENSAÇÕES";
+                    colunas = ["Tipo", "Item", "Qtd", "Destinatário", "Data e Hora"];
                 }
-                else if (tipo === 'catalogo') { 
-                    titulo = "CATÁLOGO DE FÁRMACOS"; 
-                    colunas = ["Cód. Barras", "Nome", "Princípio Ativo", "Tipo"]; 
+                else if (tipo === 'catalogo') {
+                    titulo = "CATÁLOGO DE FÁRMACOS";
+                    colunas = ["Cód. Barras", "Nome", "Princípio Ativo", "Tipo"];
                 }
-                else if (tipo === 'lotes') { 
-                    titulo = "INVENTÁRIO DE LOTES"; 
-                    colunas = ["Fármaco", "Lote", "Validade", "Qtd"]; 
+                else if (tipo === 'lotes') {
+                    titulo = "INVENTÁRIO DE LOTES";
+                    colunas = ["Fármaco", "Lote", "Validade", "Qtd"];
                 }
-                else if (tipo === 'insumos') { 
-                    titulo = "BALANÇO DE INSUMOS"; 
-                    colunas = ["Insumo", "Especificação", "Saldo"]; 
+                else if (tipo === 'insumos') {
+                    titulo = "BALANÇO DE INSUMOS";
+                    colunas = ["Insumo", "Especificação", "Saldo"];
                 }
-                else if (tipo === 'tecnovigilancia') { 
-                    titulo = "RELATÓRIO DE TECNOVIGILÂNCIA"; 
-                    colunas = ["Lote", "Ocorrência", "Gravidade", "Data"]; 
+                else if (tipo === 'tecnovigilancia') {
+                    titulo = "RELATÓRIO DE TECNOVIGILÂNCIA";
+                    colunas = ["Lote", "Ocorrência", "Gravidade", "Data"];
                 }
             }
 
             const headerHtml = colunas.map(col => `<th style="padding: 10px; border-bottom: 2px solid #000;">${col}</th>`).join("");
-            
+
             document.getElementById('printArea').innerHTML = `
                 <div style="font-family: sans-serif; color: #000; padding: 10px;">
                     <div style="text-align: center; margin-bottom: 25px;">
@@ -1215,9 +1215,9 @@
             setTimeout(() => window.print(), 50);
         }
 
-        window.onload = function() { 
-            startWebcam(); 
-            document.getElementById('cpfInput').focus(); 
+        window.onload = function() {
+            startWebcam();
+            document.getElementById('cpfInput').focus();
         };
     </script>
 </body>
