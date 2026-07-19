@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Central CAF</title>
+    <title>sisFarma - Central CAF</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* =========================================================================
+           VARIÁVEIS DE DESIGN & ESTILOS GERAIS
+           ========================================================================= */
         :root {
             --primary: #10b981;
             --primary-dark: #059669;
@@ -30,151 +33,239 @@
         .login-screen { display: flex; width: 100%; height: 100vh; background-color: #0f172a; position: fixed; top: 0; left: 0; z-index: 9999; }
         .app-container { display: none; width: 100%; height: 100vh; }
         
-        /* Layout Base */
+        /* Layout Estrutural */
         .sidebar { width: var(--sidebar-width); background-color: var(--secondary); color: #ffffff; display: flex; flex-direction: column; padding: 20px 14px; }
         .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; }
         .topbar { background-color: #ffffff; border-bottom: 1px solid var(--border-color); min-height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
         .content-body { padding: 24px; max-width: 1400px; width: 100%; margin: 0 auto; }
         
-        /* Tabelas e Abas */
+        /* Sistema de Abas SPA */
         .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .data-table { width: 100%; border-collapse: collapse; margin-top: 16px; background: #fff; border-radius: 8px; overflow: hidden; }
-        .data-table th { background: #f8fafc; padding: 12px; text-align: left; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid var(--border-color); }
-        .data-table td { padding: 12px; font-size: 0.9rem; border-bottom: 1px solid var(--border-color); }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Alertas Clínicos */
-        .alert-box { padding: 12px; border-radius: 6px; margin-bottom: 12px; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+        /* Componentes de Formulários e Tabelas */
+        .form-grid-operacional { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-top: 16px; }
+        .caf-card-form { background: var(--bg-card); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
+        .caf-form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+        .caf-label { font-size: 0.8rem; font-weight: 600; color: var(--text-main); }
+        .caf-input, .caf-select { padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem; outline: none; background-color: #f8fafc; width: 100%; }
+        .caf-input:focus, .caf-select:focus { border-color: var(--primary); background-color: #ffffff; }
+        
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 16px; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
+        .data-table th { background: #f8fafc; padding: 14px; text-align: left; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid var(--border-color); text-transform: uppercase; font-weight: 600; }
+        .data-table td { padding: 14px; font-size: 0.9rem; border-bottom: 1px solid var(--border-color); }
+        
+        /* Alertas e Badges */
+        .alert-box { padding: 14px; border-radius: 8px; margin-bottom: 16px; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 10px; }
         .alert-danger { background-color: #fef2f2; color: var(--danger); border: 1px solid #fca5a5; }
-        .alert-warning { background-color: #fffbeb; color: var(--warning); border: 1px solid #fde68a; }
+        .badge-lote { font-family: monospace; font-weight: 600; background-color: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: var(--secondary); }
         
-        /* Menu lateral */
-        .menu-link { display: flex; align-items: center; gap: 10px; padding: 12px; color: #a0aec0; text-decoration: none; border-radius: 6px; font-weight: 500; font-size: 0.85rem; cursor: pointer; margin-bottom: 4px; }
+        /* Links de Menu */
+        .menu-link { display: flex; align-items: center; gap: 10px; padding: 12px; color: #a0aec0; text-decoration: none; border-radius: 6px; font-weight: 500; font-size: 0.85rem; cursor: pointer; margin-bottom: 4px; transition: var(--transition); }
         .menu-link:hover, .menu-link.active { color: #ffffff; background-color: rgba(255, 255, 255, 0.08); }
-        .menu-link.active { border-left: 3px solid var(--primary); padding-left: 9px; }
+        .menu-link.active { border-left: 3px solid var(--primary); padding-left: 9px; background-color: rgba(255, 255, 255, 0.05); }
+        .btn-caf-submit { width: 100%; background-color: var(--primary); color: #ffffff; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: var(--transition); }
+        .btn-caf-submit:hover { background-color: var(--primary-dark); }
     </style>
 </head>
 <body>
 
-    <!-- FALLBACK/TELA DE LOGIN -->
+    <!-- OVERLAY DE CARREGAMENTO / FALLBACK DE SEGURANÇA -->
     <div class="login-screen" id="loginScreen">
         <div style="color: white; margin: auto; text-align: center;">
-            <h2>Redirecionando para o Workspace...</h2>
+            <h2 style="font-weight: 500; letter-spacing: 0.5px;">Redirecionando para o painel operacional sisFarma...</h2>
         </div>
     </div>
 
-    <!-- PAINEL OPERACIONAL CAF -->
+    <!-- RECIPIENTE ESTRUTURAL SPA -->
     <div class="app-container" id="appContainer">
         <aside class="sidebar">
             <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1);">
                 <div style="background: var(--primary); padding: 6px 10px; border-radius: 6px; font-weight: bold;">CAF</div>
-                <div style="font-weight: 700; font-size: 1.1rem;">sisFarma</div>
+                <div style="font-weight: 700; font-size: 1.1rem; letter-spacing: 0.5px;">sisFarma</div>
             </div>
             <nav style="flex-grow: 1; margin-top: 20px;">
                 <a class="menu-link active" onclick="switchTab('estoque')">📦 Estoque Central</a>
                 <a class="menu-link" onclick="switchTab('insumos')">🧸 Insumos Correlatos</a>
-                <a class="menu-link" onclick="switchTab('dispensacao')">💊 Dispensação</a>
+                <a class="menu-link" onclick="switchTab('operacoes')">⚙️ Cadastros e Fluxos</a>
                 <a class="menu-link" onclick="switchTab('historico')">📜 Rastreabilidade</a>
                 <a class="menu-link" onclick="switchTab('tecnovigilancia')">⚠️ Tecnovigilância</a>
             </nav>
-            <button onclick="voltarAoHub()" style="background: none; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 10px; border-radius: 6px; cursor: pointer; width: 100%;">↩ Voltar ao Hub</button>
+            <button onclick="voltarAoHub()" style="background: none; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 12px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: 500; transition: var(--transition);">↩ Voltar ao Hub</button>
         </aside>
 
         <main class="main-content">
             <header class="topbar">
-                <div class="page-title" id="tabTitle">Estoque Central de Medicamentos e Lotes</div>
+                <div class="page-title" id="tabTitle" style="font-weight: 700; color: var(--secondary);">Estoque Central de Medicamentos e Lotes</div>
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <div style="text-align: right;">
-                        <h4 id="topbarNome">Carregando...</h4>
+                        <h4 id="topbarNome" style="font-size: 0.9rem; font-weight: 600;">Carregando...</h4>
                         <p id="topbarCargo" style="font-size: 0.75rem; color: var(--text-muted);">...</p>
                     </div>
-                    <div style="width: 36px; height: 36px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600;" id="topbarAvatar">--</div>
+                    <div style="width: 38px; height: 38px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" id="topbarAvatar">--</div>
                 </div>
             </header>
 
             <div class="content-body">
-                <!-- Painel de Alertas Clínicos Inteligentes (RDC 430/2020) -->
+                <!-- Painel Informativo de Alertas Clínicos Críticos (RDC 430/2020) -->
                 <div id="alertasClinicosContainer"></div>
 
-                <!-- ABA: ESTOQUE -->
+                <!-- 1. ABA: ESTOQUE DE MEDICAMENTOS -->
                 <section id="tab-estoque" class="tab-content active">
                     <table class="data-table">
                         <thead>
                             <tr>
                                 <th>Medicamento</th>
                                 <th>Lote</th>
-                                <th>Fabricante</th>
+                                <th>Fabricante / Laboratório</th>
                                 <th>Validade</th>
                                 <th>Saldo Quantidade</th>
                             </tr>
                         </thead>
                         <tbody id="tbodyEstoque">
-                            <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Buscando dados no banco de dados...</td></tr>
+                            <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Aguardando comunicação com o PostgreSQL Neon...</td></tr>
                         </tbody>
                     </table>
                 </section>
 
-                <!-- ABA: INSUMOS -->
+                <!-- 2. ABA: ESTOQUE DE INSUMOS -->
                 <section id="tab-insumos" class="tab-content">
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>Insumo</th>
-                                <th>Especificação</th>
+                                <th>Insumo Hospitalar</th>
+                                <th>Especificação Técnica</th>
                                 <th>Unidade de Medida</th>
-                                <th>Quantidade</th>
+                                <th>Saldo Cadastrado</th>
                             </tr>
                         </thead>
                         <tbody id="tbodyInsumos">
-                            <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Nenhum insumo correlato carregado.</td></tr>
+                            <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Nenhum insumo correlato localizado no inventário.</td></tr>
                         </tbody>
                     </table>
                 </section>
 
-                <!-- ABA: DISPENSAÇÃO -->
-                <section id="tab-dispensacao" class="tab-content">
-                    <p style="color: var(--text-muted); margin-bottom: 16px;">Módulo de lançamento de saídas automatizado via API.</p>
-                    <div style="background: #fff; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); max-width: 500px;">
-                        <h3 style="margin-bottom: 12px; font-size: 1rem;">Registrar Saída de Item</h3>
-                        <p style="font-size: 0.85rem; color: var(--text-muted);">Os formulários operacionais completos podem ser acoplados nesta seção seguindo as IDs de integração.</p>
+                <!-- 3. ABA: FORMULÁRIOS OPERACIONAIS (O coração do CAF completo) -->
+                <section id="tab-operacoes" class="tab-content">
+                    <div class="form-grid-operacional">
+                        
+                        <!-- Form A: Catálogo Base de Medicamentos -->
+                        <div class="caf-card-form">
+                            <h3 style="margin-bottom: 16px; font-size: 1rem; color: var(--secondary); font-weight: 700;">➕ Incluir Medicamento no Catálogo</h3>
+                            <form onsubmit="handleCadastrarMedicamento(event)">
+                                <div class="caf-form-group"><label class="caf-label">Nome Comercial</label><input type="text" id="medNome" class="caf-input" placeholder="Ex: Dipirona Monoidratada" required></div>
+                                <div class="caf-form-group"><label class="caf-label">Princípio Ativo</label><input type="text" id="medPrincipio" class="caf-input" placeholder="Ex: Metamizol Sódico" required></div>
+                                <div class="caf-form-group"><label class="caf-label">Categoria Terapêutica</label><input type="text" id="medCategoria" class="caf-input" placeholder="Ex: Analgésico / Antitérmico" required></div>
+                                <div class="caf-form-group"><label class="caf-label">Código de Barras (EAN)</label><input type="text" id="medCodigoBarras" class="caf-input" placeholder="Ex: 7891234567890"></div>
+                                <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 8px; margin: 14px 0; font-weight: 500; cursor: pointer;">
+                                    <input type="checkbox" id="medControlado" style="accent-color: var(--primary);"> 🔒 Medicamento Controlado (Portaria 344)
+                                </label>
+                                <button type="submit" class="btn-caf-submit">Atualizar Catálogo Hospitalar</button>
+                            </form>
+                        </div>
+
+                        <!-- Form B: Entrada de Lote de Medicamento -->
+                        <div class="caf-card-form">
+                            <h3 style="margin-bottom: 16px; font-size: 1rem; color: var(--secondary); font-weight: 700;">📦 Registrar Entrada de Lote</h3>
+                            <form onsubmit="handleCadastrarLote(event)">
+                                <div class="caf-form-group">
+                                    <label class="caf-label">Medicamento Vinculado</label>
+                                    <select id="formLoteMedicamentoId" class="caf-select" required>
+                                        <option value="">Carregando catálogo de medicamentos...</option>
+                                    </select>
+                                </div>
+                                <div class="caf-form-group"><label class="caf-label">Número do Lote</label><input type="text" id="loteNumero" class="caf-input" placeholder="Ex: LT-2026X" required></div>
+                                <div class="caf-form-group"><label class="caf-label">Fabricante / Detentor</label><input type="text" id="loteFabricante" class="caf-input" placeholder="Ex: Eurofarma Laboratórios" required></div>
+                                <div class="caf-form-group"><label class="caf-label">Data de Validade</label><input type="text" id="loteValidade" class="caf-input" placeholder="Ex: 12/2028" required></div>
+                                <div class="caf-form-group"><label class="caf-label">Quantidade de Unidades</label><input type="number" id="loteQuantidade" class="caf-input" placeholder="Ex: 500" required></div>
+                                <button type="submit" class="btn-caf-submit" style="background-color: var(--secondary);">Efetuar Lançamento de Entrada</button>
+                            </form>
+                        </div>
+
+                        <!-- Form C: Lançar Dispensação / Baixa Real do Estoque -->
+                        <div class="caf-card-form">
+                            <h3 style="margin-bottom: 16px; font-size: 1rem; color: var(--secondary); font-weight: 700;">🚀 Lançar Baixa / Dispensação Direta</h3>
+                            <form onsubmit="handleRegistrarDispensa(event)">
+                                <div class="caf-form-group">
+                                    <label class="caf-label">Tipo de Recurso</label>
+                                    <select id="dispensaTipo" class="caf-select" required>
+                                        <option value="MED">Medicamento (ID do Lote)</option>
+                                        <option value="INS">Insumo Correlato (ID do Insumo)</option>
+                                    </select>
+                                </div>
+                                <div class="caf-form-group"><label class="caf-label">ID do Item no Banco</label><input type="number" id="dispensaItemId" class="caf-input" placeholder="Consulte o ID na tabela de estoque" required></div>
+                                <div class="caf-form-group"><label class="caf-label">Quantidade para Saída</label><input type="number" id="dispensaQtd" class="caf-input" placeholder="Ex: 20" required></div>
+                                <div class="caf-form-group"><label class="caf-label">Nome Completo do Paciente / Registro</label><input type="text" id="dispensaPaciente" class="caf-input" placeholder="Ex: Carlos Silva de Souza" required></div>
+                                <div class="caf-form-group"><label class="caf-label">Setor Clínico de Destino</label><input type="text" id="dispensaSetor" class="caf-input" placeholder="Ex: Bloco Cirúrgico / UTI Cel 2" required></div>
+                                <button type="submit" class="btn-caf-submit" style="background-color: var(--warning); color:#000;">Processar Saída com Rastreabilidade</button>
+                            </form>
+                        </div>
+
                     </div>
                 </section>
 
-                <!-- ABA: HISTÓRICO -->
+                <!-- 4. ABA: LIVRO DE RASTREABILIDADE (MOVIMENTAÇÕES) -->
                 <section id="tab-historico" class="tab-content">
                     <table class="data-table">
                         <thead>
                             <tr>
                                 <th>Data/Hora</th>
-                                <th>Tipo</th>
-                                <th>Item</th>
+                                <th>Tipo Operação</th>
+                                <th>Item Processado</th>
                                 <th>Qtd</th>
                                 <th>Setor Destino</th>
-                                <th>Paciente</th>
-                                <th>Responsável</th>
+                                <th>Paciente Atendido</th>
+                                <th>Operador Responsável</th>
                             </tr>
                         </thead>
                         <tbody id="tbodyHistorico">
-                            <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Nenhuma movimentação recente carregada.</td></tr>
+                            <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Nenhum log operacional registrado para esta licença.</td></tr>
                         </tbody>
                     </table>
                 </section>
 
-                <!-- ABA: TECNOVIGILÂNCIA -->
+                <!-- 5. ABA: LIVRO OFICIAL DE TECNOVIGILÂNCIA -->
                 <section id="tab-tecnovigilancia" class="tab-content">
+                    <div class="caf-card-form" style="margin-bottom: 24px; max-width: 100%;">
+                        <h3 style="margin-bottom: 16px; font-size: 1rem; color: var(--danger); font-weight: 700;">⚠️ Registrar Queixa Técnica ou Evento Adverso</h3>
+                        <form onsubmit="handleRegistrarTecnovigilancia(event)" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; align-items: flex-end;">
+                            <div class="caf-form-group"><label class="caf-label">Lote Afetado</label><input type="text" id="tecnoLote" class="caf-input" placeholder="Número do Lote" required></div>
+                            <div class="caf-form-group">
+                                <label class="caf-label">Tipo de Ocorrência</label>
+                                <select id="tecnoTipo" class="caf-select" required>
+                                    <option value="Queixa Técnica">Queixa Técnica (Embalagem / Desvio de Aspecto)</option>
+                                    <option value="Evento Adverso">Evento Adverso (Reação Inesperada do Paciente)</option>
+                                    <option value="Erro de Medicação">Erro de Distribuição (Near Miss)</option>
+                                </select>
+                            </div>
+                            <div class="caf-form-group">
+                                <label class="caf-label">Gravidade do Evento</label>
+                                <select id="tecnoGravidade" class="caf-select" required>
+                                    <option value="Leve">Desvio Leve</option>
+                                    <option value="Moderada">Risco Moderado</option>
+                                    <option value="Grave / Crítica">Crítica (Notificação Anvisa)</option>
+                                </select>
+                            </div>
+                            <div class="caf-form-group"><label class="caf-label">Descrição das Irregularidades</label><input type="text" id="tecnoDescricao" class="caf-input" placeholder="Detalhes constatados" required></div>
+                            <div class="caf-form-group"><label class="caf-label">Conduta Sanitária Adotada</label><input type="text" id="tecnoConduta" class="caf-input" placeholder="Ex: Lote segregado e retido" required></div>
+                            <button type="submit" class="btn-caf-submit" style="background-color: var(--danger); height: 42px;">Protocolar Incidente</button>
+                        </form>
+                    </div>
+
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>Data de Registro</th>
-                                <th>Lote Ocorrência</th>
-                                <th>Tipo de Evento</th>
-                                <th>Gravidade</th>
-                                <th>Descrição</th>
-                                <th>Conduta Adotada</th>
+                                <th>Data do Protocolo</th>
+                                <th>Lote Sob Análise</th>
+                                <th>Natureza da Ocorrência</th>
+                                <th>Nível de Gravidade</th>
+                                <th>Descrição Técnica</th>
+                                <th>Ação Sanitária Adotada</th>
                             </tr>
                         </thead>
                         <tbody id="tbodyTecnovigilancia">
-                            <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Nenhuma intercorrência registrada.</td></tr>
+                            <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Nenhuma intercorrência sanitária registrada no livro eletrônico.</td></tr>
                         </tbody>
                     </table>
                 </section>
@@ -182,341 +273,316 @@
         </main>
     </div>
 
+    <!-- =========================================================================
+       6. CORE LOGIC - JAVASCRIPT INTEGRADO AO BANCO NEON POSTGRESQL
+       ========================================================================= -->
     <script>
-// =========================================================================
-// 1. VARIÁVEIS DE CONTROLE GLOBAL & TENANT (Neon PostgreSQL)
-// =========================================================================
-let logedCNPJ = "";
-let logedOperator = "";
+        let logedCNPJ = "";
+        let logedOperator = "";
 
-// =========================================================================
-// 2. PORTEIRO AUTOMÁTICO & PERSISTÊNCIA DE SESSÃO DO HUB
-// =========================================================================
-document.addEventListener('DOMContentLoaded', () => {
-    const sessaoAtiva = sessionStorage.getItem('colaborador');
+        // --- A. PORTEIRO AUTOMÁTICO DE SESSÃO DO HUB UNIFICADO ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const sessaoAtiva = sessionStorage.getItem('colaborador');
 
-    if (sessaoAtiva) {
-        const usuarioLogado = JSON.parse(sessaoAtiva);
-        console.log("⚡ [T.I. Mode] Módulo CAF carregado para o usuário:", usuarioLogado.nome);
+            if (sessaoAtiva) {
+                const usuarioLogado = JSON.parse(sessaoAtiva);
+                console.log("⚡ [T.I. Mode] Módulo CAF validado para o crachá:", usuarioLogado.nome);
 
-        // Retrocompatibilidade garantida com códigos antigos
-        if (!sessionStorage.getItem('ph_user')) {
-            sessionStorage.setItem('ph_user', JSON.stringify(usuarioLogado));
-        }
+                // Garante compatibilidade caso existam chaves herdadas do ph_user
+                if (!sessionStorage.getItem('ph_user')) {
+                    sessionStorage.setItem('ph_user', JSON.stringify(usuarioLogado));
+                }
 
-        // Libera as telas originais do seu HTML
-        const telaDeLogin = document.getElementById('loginScreen');
-        const painelPrincipal = document.getElementById('appContainer');
-        if (telaDeLogin) telaDeLogin.style.display = 'none';
-        if (painelPrincipal) painelPrincipal.style.display = 'flex';
+                // Desbloqueia as telas estruturais da SPA
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'flex';
 
-        // Define as credenciais globais da unidade hospitalar
-        logedCNPJ = usuarioLogado.empresa_cnpj;
-        logedOperator = usuarioLogado.nome;
+                // Injeta os dados nas chaves Multi-Tenant Globais
+                logedCNPJ = usuarioLogado.empresa_cnpj;
+                logedOperator = usuarioLogado.nome;
 
-        // Atualiza a Topbar com os dados reais do operador
-        const topbarNome = document.getElementById('topbarNome') || document.getElementById('headerUserName');
-        const topbarCargo = document.getElementById('topbarCargo') || document.getElementById('headerUserRole');
-        const topbarAvatar = document.getElementById('topbarAvatar') || document.getElementById('headerAvatar');
+                // Popula os elementos dinâmicos do cabeçalho
+                document.getElementById('topbarNome').innerText = usuarioLogado.nome;
+                document.getElementById('topbarCargo').innerText = usuarioLogado.cargo;
+                document.getElementById('topbarAvatar').innerText = usuarioLogado.nome.charAt(0).toUpperCase();
 
-        if (topbarNome) topbarNome.innerText = usuarioLogado.nome;
-        if (topbarCargo) topbarCargo.innerText = usuarioLogado.cargo;
-        if (topbarAvatar) topbarAvatar.innerText = usuarioLogado.nome.charAt(0).toUpperCase();
+                // Dispara a sincronização de dados direto na API Serverless do Flask
+                sincronizarDadosCAF(logedCNPJ);
 
-        // Dispara a sincronização completa de dados do CAF
-        sincronizarDadosCAF(logedCNPJ);
-
-    } else {
-        alert("Sessão não iniciada. Por favor, faça login no Hub Central.");
-        window.location.href = 'index.html';
-    }
-});
-
-// =========================================================================
-// 3. BUSCA DE DADOS (GET) - SINCRONIZAÇÃO COMPLETA DO BANCO
-// =========================================================================
-async function sincronizarDadosCAF(cnpj) {
-    try {
-        const response = await fetch(`/api/pharmacy/sync?cnpj=${cnpj}`);
-        const data = await response.json();
-
-        if (data.success) {
-            renderizarEstoqueELotes(data);
-            renderizarInsumos(data.insumos);
-            renderizarRastreabilidade(data.movimentacoes);
-            renderizarTecnovigilancia(data.tecnovigilancia);
-            alimentarSelectsFormularios(data.medicamentos, data.lotes, data.insumos);
-        } else {
-            console.error("Erro na sincronização:", data.message);
-        }
-    } catch (error) {
-        console.error("Erro de comunicação com o servidor Flask:", error);
-    }
-}
-
-// =========================================================================
-// 4. RENDERIZAÇÃO COMPLETA DAS TABELAS E ALERTAS CLÍNICOS (RDC 430/2020)
-// =========================================================================
-function renderizarEstoqueELotes(data) {
-    const tbody = document.getElementById('tbodyEstoque');
-    const alertasContainer = document.getElementById('alertasClinicosContainer');
-    if (!tbody) return;
-    
-    tbody.innerHTML = "";
-    if (alertasContainer) alertasContainer.innerHTML = "";
-
-    if (data.lotes && data.lotes.length > 0) {
-        data.lotes.forEach(lote => {
-            // Alertas de Estoque Baixo ou Validade próxima (Exemplo: menor que 150 unidades)
-            if (lote.quantidade < 150 && alertasContainer) {
-                alertasContainer.innerHTML += `
-                    <div class="alert-box alert-danger">
-                        🚨 <strong>Estoque Crítico:</strong> O item "${lote.med_nome || 'Medicamento'}" (Lote: ${lote.numero_lote}) possui apenas ${lote.quantidade} unidades em saldo.
-                    </div>
-                `;
+            } else {
+                alert("Sessão não iniciada ou expirada. Retornando ao controle central de acesso.");
+                window.location.href = 'index.html';
             }
-
-            tbody.innerHTML += `
-                <tr>
-                    <td><strong>${lote.med_nome || 'Medicamento'}</strong></td>
-                    <td><span class="badge-lote">${lote.numero_lote}</span></td>
-                    <td>${lote.fabricante}</td>
-                    <td>${lote.validade}</td>
-                    <td><span style="font-weight:700; color: ${lote.quantidade < 150 ? 'var(--danger)' : 'inherit'}">${lote.quantidade} un</span></td>
-                </tr>
-            `;
         });
-    } else {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Nenhum medicamento ou lote cadastrado.</td></tr>`;
-    }
-}
 
-function renderizarInsumos(insumos) {
-    const tbody = document.getElementById('tbodyInsumos');
-    if (!tbody) return;
-    tbody.innerHTML = "";
+        // --- B. RETRIEVE DATA (GET REQUESTS) ---
+        async function sincronizarDadosCAF(cnpj) {
+            try {
+                const response = await fetch(`/api/pharmacy/sync?cnpj=${cnpj}`);
+                const data = await response.json();
 
-    if (insumos && insumos.length > 0) {
-        insumos.forEach(ins => {
-            tbody.innerHTML += `
-                <tr>
-                    <td><strong>${ins.nome}</strong></td>
-                    <td>${ins.especificacao}</td>
-                    <td>${ins.unidade_medida}</td>
-                    <td><span style="font-weight:700;">${ins.quantidade} un</span></td>
-                </tr>
-            `;
-        });
-    } else {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Nenhum insumo correlato em estoque.</td></tr>`;
-    }
-}
+                if (data.success) {
+                    renderizarEstoqueELotes(data);
+                    renderizarInsumos(data.insumos);
+                    renderizarRastreabilidade(data.movimentacoes);
+                    renderizarTecnovigilancia(data.tecnovigilancia);
+                    alimentarSelectsFormularios(data.medicamentos, data.lotes, data.insumos);
+                } else {
+                    console.error("A API Flask reportou erro de Tenant:", data.message);
+                }
+            } catch (error) {
+                console.error("Falha crítica de rede na tubulação assíncrona do banco Neon:", error);
+            }
+        }
 
-function renderizarRastreabilidade(movimentacoes) {
-    const tbody = document.getElementById('tbodyHistorico');
-    if (!tbody) return;
-    tbody.innerHTML = "";
+        // --- C. RENDER ENGINE (POPULADOR DINÂMICO DE TABELAS) ---
+        function renderizarEstoqueELotes(data) {
+            const tbody = document.getElementById('tbodyEstoque');
+            const alertasContainer = document.getElementById('alertasClinicosContainer');
+            if (!tbody) return;
+            
+            tbody.innerHTML = "";
+            if (alertasContainer) alertasContainer.innerHTML = "";
 
-    if (movimentacoes && movimentacoes.length > 0) {
-        movimentacoes.forEach(mov => {
-            tbody.innerHTML += `
-                <tr>
-                    <td><small>${mov.data_movimentacao}</small></td>
-                    <td><span style="font-weight:600; color: ${mov.tipo.includes('SAÍDA') ? 'var(--danger)' : 'var(--success)'}">${mov.tipo}</span></td>
-                    <td>${mov.item_nome}</td>
-                    <td><strong>${mov.quantidade}</strong></td>
-                    <td>${mov.setor_destino}</td>
-                    <td>${mov.paciente_nome}</td>
-                    <td><small>${mov.responsavel}</small></td>
-                </tr>
-            `;
-        });
-    } else {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Nenhuma movimentação registrada no livro oficial.</td></tr>`;
-    }
-}
+            if (data.lotes && data.lotes.length > 0) {
+                data.lotes.forEach(lote => {
+                    // Trigger de Monitoramento Clínico Base (Saldo < 150 Unidades)
+                    if (lote.quantidade < 150 && alertasContainer) {
+                        alertasContainer.innerHTML += `
+                            <div class="alert-box alert-danger">
+                                🚨 <strong>Estoque de Segurança Violado:</strong> O item "${lote.med_nome || 'Medicamento'}" (Lote: ${lote.numero_lote}) atingiu o saldo crítico de ${lote.quantidade} un. Providencie reposição urgente.
+                            </div>
+                        `;
+                    }
 
-function renderizarTecnovigilancia(ocorrencias) {
-    const tbody = document.getElementById('tbodyTecnovigilancia');
-    if (!tbody) return;
-    tbody.innerHTML = "";
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${lote.med_nome || 'Medicamento'}</strong> (ID Lote: ${lote.id})</td>
+                            <td><span class="badge-lote">${lote.numero_lote}</span></td>
+                            <td>${lote.fabricante}</td>
+                            <td>${lote.validade}</td>
+                            <td><span style="font-weight:700; color: ${lote.quantidade < 150 ? 'var(--danger)' : 'inherit'}">${lote.quantidade} un</span></td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Nenhum lote ou especificação de medicamento cadastrada para esta unidade corporativa.</td></tr>`;
+            }
+        }
 
-    if (ocorrencias && ocorrencias.length > 0) {
-        ocorrencias.forEach(oc => {
-            tbody.innerHTML += `
-                <tr>
-                    <td><small>${oc.data_registro}</small></td>
-                    <td><span class="badge-lote">${oc.lote_texto}</span></td>
-                    <td><strong>${oc.tipo_ocorrencia}</strong></td>
-                    <td><span style="color: var(--danger); font-weight:600;">${oc.gravidade}</span></td>
-                    <td>${oc.descricao}</td>
-                    <td><small>${oc.conduta}</small></td>
-                </tr>
-            `;
-        });
-    } else {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Nenhuma intercorrência ou desvio de qualidade registrado.</td></tr>`;
-    }
-}
+        function renderizarInsumos(insumos) {
+            const tbody = document.getElementById('tbodyInsumos');
+            if (!tbody) return;
+            tbody.innerHTML = "";
 
-function alimentarSelectsFormularios(medicamentos, lotes, insumos) {
-    const selectMed = document.getElementById('formLoteMedicamentoId');
-    if (!selectMed) return; // Proteção contra elemento ausente no HTML
-    
-    selectMed.innerHTML = '<option value="">-- Selecione o Medicamento do Catálogo --</option>';
-    if (medicamentos) {
-        medicamentos.forEach(m => {
-            selectMed.innerHTML += `<option value="${m.id}">${m.nome} (${m.principio_ativo})</option>`;
-        });
-    }
-}
+            if (insumos && insumos.length > 0) {
+                insumos.forEach(ins => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${ins.nome}</strong> (ID: ${ins.id})</td>
+                            <td>${ins.especificacao}</td>
+                            <td>${ins.unidade_medida}</td>
+                            <td><span style="font-weight:700;">${ins.quantidade} un</span></td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Nenhum insumo ou material descartável correlato em estoque.</td></tr>`;
+            }
+        }
 
-// =========================================================================
-// 5. OPERAÇÕES DE LANÇAMENTO (POST) - CONEXÃO DIRETA COM O SEU FLASK/NEON
-// =========================================================================
+        function renderizarRastreabilidade(movimentacoes) {
+            const tbody = document.getElementById('tbodyHistorico');
+            if (!tbody) return;
+            tbody.innerHTML = "";
 
-async function handleCadastrarMedicamento(event) {
-    if(event) event.preventDefault();
-    if(!document.getElementById('medNome')) return;
-    
-    const payload = {
-        empresa_cnpj: logedCNPJ,
-        nome: document.getElementById('medNome').value,
-        principio_ativo: document.getElementById('medPrincipio').value,
-        categoria: document.getElementById('medCategoria').value,
-        controlado: document.getElementById('medControlado').checked ? 1 : 0,
-        codigo_barras: document.getElementById('medCodigoBarras').value
-    };
+            if (movimentacoes && movimentacoes.length > 0) {
+                movimentacoes.forEach(mov => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><small>${mov.data_movimentacao}</small></td>
+                            <td><span style="font-weight:600; color: ${mov.tipo.includes('SAÍDA') ? 'var(--danger)' : 'var(--success)'}">${mov.tipo}</span></td>
+                            <td>${mov.item_nome}</td>
+                            <td><strong>${mov.quantidade}</strong></td>
+                            <td>${mov.setor_destino}</td>
+                            <td>${mov.paciente_nome}</td>
+                            <td><small>${mov.responsavel}</small></td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Nenhuma transação de baixa ou entrada efetuada no livro eletrônico.</td></tr>`;
+            }
+        }
 
-    try {
-        const response = await fetch('/api/pharmacy/medicamentos', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        const data = await response.json();
-        if (data.success) {
-            alert("Medicamento incluído no catálogo com sucesso!");
-            sincronizarDadosCAF(logedCNPJ);
-            event.target.reset();
-        } else { alert("Erro: " + data.message); }
-    } catch (e) { console.error(e); }
-}
+        function renderizarTecnovigilancia(ocorrencias) {
+            const tbody = document.getElementById('tbodyTecnovigilancia');
+            if (!tbody) return;
+            tbody.innerHTML = "";
 
-async function handleCadastrarLote(event) {
-    if(event) event.preventDefault();
-    if(!document.getElementById('formLoteMedicamentoId')) return;
+            if (ocorrencias && ocorrencias.length > 0) {
+                ocorrencias.forEach(oc => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><small>${oc.data_registro}</small></td>
+                            <td><span class="badge-lote">${oc.lote_texto}</span></td>
+                            <td><strong>${oc.tipo_ocorrencia}</strong></td>
+                            <td><span style="color: var(--danger); font-weight:600;">${oc.gravidade}</span></td>
+                            <td>${oc.descricao}</td>
+                            <td><small>${oc.conduta}</small></td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Nenhum registro de queixa técnica ativa cadastrado no sistema.</td></tr>`;
+            }
+        }
 
-    const payload = {
-        medicamento_id: document.getElementById('formLoteMedicamentoId').value,
-        numero_lote: document.getElementById('loteNumero').value,
-        fabricante: document.getElementById('loteFabricante').value,
-        validade: document.getElementById('loteValidade').value,
-        quantidade: document.getElementById('loteQuantidade').value
-    };
+        function alimentarSelectsFormularios(medicamentos, lotes, insumos) {
+            const selectMed = document.getElementById('formLoteMedicamentoId');
+            if (!selectMed) return;
+            
+            selectMed.innerHTML = '<option value="">-- Selecione o Medicamento do Catálogo Base --</option>';
+            if (medicamentos) {
+                medicamentos.forEach(m => {
+                    selectMed.innerHTML += `<option value="${m.id}">${m.nome} [Ativo: ${m.principio_ativo}]</option>`;
+                });
+            }
+        }
 
-    try {
-        const response = await fetch('/api/pharmacy/lotes', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        const data = await response.json();
-        if (data.success) {
-            alert("Entrada de lote registrada no estoque!");
-            sincronizarDadosCAF(logedCNPJ);
-            event.target.reset();
-        } else { alert("Erro: " + data.message); }
-    } catch (e) { console.error(e); }
-}
+        // --- D. MUTATION WORKFLOWS (POST REQUESTS PARA O BANCO NEON) ---
 
-async function handleRegistrarDispensa(event) {
-    if(event) event.preventDefault();
-    if(!document.getElementById('dispensaTipo')) return;
+        async function handleCadastrarMedicamento(event) {
+            event.preventDefault();
+            const payload = {
+                empresa_cnpj: logedCNPJ,
+                nome: document.getElementById('medNome').value.trim(),
+                principio_ativo: document.getElementById('medPrincipio').value.trim(),
+                categoria: document.getElementById('medCategoria').value.trim(),
+                controlado: document.getElementById('medControlado').checked ? 1 : 0,
+                codigo_barras: document.getElementById('medCodigoBarras').value.trim()
+            };
 
-    const payload = {
-        empresa_cnpj: logedCNPJ,
-        tipo: document.getElementById('dispensaTipo').value,
-        id_item: document.getElementById('dispensaItemId').value,
-        qtd: document.getElementById('dispensaQtd').value,
-        paciente: document.getElementById('dispensaPaciente').value,
-        setor: document.getElementById('dispensaSetor').value,
-        responsavel: logedOperator
-    };
+            try {
+                const response = await fetch('/api/pharmacy/medicamentos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert("Medicamento incluído no catálogo com sucesso!");
+                    sincronizarDadosCAF(logedCNPJ);
+                    event.target.reset();
+                } else { alert("Erro operacional: " + data.message); }
+            } catch (e) { console.error(e); }
+        }
 
-    try {
-        const response = await fetch('/api/pharmacy/dispensar', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        const data = await response.json();
-        if (data.success) {
-            alert("Dispensação realizada e estoque updated!");
-            sincronizarDadosCAF(logedCNPJ);
-            event.target.reset();
-        } else { alert("Erro: " + data.message); }
-    } catch (e) { console.error(e); }
-}
+        async function handleCadastrarLote(event) {
+            event.preventDefault();
+            const payload = {
+                medicamento_id: document.getElementById('formLoteMedicamentoId').value,
+                numero_lote: document.getElementById('loteNumero').value.trim(),
+                fabricante: document.getElementById('loteFabricante').value.trim(),
+                validade: document.getElementById('loteValidade').value.trim(),
+                quantidade: document.getElementById('loteQuantidade').value
+            };
 
-async function handleRegistrarTecnovigilancia(event) {
-    if(event) event.preventDefault();
-    if(!document.getElementById('tecnoLote')) return;
+            try {
+                const response = await fetch('/api/pharmacy/lotes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert("Entrada de lote registrada com sucesso no estoque!");
+                    sincronizarDadosCAF(logedCNPJ);
+                    event.target.reset();
+                } else { alert("Erro operacional: " + data.message); }
+            } catch (e) { console.error(e); }
+        }
 
-    const payload = {
-        empresa_cnpj: logedCNPJ,
-        lote_texto: document.getElementById('tecnoLote').value,
-        tipo_ocorrencia: document.getElementById('tecnoTipo').value,
-        gravidade: document.getElementById('tecnoGravidade').value,
-        descricao: document.getElementById('tecnoDescricao').value,
-        conduta: document.getElementById('tecnoConduta').value
-    };
+        async function handleRegistrarDispensa(event) {
+            event.preventDefault();
+            const payload = {
+                empresa_cnpj: logedCNPJ,
+                tipo: document.getElementById('dispensaTipo').value,
+                id_item: document.getElementById('dispensaItemId').value,
+                qtd: document.getElementById('dispensaQtd').value,
+                paciente: document.getElementById('dispensaPaciente').value.trim(),
+                setor: document.getElementById('dispensaSetor').value.trim(),
+                responsavel: logedOperator
+            };
 
-    try {
-        const response = await fetch('/api/pharmacy/tecnovigilancia', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        const data = await response.json();
-        if (data.success) {
-            alert("Notificação de Tecnovigilância protocolada com sucesso!");
-            sincronizarDadosCAF(logedCNPJ);
-            event.target.reset();
-        } else { alert("Erro: " + data.message); }
-    } catch (e) { console.error(e); }
-}
+            try {
+                const response = await fetch('/api/pharmacy/dispensar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert("Baixa executada com sucesso! Saldo do estoque atualizado.");
+                    sincronizarDadosCAF(logedCNPJ);
+                    event.target.reset();
+                } else { alert("Impossível processar: " + data.message); }
+            } catch (e) { console.error(e); }
+        }
 
-// =========================================================================
-// 6. FUNÇÕES DE NAVEGAÇÃO INTERNA (SPA)
-// =========================================================================
-function switchTab(tabId) {
-    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-    document.querySelectorAll('.menu-link').forEach(link => link.classList.remove('active'));
-    
-    const targetTab = document.getElementById(`tab-${tabId}`);
-    if (targetTab) targetTab.classList.add('active');
-    
-    // Garante a ativação visual mesmo se disparado por clique direto
-    if (event && event.target) {
-        event.target.classList.add('active');
-    }
-    
-    const titles = { 
-        'estoque': 'Estoque Central de Medicamentos e Lotes', 
-        'insumos': 'Estoque de Insumos e Correlatos',
-        'dispensacao': 'Central de Dispensação Automatizada', 
-        'historico': 'Livro de Rastreabilidade Farmacêutica',
-        'tecnovigilancia': 'Eventos Adversos e Queixas Técnicas (RDC 430/2020)'
-    };
-    
-    const tabTitle = document.getElementById('tabTitle');
-    if (tabTitle && titles[tabId]) tabTitle.innerText = titles[tabId];
-}
+        async function handleRegistrarTecnovigilancia(event) {
+            event.preventDefault();
+            const payload = {
+                empresa_cnpj: logedCNPJ,
+                lote_texto: document.getElementById('tecnoLote').value.trim(),
+                tipo_ocorrencia: document.getElementById('tecnoTipo').value,
+                gravidade: document.getElementById('tecnoGravidade').value,
+                descricao: document.getElementById('tecnoDescricao').value.trim(),
+                conduta: document.getElementById('tecnoConduta').value.trim()
+            };
 
-function voltarAoHub() {
-    window.location.href = 'index.html';
-}
+            try {
+                const response = await fetch('/api/pharmacy/tecnovigilancia', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert("Notificação de Tecnovigilância protocolada sob conformidade!");
+                    sincronizarDadosCAF(logedCNPJ);
+                    event.target.reset();
+                } else { alert("Erro de gravação: " + data.message); }
+            } catch (e) { console.error(e); }
+        }
+
+        // --- E. CONTROLADOR DE ABAS DA SPA INTERFACE ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.menu-link').forEach(link => link.classList.remove('active'));
+            
+            const targetTab = document.getElementById(`tab-${tabId}`);
+            if (targetTab) targetTab.classList.add('active');
+            
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+            
+            const titles = { 
+                'estoque': 'Estoque Central de Medicamentos e Lotes', 
+                'insumos': 'Estoque Setorial de Insumos Hospitalares',
+                'operacoes': 'Fluxos de Entrada, Baixa e Dispensação', 
+                'historico': 'Livro Eletrônico de Rastreabilidade Farmacêutica',
+                'tecnovigilancia': 'Eventos Adversos e Notificações Técnicas (RDC 430/2020)'
+            };
+            
+            const tabTitle = document.getElementById('tabTitle');
+            if (tabTitle && titles[tabId]) tabTitle.innerText = titles[tabId];
+        }
+
+        function voltarAoHub() {
+            window.location.href = 'index.html';
+        }
     </script>
 </body>
 </html>
