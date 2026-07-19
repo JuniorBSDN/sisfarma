@@ -160,6 +160,39 @@ def verificar_senha_master(senha):
     return senha == senha_correta
 
 
+@app.route('/api/admin/employees/<cpf>/status', methods=['PUT'])
+def toggle_employee_status(cpf):
+    cnpj_header = request.headers.get("X-Company-CNPJ")
+    if not cnpj_header:
+        return jsonify({"success": False, "message": "Cabeçalho CNPJ ausente."}), 400
+
+    conn = conectar_bd()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    try:
+        # Verifica o status atual do colaborador
+        cursor.execute("SELECT status FROM colaboradores WHERE cpf = %s AND empresa_cnpj = %s", (cpf, cnpj_header))
+        row = cursor.fetchone()
+
+        if not row:
+            cursor.close()
+            conn.close()
+            return jsonify({"success": False, "message": "Colaborador não localizado."}), 404
+
+        # Inverte o status de forma compatível (Ativo/Inativo ou Ativa/Inativa)
+        novo_status = "Inativo" if (row["status"] == "Ativa" or row["status"] == "Ativo") else "Ativo"
+        
+        cursor.execute("UPDATE colaboradores SET status = %s WHERE cpf = %s AND empresa_cnpj = %s", (novo_status, cpf, cnpj_header))
+        conn.commit()
+        
+        return jsonify({"success": True, "new_status": novo_status}), 200
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
 # =========================================================================
 # ROTAS DO PAINEL MASTER (master.html)
 # =========================================================================
