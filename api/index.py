@@ -1,598 +1,1224 @@
-import os
-import psycopg2
-from psycopg2.extras import RealDictCursor
-import random
-import string
-from datetime import datetime
-from flask import Flask, request, jsonify
-
-app = Flask(__name__)
-
-# A Vercel injeta automaticamente a variável DATABASE_URL se integrar o Neon pelo painel
-DATABASE_URL = os.environ.get("DATABASE_URL")
-
-
-# =========================================================================
-# LIGAÇÃO E INICIALIZAÇÃO DO POSTGRESQL (NEON)
-# =========================================================================
-def conectar_bd():
-    if not DATABASE_URL:
-        raise ValueError("A variável de ambiente DATABASE_URL não está configurada.")
-    return psycopg2.connect(DATABASE_URL)
-
-
-def inicializar_banco():
-    conn = conectar_bd()
-    cursor = conn.cursor()
-
-    # Tabela de Empresas (sisFarma Master)
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS empresas (
-        id SERIAL PRIMARY KEY,
-        razao_social TEXT NOT NULL,
-        cnpj TEXT UNIQUE NOT NULL,
-        email TEXT NOT NULL,
-        telefone TEXT,
-        plano TEXT NOT NULL,
-        status TEXT DEFAULT 'Ativa',
-        senha TEXT NOT NULL
-    )
-    ''')
-
-    # Tabela de Funcionários/Colaboradores (sisFarma Admin Local)
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS colaboradores (
-        id SERIAL PRIMARY KEY,
-        empresa_cnpj TEXT NOT NULL,
-        nome TEXT NOT NULL,
-        cpf TEXT UNIQUE NOT NULL,
-        cargo TEXT NOT NULL,
-        setor TEXT NOT NULL,
-        status TEXT DEFAULT 'Ativa',
-        FOREIGN KEY(empresa_cnpj) REFERENCES empresas(cnpj) ON DELETE CASCADE
-    )
-    ''')
-
-    # Histórico de Acessos de Colaboradores (Logs de Auditoria)
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS logs_acesso (
-        id SERIAL PRIMARY KEY,
-        colaborador_cpf TEXT NOT NULL,
-        data_hora TEXT NOT NULL,
-        ip TEXT NOT NULL,
-        tipo TEXT NOT NULL,
-        acao TEXT NOT NULL,
-        FOREIGN KEY(colaborador_cpf) REFERENCES colaboradores(cpf) ON DELETE CASCADE
-    )
-    ''')
-
-    # Tabelas de Operação da Farmácia Hospitalar (Consolidada)
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS medicamentos (
-        id SERIAL PRIMARY KEY,
-        empresa_cnpj TEXT NOT NULL,
-        nome TEXT NOT NULL,
-        principio_ativo TEXT NOT NULL,
-        categoria TEXT NOT NULL,
-        controlado INTEGER DEFAULT 0,
-        codigo_barras TEXT,
-        FOREIGN KEY(empresa_cnpj) REFERENCES empresas(cnpj) ON DELETE CASCADE
-    )
-    ''')
-
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS lotes (
-        id SERIAL PRIMARY KEY,
-        medicamento_id INTEGER NOT NULL,
-        numero_lote TEXT NOT NULL,
-        fabricante TEXT NOT NULL,
-        validade TEXT NOT NULL,
-        quantidade INTEGER NOT NULL,
-        FOREIGN KEY(medicamento_id) REFERENCES medicamentos(id) ON DELETE CASCADE
-    )
-    ''')
-
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS insumos (
-        id SERIAL PRIMARY KEY,
-        empresa_cnpj TEXT NOT NULL,
-        nome TEXT NOT NULL,
-        especificacao TEXT NOT NULL,
-        unidade_medida TEXT NOT NULL,
-        quantidade INTEGER NOT NULL,
-        FOREIGN KEY(empresa_cnpj) REFERENCES empresas(cnpj) ON DELETE CASCADE
-    )
-    ''')
-
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS movimentacoes (
-        id SERIAL PRIMARY KEY,
-        empresa_cnpj TEXT NOT NULL,
-        tipo TEXT NOT NULL,
-        item_nome TEXT NOT NULL,
-        quantidade INTEGER NOT NULL,
-        setor_destino TEXT NOT NULL,
-        paciente_nome TEXT NOT NULL,
-        responsavel TEXT NOT NULL,
-        data_movimentacao TEXT NOT NULL,
-        FOREIGN KEY(empresa_cnpj) REFERENCES empresas(cnpj) ON DELETE CASCADE
-    )
-    ''')
-
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS tecnovigilancia (
-        id SERIAL PRIMARY KEY,
-        empresa_cnpj TEXT NOT NULL,
-        lote_texto TEXT NOT NULL,
-        tipo_ocorrencia TEXT NOT NULL,
-        gravidade TEXT NOT NULL,
-        descricao TEXT NOT NULL,
-        conduta TEXT NOT NULL,
-        data_registro TEXT NOT NULL,
-        FOREIGN KEY(empresa_cnpj) REFERENCES empresas(cnpj) ON DELETE CASCADE
-    )
-    ''')
-
-    conn.commit()
-    cursor.close()
-    conn.close()
-
-
-# Executa a inicialização de tabelas de forma segura caso a ligação exista
-if DATABASE_URL:
-    try:
-        inicializar_banco()
-        print("Tabelas do Banco de Dados Neon PostgreSQL prontas!")
-    except Exception as e:
-        print(f"Erro ao inicializar banco Neon: {e}")
-
-
-# =========================================================================
-# FUNÇÕES AUXILIARES
-# =========================================================================
-def gerar_senha_aleatoria():
-    chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
-    return "sF_" + "".join(random.choice(chars) for _ in range(8))
-
-
-def verificar_senha_master(senha):
-    senha_correta = os.environ.get("ADMIN_MASTER_PASSWORD")
-    return senha == senha_correta
-
-
-# =========================================================================
-# ROTAS DO PAINEL MASTER (master.html)
-# =========================================================================
-
-@app.route('/api/master/auth', methods=['POST'])
-def auth_master():
-    data = request.json or {}
-    senha = data.get("senha")
-    if verificar_senha_master(senha):
-        return jsonify({"success": True, "token": "master_session_granted"}), 200
-    return jsonify({"success": False, "message": "Senha Master Incorreta."}), 401
-
-
-@app.route('/api/master/companies', methods=['GET', 'POST'])
-def manage_companies():
-    conn = conectar_bd()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-
-    if request.method == 'POST':
-        data = request.json or {}
-        razao_social = data.get("razao_social")
-        cnpj = data.get("cnpj")
-        email = data.get("email")
-        telefone = data.get("telefone")
-        plano = data.get("plano")
-        status = data.get("status", "Ativo")
-        senha_gerada = gerar_senha_aleatoria()
-
-        try:
-            cursor.execute('''
-                INSERT INTO empresas (razao_social, cnpj, email, telefone, plano, status, senha)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ''', (razao_social, cnpj, email, telefone, plano, status, senha_gerada))
-            conn.commit()
-            return jsonify({"success": True, "cnpj": cnpj, "senha": senha_gerada}), 201
-        except psycopg2.IntegrityError:
-            conn.rollback()
-            return jsonify({"success": False, "message": "Este CNPJ já está cadastrado no sistema."}), 400
-        finally:
-            cursor.close()
-            conn.close()
-
-    cursor.execute("SELECT * FROM empresas")
-    companies = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return jsonify(companies), 200
-
-
-@app.route('/api/master/companies/<cnpj>/status', methods=['PUT'])
-def toggle_company_status(cnpj):
-    conn = conectar_bd()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-
-    cursor.execute("SELECT status FROM empresas WHERE cnpj = %s", (cnpj,))
-    row = cursor.fetchone()
-
-    if not row:
-        cursor.close()
-        conn.close()
-        return jsonify({"success": False, "message": "Empresa não localizada."}), 404
-
-    novo_status = "Inativa" if row["status"] == "Ativa" else "Ativa"
-    cursor.execute("UPDATE empresas SET status = %s WHERE cnpj = %s", (novo_status, cnpj))
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return jsonify({"success": True, "new_status": novo_status}), 200
-
-
-# =========================================================================
-# ROTAS DO PAINEL ADMIN LOCAL (admin.html)
-# =========================================================================
-
-@app.route('/api/admin/auth', methods=['POST'])
-def auth_admin():
-    data = request.json or {}
-    cnpj = data.get("cnpj")
-    senha = data.get("senha")
-
-    conn = conectar_bd()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute("SELECT * FROM empresas WHERE cnpj = %s AND senha = %s", (cnpj, senha))
-    company = cursor.fetchone()
-    cursor.close()
-    conn.close()
-
-    if company:
-        if company["status"] != "Ativa":
-            return jsonify({"success": False, "message": "Licença suspensa. Contacte a equipa técnica Master."}), 403
-        return jsonify({"success": True, "cnpj": cnpj, "razao_social": company["razao_social"]}), 200
-    return jsonify({"success": False, "message": "Credenciais de licenciamento corporativo incorretas."}), 401
-
-
-@app.route('/api/admin/employees', methods=['GET', 'POST'])
-def manage_employees():
-    cnpj_header = request.headers.get("X-Company-CNPJ")
-    if not cnpj_header:
-        return jsonify({"success": False, "message": "Cabeçalho de identificação (CNPJ da Farmácia) ausente."}), 400
-
-    conn = conectar_bd()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-
-    if request.method == 'POST':
-        data = request.json or {}
-        nome = data.get("nome")
-        cpf = data.get("cpf")
-        cargo = data.get("cargo")
-        setor = data.get("setor")
-        status = data.get("status", "Ativa")
-
-        try:
-            cursor.execute('''
-                INSERT INTO colaboradores (empresa_cnpj, nome, cpf, cargo, setor, status)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            ''', (cnpj_header, nome, cpf, cargo, setor, status))
-            conn.commit()
-            return jsonify({"success": True, "cpf": cpf}), 201
-        except psycopg2.IntegrityError:
-            conn.rollback()
-            return jsonify({"success": False, "message": "Este CPF já se encontra cadastrado nesta ou noutra unidade."}), 400
-        finally:
-            cursor.close()
-            conn.close()
-
-    cursor.execute("SELECT * FROM colaboradores WHERE empresa_cnpj = %s", (cnpj_header,))
-    employees = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return jsonify(employees), 200
-
-
-# NOVA ROTA: Atualizar status do colaborador de forma definitiva por CPF
-@app.route('/api/admin/employees/<cpf>/status', methods=['PUT'])
-def toggle_employee_status(cpf):
-    cnpj_header = request.headers.get("X-Company-CNPJ")
-    if not cnpj_header:
-        return jsonify({"success": False, "message": "Identificação corporativa ausente."}), 400
-
-    conn = conectar_bd()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-
-    # 1. Busca o status atual do colaborador
-    cursor.execute("SELECT status FROM colaboradores WHERE cpf = %s AND empresa_cnpj = %s", (cpf, cnpj_header))
-    row = cursor.fetchone()
-
-    if not row:
-        cursor.close()
-        conn.close()
-        return jsonify({"success": False, "message": "Colaborador não localizado."}), 404
-
-    # 2. Alterna o status de forma inteligente
-    novo_status = "Inativo" if row["status"] in ["Ativa", "Ativo", "ATIVO", "ATIVA"] else "Ativo"
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sisFarma - Central de Dispensação e Rastreabilidade</title>
     
-    # 3. Executa o UPDATE real no banco de dados
-    cursor.execute("UPDATE colaboradores SET status = %s WHERE cpf = %s AND empresa_cnpj = %s", (novo_status, cpf, cnpj_header))
-    conn.commit()
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    cursor.close()
-    conn.close()
-    
-    return jsonify({"success": True, "new_status": novo_status}), 200
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
-
-# =========================================================================
-# ROTAS DA OPERAÇÃO DE FARMÁCIA (index.html) - SEGURA POR CNPJ
-# =========================================================================
-
-@app.route('/api/pharmacy/login', methods=['POST'])
-def employee_login():
-    data = request.json or {}
-    cpf = data.get("cpf")
-    ip_cliente = request.remote_addr or "127.0.0.1"
-
-    conn = conectar_bd()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute("SELECT * FROM colaboradores WHERE cpf = %s", (cpf,))
-    colab = cursor.fetchone()
-
-    if not colab:
-        cursor.close()
-        conn.close()
-        return jsonify({"success": False, "message": "Colaborador ou crachá não localizado no sistema."}), 401
-
-   # Flexibilizamos para aceitar Ativo ou Ativa
-    if colab["status"] not in ["Ativa", "Ativo", "ATIVO", "ATIVA"]:
-        cursor.close()
-        conn.close()
-        return jsonify({"success": False, "message": "Acesso Suspenso. Por favor, consulte a Administração."}), 403
-        
-    # Registra Log de Login
-    cursor.execute('''
-        INSERT INTO logs_acesso (colaborador_cpf, data_hora, ip, tipo, acao)
-        VALUES (%s, %s, %s, %s, %s)
-    ''', (cpf, datetime.now().strftime("%Y-%m-%d %H:%M"), ip_cliente, "QR Code", "Login efetuado com sucesso"))
-
-    conn.commit()
-    cursor.close()
-    conn.close()
-
-    return jsonify({
-        "success": True,
-        "colaborador": {
-            "nome": colab["nome"],
-            "cargo": colab["cargo"],
-            "setor": colab["setor"],
-            "empresa_cnpj": colab["empresa_cnpj"]
+    <style>
+        /* ==========================================
+           VARIÁVEIS DE DESIGN & RESET
+           ========================================== */
+        :root {
+            --primary: #10b981; --primary-dark: #059669; --secondary: #1e3d59; 
+            --bg-body: #f4f6f9; --bg-card: #ffffff; --text-main: #2d3748;
+            --text-muted: #718096; --border-color: #e2e8f0; --success: #22c55e;
+            --danger: #ef4444; --warning: #f59e0b; --sidebar-width: 260px; --transition: all 0.3s ease;
         }
-    }), 200
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-body); color: var(--text-main); height: 100vh; overflow: hidden; }
 
+        /* TELA DE LOGIN */
+        .login-screen { display: flex; width: 100%; height: 100vh; background-color: #0f172a; position: fixed; top: 0; left: 0; z-index: 9999; transition: var(--transition); }
+        .login-banner { flex: 1; background: linear-gradient(135deg, #1e3d59 0%, #112233 100%); display: flex; flex-direction: column; justify-content: center; padding: 60px; color: #ffffff; }
+        .login-banner h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 12px; }
+        .login-banner h1 span { color: var(--primary); }
+        .login-banner p { font-size: 1.1rem; color: #94a3b8; line-height: 1.6; }
+        .login-box-container { width: 460px; background-color: #1e293b; display: flex; flex-direction: column; justify-content: center; padding: 48px; border-left: 1px solid #334155; overflow-y: auto;}
+        .login-header { margin-bottom: 24px; text-align: center; }
+        .login-header h2 { color: #ffffff; font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; }
+        .login-header p { color: #94a3b8; font-size: 0.85rem; }
+        
+        /* SCANNER DE WEBCAM */
+        .scanner-view { width: 100%; height: 240px; background-color: #020617; border-radius: 12px; border: 2px solid var(--primary); position: relative; overflow: hidden; margin-bottom: 24px; display: flex; align-items: center; justify-content: center; }
+        #webcam-reader { width: 100%; height: 100%; }
+        #webcam-reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+        .scanner-laser { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background-color: var(--primary); box-shadow: 0 0 12px var(--primary); animation: scanning 2s linear infinite; z-index: 10; pointer-events: none; }
+        @keyframes scanning { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
+        .scanner-placeholder { position: absolute; bottom: 12px; color: #ffffff; background-color: rgba(15, 23, 42, 0.85); padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; text-align: center; z-index: 15; font-weight: 600; pointer-events: none; border: 1px solid rgba(255, 255, 255, 0.1); }
+        
+        .login-input { width: 100%; padding: 12px 16px; background-color: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #ffffff; font-size: 0.95rem; outline: none; margin-bottom: 16px; }
+        .login-input:focus { border-color: var(--primary); }
+        .btn-login-submit { width: 100%; background-color: var(--primary); color: #ffffff; border: none; padding: 14px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .btn-login-submit:hover { background-color: var(--primary-dark); }
+        .divider { display: flex; align-items: center; text-align: center; color: #475569; font-size: 0.75rem; text-transform: uppercase; font-weight: 600; margin: 16px 0; }
+        .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #334155; }
+        .divider:not(:empty)::before { margin-right: .5em; } .divider:not(:empty)::after { margin-left: .5em; }
 
-# Sincroniza Medicamentos, Lotes, Insumos, Saídas e Tecnovigilância filtrados pelo CNPJ da Unidade Hospitalar
-@app.route('/api/pharmacy/sync', methods=['GET'])
-def sync_pharmacy_data():
-    cnpj = request.args.get("cnpj")
-    if not cnpj:
-        return jsonify({"success": False, "message": "Parâmetro CNPJ ausente."}), 400
+        /* PAINEL INTERNO */
+        .app-container { display: none; width: 100%; height: 100vh; }
+        .sidebar { width: var(--sidebar-width); background-color: var(--secondary); color: #ffffff; display: flex; flex-direction: column; padding: 20px 14px; }
+        .sidebar-brand { display: flex; align-items: center; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .brand-logo { background-color: var(--primary); width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; color: #ffffff; }
+        .brand-name { font-size: 1.1rem; font-weight: 700; }
+        .brand-name span { color: var(--primary); font-size: 0.75rem; display: block; font-weight: 400; }
+        .sidebar-menu-wrapper { flex-grow: 1; overflow-y: auto; margin-top: 16px; }
+        .menu-section-title { font-size: 0.7rem; text-transform: uppercase; color: #718096; font-weight: 700; margin: 14px 0 6px 8px; }
+        .sidebar-menu { list-style: none; }
+        .menu-link { display: flex; align-items: center; gap: 10px; padding: 10px; color: #a0aec0; text-decoration: none; border-radius: 6px; font-weight: 500; font-size: 0.85rem; cursor: pointer; margin-bottom: 4px; }
+        .menu-link:hover, .menu-link.active { color: #ffffff; background-color: rgba(255, 255, 255, 0.08); }
+        .menu-link.active { border-left: 3px solid var(--primary); background-color: rgba(255, 255, 255, 0.1); padding-left: 7px; }
+        .sidebar-footer { padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+        .btn-logout { background: none; border: 1px solid rgba(255, 255, 255, 0.15); color: #ef4444; width: 100%; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        .topbar { background-color: #ffffff; border-bottom: 1px solid var(--border-color); min-height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+        .page-title { font-size: 1.1rem; font-weight: 600; color: var(--secondary); }
+        .user-profile { display: flex; align-items: center; gap: 12px; }
+        .user-avatar { width: 36px; height: 36px; background-color: var(--primary); color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+        .user-info h4 { font-size: 0.85rem; font-weight: 600; }
+        .user-info p { font-size: 0.75rem; color: var(--text-muted); }
+        .content-body { padding: 24px; max-width: 1300px; width: 100%; margin: 0 auto; }
+        
+        .page-section { display: none; }
+        .page-section.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    conn = conectar_bd()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
+        .grid-forms { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 24px; }
+        .box-container { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
+        .box-title { font-size: 1rem; font-weight: 700; color: var(--secondary); margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+        .form-label { font-size: 0.8rem; font-weight: 600; color: var(--text-main); }
+        .form-input, .form-select, .form-textarea { padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.85rem; outline: none; background-color: #f8fafc; }
+        .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--primary); background-color: #ffffff; }
+        
+        .input-scan { border: 2px solid #a7f3d0; background-color: #ecfdf5; font-weight: 600; color: var(--primary-dark); }
+        .input-scan:focus { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); }
 
-    # 1. Puxa medicamentos da empresa logada
-    cursor.execute("SELECT * FROM medicamentos WHERE empresa_cnpj = %s", (cnpj,))
-    meds = cursor.fetchall()
+        .btn-action-primary { background-color: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: var(--transition); }
+        .btn-action-primary:hover { background-color: var(--primary-dark); }
+        .btn-orange { background-color: #e67e22; } .btn-orange:hover { background-color: #d35400; }
+        .btn-red { background-color: #ef4444; } .btn-red:hover { background-color: #dc2626; }
+        
+        /* Controles de Filtro e Busca */
+        .filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .search-input { width: 180px; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; outline: none; font-size: 0.8rem; background-color: #f8fafc; }
+        .search-input:focus { border-color: var(--primary); background-color: #fff; }
+        .btn-print-mini { background-color: #f1f5f9; border: 1px solid var(--border-color); color: var(--text-main); padding: 7px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .btn-print-mini:hover { background-color: #e2e8f0; }
 
-    # 2. Puxa lotes cujos medicamentos pertençam a essa empresa
-    cursor.execute('''
-        SELECT l.*, m.nome as med_nome FROM lotes l
-        JOIN medicamentos m ON l.medicamento_id = m.id
-        WHERE m.empresa_cnpj = %s
-    ''', (cnpj,))
-    lotes = cursor.fetchall()
+        .table-wrapper { margin-top: 14px; overflow-x: auto; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; max-height: 500px;}
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; }
+        .data-table th { background-color: #f8fafc; padding: 12px 16px; color: var(--text-muted); border-bottom: 1px solid var(--border-color); font-size: 0.75rem; text-transform: uppercase; position: sticky; top: 0; z-index: 2; }
+        .data-table td { padding: 12px 16px; border-bottom: 1px solid var(--border-color); }
+        
+        .badge-ctrl { background-color: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
+        .badge-comum { background-color: #d1fae5; color: #065f46; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
+        .sidebar-alert-dot { width: 8px; height: 8px; background-color: var(--danger); border-radius: 50%; display: inline-block; margin-left: auto; }
+        
+        .label-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 20px; }
+        .label-card-p { border: 2px dashed #000; background-color: white; padding: 16px; font-size: 0.75rem; color: #000; border-radius: 6px; position: relative; }
+        
+        .alert-banner { display: flex; align-items: center; gap: 12px; padding: 14px; background-color: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; color: #b45309; margin-bottom: 20px; font-size: 0.85rem; font-weight: 500; }
 
-    # 3. Puxa Insumos da empresa
-    cursor.execute("SELECT * FROM insumos WHERE empresa_cnpj = %s", (cnpj,))
-    insumos = cursor.fetchall()
+        /* Modais de Impressão */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 10000; align-items: center; justify-content: center; }
+        .modal-content { background-color: #ffffff; border-radius: 16px; padding: 32px; max-width: 480px; width: 90%; text-align: center; position: relative; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        .modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); }
 
-    # 4. Puxa Rastreabilidade / Movimentações
-    cursor.execute("SELECT * FROM movimentacoes WHERE empresa_cnpj = %s ORDER BY id DESC LIMIT 100", (cnpj,))
-    movs = cursor.fetchall()
+        .receipt-card { border: 1px solid #cbd5e1; background-color: #f8fafc; padding: 20px; border-radius: 8px; text-align: left; margin: 20px 0; font-family: monospace; font-size: 0.8rem; color: #0f172a; line-height: 1.5; }
+        .receipt-card hr { border: 0; border-top: 1px dashed #cbd5e1; margin: 10px 0; }
 
-    # 5. Puxa Registros de Tecnovigilância
-    cursor.execute("SELECT * FROM tecnovigilancia WHERE empresa_cnpj = %s ORDER BY id DESC", (cnpj,))
-    tecno = cursor.fetchall()
+        #printArea { display: none; }
 
-    cursor.close()
-    conn.close()
+        @media print {
+            body, html { height: auto !important; overflow: visible !important; background: #fff !important; color: #000 !important; }
+            .login-screen, .app-container, .modal-overlay, aside.sidebar, main.main-content, header.topbar, .content-body { display: none !important; }
+            #printArea { display: block !important; visibility: visible !important; position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; height: auto !important; }
+            #etiquetasContainer, #etiquetasContainer * { visibility: visible !important; }
+        }
+    </style>
+</head>
+<body>
 
-    return jsonify({
-        "success": True,
-        "medicamentos": meds,
-        "lotes": lotes,
-        "insumos": insumos,
-        "movimentacoes": movs,
-        "tecnovigilancia": tecno
-    })
+    <div id="printArea"></div>
 
+    <!-- TELA DE LOGIN -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-banner">
+            <h1>SISTEMA <span>sisFarma</span></h1>
+            <p>Unidade Central & Rastreabilidade Biocriptográfica (RDC 430/2020).</p>
+            <div style="margin-top: 40px; font-size: 0.85rem; color: #64748b; line-height: 1.8;">
+                <strong>💡 INTEGRAÇÃO COM CRACHÁS:</strong><br>
+                Apresente o QR Code do seu crachá em frente à câmara para efetuar o login instantâneo.
+            </div>
+        </div>
+        <div class="login-box-container">
+            <div class="login-header">
+                <h2>🔐 Identificação do Operador</h2>
+                <p>Apresente o seu Crachá ou digite o seu CPF</p>
+            </div>
+            <div class="scanner-view">
+                <div class="scanner-laser"></div>
+                <div id="webcam-reader"></div>
+                <div class="scanner-placeholder" id="scannerMsg">Aguardando Leitura...</div>
+            </div>
+            <div class="divider">Ou login manual</div>
+            <input type="text" class="login-input" id="cpfInput" maxlength="11" placeholder="Clique aqui e passe o Crachá no leitor" onkeypress="handleKeyPress(event)">
+            <button class="btn-login-submit" onclick="attemptManualLogin()" id="btnLoginSubmit">Autenticar Operador</button>
+        </div>
+    </div>
 
-# Registrar novo Medicamento no Catálogo Base da empresa
-@app.route('/api/pharmacy/medicamentos', methods=['POST'])
-def add_medicamento():
-    data = request.json or {}
-    cnpj = data.get("empresa_cnpj")
-    nome = data.get("nome")
-    principio = data.get("principio_ativo")
-    categoria = data.get("categoria")
-    controlado = int(data.get("controlado", 0))
-    codigo_barras = data.get("codigo_barras")
+    <!-- PAINEL OPERACIONAL -->
+    <div class="app-container" id="appContainer">
+        <aside class="sidebar">
+            <div>
+                <div class="sidebar-brand">
+                    <div class="brand-logo">sF</div>
+                    <div class="brand-name">sisFarma<span>Central CAF</span></div>
+                </div>
+                <div class="sidebar-menu-wrapper">
+                    <div class="menu-section-title">Operações de Estoque</div>
+                    <ul class="sidebar-menu">
+                        <li><a onclick="switchTab('dispensar')" id="nav-dispensar" class="menu-link active">⚡ Dispensar Itens</a></li>
+                        <li><a onclick="switchTab('catalogo')" id="nav-catalogo" class="menu-link">💊 Catálogo Base</a></li>
+                        <li><a onclick="switchTab('lotes')" id="nav-lotes" class="menu-link">📦 Entrada de Lotes</a></li>
+                        <li><a onclick="switchTab('insumos')" id="nav-insumos" class="menu-link">💉 Cadastro Insumos</a></li>
+                    </ul>
+                    <div class="menu-section-title">Serviços & Auditoria</div>
+                    <ul class="sidebar-menu">
+                        <li><a onclick="switchTab('etiquetas')" id="nav-etiquetas" class="menu-link">🏷️ Gerar Etiquetas</a></li>
+                        <li><a onclick="switchTab('rastreio')" id="nav-rastreio" class="menu-link">🔍 Rastreabilidade</a></li>
+                        <li><a onclick="switchTab('alertas')" id="nav-alertas" class="menu-link">⚠️ Alertas Clínicos <span class="sidebar-alert-dot" id="alertDot" style="display:none;"></span></a></li>
+                        <li><a onclick="switchTab('tecno')" id="nav-tecno" class="menu-link">🚩 Tecnovigilância</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="sidebar-footer">
+                <button class="btn-logout" onclick="logout()">Encerrar Turno (Sair)</button>
+            </div>
+        </aside>
 
-    if not cnpj:
-        return jsonify({"success": False, "message": "CNPJ não informado."}), 400
+        <main class="main-content">
+            <header class="topbar">
+                <div class="page-title" id="page-current-title">Dispensação e Saídas</div>
+                <div class="user-profile">
+                    <div class="user-avatar" id="headerAvatar">--</div>
+                    <div class="user-info">
+                        <h4 id="headerUserName">A carregar...</h4>
+                        <p id="headerUserRole">...</p>
+                    </div>
+                </div>
+            </header>
 
-    conn = conectar_bd()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    try:
-        cursor.execute('''
-            INSERT INTO medicamentos (empresa_cnpj, nome, principio_ativo, categoria, controlado, codigo_barras)
-            VALUES (%s, %s, %s, %s, %s, %s) RETURNING id
-        ''', (cnpj, nome, principio, categoria, controlado, codigo_barras))
-        new_id = cursor.fetchone()['id']
-        conn.commit()
-        return jsonify({"success": True, "id": new_id}), 201
-    except Exception as e:
-        conn.rollback()
-        return jsonify({"success": False, "message": str(e)}), 500
-    finally:
-        cursor.close()
-        conn.close()
+            <div class="content-body">
+                
+                <!-- 1. DISPENSAÇÃO -->
+                <section id="sec-dispensar" class="page-section active">
+                    <div class="alert-banner" id="dispenseAlertBanner" style="display: none;">
+                        <span>⚠️ Existem lotes no sistema com prazo de validade expirado ou inferior a 30 dias. Verifique a aba de Alertas!</span>
+                    </div>
 
+                    <div class="grid-forms">
+                        <div class="box-container">
+                            <div class="box-title">⚡ Processar Saída de Estoque</div>
+                            <div class="form-group" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px dashed var(--border-color);">
+                                <label class="form-label" style="color: var(--primary-dark);">🎯 Leitura Ótica Rápida (Código de Barras)</label>
+                                <input type="text" class="form-input input-scan" id="disp_scan_barcode" placeholder="Clique aqui e bipe a embalagem..." onkeypress="scanMedicationBarcode(event)">
+                            </div>
+                            <form id="dispensaForm" onsubmit="handleDispensa(event)">
+                                <div class="form-group">
+                                    <label class="form-label">Tipo de Material</label>
+                                    <div style="display: flex; gap: 20px;">
+                                        <label><input type="radio" name="tipo_material" value="MED" checked onchange="syncDispensarDropdown()"> Medicamentos</label>
+                                        <label><input type="radio" name="tipo_material" value="INS" onchange="syncDispensarDropdown()"> Insumos</label>
+                                    </div>
+                                </div>
+                                <div class="form-group"><label class="form-label">Item / Lote Selecionado</label><select class="form-select" id="disp_lote_id" required></select></div>
+                                <div class="form-group"><label class="form-label">Nome Completo do Paciente</label><input type="text" class="form-input" id="disp_paciente" placeholder="Nome do paciente recebedor" required></div>
+                                <div class="form-group">
+                                    <label class="form-label">Setor Destinatário</label>
+                                    <select class="form-select" id="disp_setor">
+                                        <option value="UTI Adulto">UTI Adulto</option>
+                                        <option value="Pronto Socorro / Triagem">Pronto Socorro / Triagem</option>
+                                        <option value="Clínica Médica">Clínica Médica</option>
+                                        <option value="Pediatria">Pediatria</option>
+                                        <option value="Centro Cirúrgico">Centro Cirúrgico</option>
+                                    </select>
+                                </div>
+                                <div class="form-group"><label class="form-label">Quantidade para Dispensar</label><input type="number" class="form-input" id="disp_qtd" min="1" required></div>
+                                <button type="submit" class="btn-action-primary btn-orange">Registrar Baixa Segura</button>
+                            </form>
+                        </div>
+                        <div class="box-container">
+                            <div class="box-title">
+                                <span>Histórico Geral de Saídas</span>
+                                <div class="filter-group">
+                                    <input type="text" id="searchDisp" class="search-input" style="width: 130px;" placeholder="Buscar..." onkeyup="genericFilterTable('searchDisp', 'disp_movs_body')">
+                                    <button class="btn-print-mini" onclick="printReport('dispensacoes')">🖨️</button>
+                                </div>
+                            </div>
+                            <div class="table-wrapper">
+                                <table class="data-table">
+                                    <thead><tr><th>Tipo</th><th>Item</th><th>Qtd</th><th>Destinatário / Paciente</th><th>Data e Hora</th></tr></thead>
+                                    <tbody id="disp_movs_body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
-# Registrar Entrada de Lote vinculado a um Medicamento do Catálogo
-@app.route('/api/pharmacy/lotes', methods=['POST'])
-def add_lote():
-    data = request.json or {}
-    med_id = data.get("medicamento_id")
-    numero = data.get("numero_lote")
-    fabricante = data.get("fabricante")
-    validade = data.get("validade")
-    quantidade = int(data.get("quantidade", 0))
+                <!-- 2. CATÁLOGO BASE -->
+                <section id="sec-catalogo" class="page-section">
+                    <div class="grid-forms">
+                        <div class="box-container">
+                            <div class="box-title">➕ Incluir Novo Fármaco</div>
+                            <form id="medForm" onsubmit="handleMedSubmit(event)">
+                                <div class="form-group"><label class="form-label">Código de Barras (EAN)</label><input type="text" class="form-input" id="med_codigo_barras"></div>
+                                <div class="form-group"><label class="form-label">Nome do Fármaco</label><input type="text" class="form-input" id="med_nome" required></div>
+                                <div class="form-group"><label class="form-label">Princípio Ativo</label><input type="text" class="form-input" id="med_principio" required></div>
+                                <div class="form-group">
+                                    <label class="form-label">Categoria Farmacoterapêutica</label>
+                                    <select class="form-select" id="med_categoria">
+                                        <option value="Analgésico / Antitérmico">Analgésico / Antitérmico</option>
+                                        <option value="Antimicrobiano / Antibiótico">Antimicrobiano / Antibiótico</option>
+                                        <option value="Cardiovascular">Cardiovascular</option>
+                                        <option value="Opioide / Psicotrópico">Opioide / Psicotrópico</option>
+                                        <option value="Anestésico">Anestésico</option>
+                                    </select>
+                                </div>
+                                <div class="form-group"><label><input type="checkbox" id="med_controlado"> Controlado (Port. 344)</label></div>
+                                <button type="submit" class="btn-action-primary">Salvar Fármaco</button>
+                            </form>
+                        </div>
+                        <div class="box-container">
+                            <div class="box-title">
+                                <span>Catálogo Base</span>
+                                <div class="filter-group">
+                                    <input type="text" id="searchCat" class="search-input" placeholder="Buscar Fármaco..." onkeyup="genericFilterTable('searchCat', 'med_table_body')">
+                                    <button class="btn-print-mini" onclick="printReport('catalogo')">🖨️</button>
+                                </div>
+                            </div>
+                            <div class="table-wrapper">
+                                <table class="data-table">
+                                    <thead><tr><th>Cód. Barras</th><th>Nome</th><th>Princípio Ativo</th><th>Tipo</th></tr></thead>
+                                    <tbody id="med_table_body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
-    conn = conectar_bd()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    try:
-        cursor.execute('''
-            INSERT INTO lotes (medicamento_id, numero_lote, fabricante, validade, quantidade)
-            VALUES (%s, %s, %s, %s, %s) RETURNING id
-        ''', (med_id, numero, fabricante, validade, quantidade))
-        new_id = cursor.fetchone()['id']
-        conn.commit()
-        return jsonify({"success": True, "id": new_id}), 201
-    except Exception as e:
-        conn.rollback()
-        return jsonify({"success": False, "message": str(e)}), 500
-    finally:
-        cursor.close()
-        conn.close()
+                <!-- 3. ENTRADA DE LOTES -->
+                <section id="sec-lotes" class="page-section">
+                    <div class="grid-forms">
+                        <div class="box-container">
+                            <div class="box-title">📥 Registrar Lote</div>
+                            <form id="loteForm" onsubmit="handleLoteSubmit(event)">
+                                <div class="form-group"><label class="form-label">Fármaco do Catálogo</label><select class="form-select" id="lote_med_id" required></select></div>
+                                <div class="form-group"><label class="form-label">Número do Lote</label><input type="text" class="form-input" id="lote_numero" required></div>
+                                <div class="form-group"><label class="form-label">Fabricante / Laboratório</label><input type="text" class="form-input" id="lote_fabricante" required></div>
+                                <div class="form-group"><label class="form-label">Data de Validade</label><input type="date" class="form-input" id="lote_validade" required></div>
+                                <div class="form-group"><label class="form-label">Quantidade</label><input type="number" class="form-input" id="lote_quantidade" min="1" required></div>
+                                <button type="submit" class="btn-action-primary">Registrar Lote</button>
+                            </form>
+                        </div>
+                        <div class="box-container">
+                            <div class="box-title">
+                                <span>Inventário de Lotes</span>
+                                <div class="filter-group">
+                                    <input type="text" id="searchLote" class="search-input" placeholder="Buscar Lote..." onkeyup="genericFilterTable('searchLote', 'lote_table_body')">
+                                    <button class="btn-print-mini" onclick="printReport('lotes')">🖨️</button>
+                                </div>
+                            </div>
+                            <div class="table-wrapper"><table class="data-table"><thead><tr><th>Fármaco</th><th>Lote</th><th>Validade</th><th>Qtd</th></tr></thead><tbody id="lote_table_body"></tbody></table></div>
+                        </div>
+                    </div>
+                </section>
 
+                <!-- 4. INSUMOS -->
+                <section id="sec-insumos" class="page-section">
+                    <div class="grid-forms">
+                        <div class="box-container">
+                            <div class="box-title">💉 Registrar Insumo</div>
+                            <form id="insForm" onsubmit="handleInsumoSubmit(event)">
+                                <div class="form-group"><label class="form-label">Nome</label><input type="text" class="form-input" id="ins_nome" required></div>
+                                <div class="form-group"><label class="form-label">Especificação</label><input type="text" class="form-input" id="ins_especificacao" required></div>
+                                <div class="form-group"><label class="form-label">Unidade</label><select class="form-select" id="ins_unidade"><option>Unidade</option><option>Caixa</option></select></div>
+                                <div class="form-group"><label class="form-label">Qtd Entrada</label><input type="number" class="form-input" id="ins_qtd" required></div>
+                                <button type="submit" class="btn-action-primary">Registrar</button>
+                            </form>
+                        </div>
+                        <div class="box-container">
+                            <div class="box-title">
+                                <span>Saldo Insumos</span>
+                                <div class="filter-group">
+                                    <input type="text" id="searchIns" class="search-input" placeholder="Buscar Insumo..." onkeyup="genericFilterTable('searchIns', 'ins_table_body')">
+                                    <button class="btn-print-mini" onclick="printReport('insumos')">🖨️</button>
+                                </div>
+                            </div>
+                            <div class="table-wrapper"><table class="data-table"><thead><tr><th>Insumo</th><th>Espec.</th><th>Saldo</th></tr></thead><tbody id="ins_table_body"></tbody></table></div>
+                        </div>
+                    </div>
+                </section>
 
-# Registrar Entrada de Insumo Correlato
-@app.route('/api/pharmacy/insumos', methods=['POST'])
-def add_insumo():
-    data = request.json or {}
-    cnpj = data.get("empresa_cnpj")
-    nome = data.get("nome")
-    especificacao = data.get("especificacao")
-    unidade = data.get("unidade_medida")
-    quantidade = int(data.get("quantidade", 0))
+                <!-- 5. ETIQUETAS -->
+                <section id="sec-etiquetas" class="page-section">
+                    <div class="box-container" style="max-width: 100%;">
+                        <div class="box-title">🏷️ Central de Etiquetas e Código de Barras (Fracionamento)</div>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">Gere etiquetas prontas para fracionamento individual atendendo a rastreabilidade hospitalar.</p>
+                        <div class="grid-forms">
+                            <div class="form-group">
+                                <label class="form-label">Selecionar Fármaco e Lote</label>
+                                <select class="form-select" id="etiqueta_lote_id" onchange="previewEtiqueta()"></select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Quantidade de Vias</label>
+                                <input type="number" class="form-input" id="etiqueta_vias" min="1" value="1" oninput="previewEtiqueta()">
+                            </div>
+                        </div>
+                        <div class="label-grid" id="etiquetasContainer"></div>
+                        <button class="btn-action-primary btn-orange" style="margin-top: 20px;" onclick="window.print()">🖨️ Imprimir Etiquetas</button>
+                    </div>
+                </section>
 
-    conn = conectar_bd()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    try:
-        cursor.execute('''
-            INSERT INTO insumos (empresa_cnpj, nome, especificacao, unidade_medida, quantidade)
-            VALUES (%s, %s, %s, %s, %s) RETURNING id
-        ''', (cnpj, nome, especificacao, unidade, quantidade))
-        new_id = cursor.fetchone()['id']
-        conn.commit()
-        return jsonify({"success": True, "id": new_id}), 201
-    except Exception as e:
-        conn.rollback()
-        return jsonify({"success": False, "message": str(e)}), 500
-    finally:
-        cursor.close()
-        conn.close()
+                <!-- 6. RASTREABILIDADE (AUDITORIA COM FILTRO DE DATAS) -->
+                <section id="sec-rastreio" class="page-section">
+                    <div class="box-container" style="max-width: 100%;">
+                        <div class="box-title" style="align-items: center;">
+                            <span>🔍 Auditoria & Rastreabilidade</span>
+                            <div class="filter-group">
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">De:</span>
+                                <input type="date" id="rastreioDataInicio" class="form-input" style="padding: 6px; font-size: 0.75rem;" onchange="updateRastreioTable()">
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">Até:</span>
+                                <input type="date" id="rastreioDataFim" class="form-input" style="padding: 6px; font-size: 0.75rem;" onchange="updateRastreioTable()">
+                                
+                                <input type="text" class="search-input" id="rastreioSearch" onkeyup="updateRastreioTable()" placeholder="Buscar Termo...">
+                                <button class="btn-print-mini" style="background-color: #fee2e2; border-color: #fca5a5; color: #991b1b;" onclick="printPortaria344Report()">📋 P. 344</button>
+                                <button class="btn-print-mini" onclick="printReport('rastreio')">🖨️ Imprimir</button>
+                            </div>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead><tr><th>Operação</th><th>Paciente / Setor</th><th>Item Responsável</th><th>Qtd</th><th>Data e Hora</th></tr></thead>
+                                <tbody id="rastreio_table_body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
 
+                <!-- 7. ALERTAS CLÍNICOS -->
+                <section id="sec-alertas" class="page-section">
+                    <div class="grid-forms" style="grid-template-columns: 1fr;">
+                        <div class="box-container">
+                            <div class="box-title" style="color: var(--danger)">⚠️ Lotes Vencidos ou Próximos do Vencimento (Abaixo de 30 dias)</div>
+                            <div class="table-wrapper"><table class="data-table"><thead><tr style="background-color: #fee2e2;"><th>Fármaco</th><th>Lote</th><th>Fabricante</th><th>Vencimento</th><th>Dias Restantes</th></tr></thead><tbody id="alerta_vencidos_body"></tbody></table></div>
+                        </div>
+                        <div class="box-container" style="margin-top: 24px;">
+                            <div class="box-title" style="color: var(--warning)">⚡ Alerta de Nível Crítico de Estoque (Abaixo de 150 unidades)</div>
+                            <div class="table-wrapper"><table class="data-table"><thead><tr style="background-color: #fef3c7;"><th>Item</th><th>Lote / Tipo</th><th>Quantidade no Sistema</th><th>Status da Reposição</th></tr></thead><tbody id="alerta_estoque_body"></tbody></table></div>
+                        </div>
+                    </div>
+                </section>
 
-# Registrar Baixa/Dispensação por Lote ou Insumo
-@app.route('/api/pharmacy/dispensar', methods=['POST'])
-def register_dispensa():
-    data = request.json or {}
-    cnpj = data.get("empresa_cnpj")
-    tipo = data.get("tipo")  # "MED" ou "INS"
-    id_item = data.get("id_item")  # lote_id se MED, insumo_id se INS
-    qtd_saida = int(data.get("qtd", 0))
-    paciente = data.get("paciente")
-    setor = data.get("setor")
-    responsavel = data.get("responsavel", "Operador Geral")
+                <!-- 8. TECNOVIGILÂNCIA -->
+                <section id="sec-tecno" class="page-section">
+                    <div class="grid-forms">
+                        <div class="box-container">
+                            <div class="box-title">🚩 Registrar Desvio</div>
+                            <form id="tecnoForm" onsubmit="handleTecnoSubmit(event)">
+                                <div class="form-group"><label class="form-label">Identificação Lote</label><input type="text" class="form-input" id="tecno_lote" required></div>
+                                <div class="form-group">
+                                    <label class="form-label">Tipo de Desvio</label>
+                                    <select class="form-select" id="tecno_tipo">
+                                        <option value="Embalagem Danificada">Embalagem Danificada</option>
+                                        <option value="Corpo Estranho">Corpo Estranho</option>
+                                        <option value="Suspeita de Ineficácia">Suspeita de Ineficácia</option>
+                                        <option value="Reação Adversa Grave">Reação Adversa Grave</option>
+                                    </select>
+                                </div>
+                                <div class="form-group"><label class="form-label">Gravidade</label><select class="form-select" id="tecno_gravidade"><option value="Baixa">Baixa</option><option value="Média">Média</option><option value="Crítica">Crítica</option></select></div>
+                                <div class="form-group"><label class="form-label">Descrição</label><textarea class="form-textarea" id="tecno_descricao" rows="2" required></textarea></div>
+                                <div class="form-group"><label class="form-label">Conduta Adotada</label><input type="text" class="form-input" id="tecno_conduta" required></div>
+                                <button type="submit" class="btn-action-primary btn-red">Submeter Alerta</button>
+                            </form>
+                        </div>
+                        <div class="box-container">
+                            <div class="box-title">
+                                <span>Histórico de Desvios</span>
+                                <div class="filter-group">
+                                    <input type="text" id="searchTecno" class="search-input" placeholder="Buscar..." onkeyup="genericFilterTable('searchTecno', 'tecno_table_body')">
+                                    <button class="btn-print-mini" onclick="printReport('tecnovigilancia')">🖨️</button>
+                                </div>
+                            </div>
+                            <div class="table-wrapper"><table class="data-table"><thead><tr><th>Lote</th><th>Ocorrência</th><th>Gravidade</th><th>Data</th></tr></thead><tbody id="tecno_table_body"></tbody></table></div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
 
-    conn = conectar_bd()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    <!-- MODAL DE RECIBO -->
+    <div class="modal-overlay" id="receiptModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="document.getElementById('receiptModal').style.display='none'">×</button>
+            <h3 style="color: var(--secondary)">✓ Registro Salvo</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Comprovante de Saída Gerado.</p>
+            <div class="receipt-card" id="printReceiptArea"></div>
+            <button class="btn-action-primary" style="width: 100%;" onclick="printSingleReceipt()">🖨️ Imprimir Recibo</button>
+        </div>
+    </div>
 
-    try:
-        if tipo == "MED":
-            # Puxa o lote
-            cursor.execute("SELECT quantidade, medicamento_id FROM lotes WHERE id = %s", (id_item,))
-            lote = cursor.fetchone()
-            if not lote or lote['quantidade'] < qtd_saida:
-                return jsonify({"success": False, "message": "Estoque de lote insuficiente!"}), 400
+    <script>
+        let currentUser = null;
+        let html5QrCode = null; 
+        let database = { medicamentos: [], lotes: [], insumos: [], movimentacoes: [], tecnovigilancia: [] };
+        let lastDispensaData = null; 
 
-            # Atualiza o saldo do Lote
-            cursor.execute("UPDATE lotes SET quantidade = quantidade - %s WHERE id = %s", (qtd_saida, id_item))
+        // =========================================
+        // 1. SINCRONIZAÇÃO COM O POSTGRESQL (NEON)
+        // =========================================
+        async function syncDatabase() {
+            if (!currentUser) return;
+            try {
+                const response = await fetch(`/api/pharmacy/sync?cnpj=${currentUser.empresa_cnpj}`);
+                const data = await response.json();
+                if(data.success) {
+                    database.medicamentos = data.medicamentos || [];
+                    database.lotes = data.lotes || [];
+                    database.insumos = data.insumos || [];
+                    database.movimentacoes = data.movimentacoes || [];
+                    database.tecnovigilancia = data.tecnovigilancia || [];
+                    updateAllTables();
+                }
+            } catch (error) { 
+                console.error("Erro Sync:", error); 
+            }
+        }
 
-            # Captura nome do medicamento
-            cursor.execute("SELECT nome FROM medicamentos WHERE id = %s", (lote['medicamento_id'],))
-            med = cursor.fetchone()
-            item_nome = med['nome']
-        else:
-            # Puxa o Insumo
-            cursor.execute("SELECT quantidade, nome FROM insumos WHERE id = %s", (id_item,))
-            ins = cursor.fetchone()
-            if not ins or ins['quantidade'] < qtd_saida:
-                return jsonify({"success": False, "message": "Estoque de insumos insuficiente!"}), 400
+        // =========================================
+        // 2. SISTEMA DE BUSCA GENÉRICA (TEXTO)
+        // =========================================
+        function genericFilterTable(inputId, tbodyId) {
+            const filter = document.getElementById(inputId).value.toLowerCase();
+            const trs = document.getElementById(tbodyId).getElementsByTagName('tr');
+            for (let i = 0; i < trs.length; i++) {
+                trs[i].style.display = trs[i].innerText.toLowerCase().includes(filter) ? "" : "none";
+            }
+        }
 
-            # Atualiza o saldo do Insumo
-            cursor.execute("UPDATE insumos SET quantidade = quantidade - %s WHERE id = %s", (qtd_saida, id_item))
-            item_nome = ins['nome']
+        // =========================================
+        // 3. SISTEMA DE FILTRO AVANÇADO (DATA E TEXTO)
+        // =========================================
+        function getFilteredRastreioData() {
+            const search = document.getElementById('rastreioSearch').value.toLowerCase();
+            const dataInicio = document.getElementById('rastreioDataInicio').value; 
+            const dataFim = document.getElementById('rastreioDataFim').value; 
 
-        # Grava na tabela de Movimentações
-        data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        cursor.execute('''
-            INSERT INTO movimentacoes (empresa_cnpj, tipo, item_nome, quantidade, setor_destino, paciente_nome, responsavel, data_movimentacao)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        ''', (cnpj, f"SAÍDA {tipo}", item_nome, qtd_saida, setor, paciente, responsavel, data_atual))
+            return database.movimentacoes.filter(m => {
+                // 1. Filtro de Texto
+                const textStr = `${m.tipo} ${m.item_nome} ${m.paciente_nome} ${m.setor_destino} ${m.responsavel} ${m.data_movimentacao}`.toLowerCase();
+                const matchText = textStr.includes(search);
 
-        conn.commit()
-        return jsonify({"success": True}), 200
-    except Exception as e:
-        conn.rollback()
-        return jsonify({"success": False, "message": str(e)}), 500
-    finally:
-        cursor.close()
-        conn.close()
+                // 2. Filtro de Datas
+                let matchDate = true;
+                if (m.data_movimentacao) {
+                    // Espera o formato "DD/MM/YYYY, HH:MM" que definimos no Python
+                    const datePart = m.data_movimentacao.split(/[\s,]+/)[0]; 
+                    const partesDaData = datePart.split('/');
+                    
+                    if (partesDaData.length === 3) {
+                        const dia = partesDaData[0].padStart(2, '0');
+                        const mes = partesDaData[1].padStart(2, '0');
+                        const ano = partesDaData[2];
+                        const isoStr = `${ano}-${mes}-${dia}`;
+                        
+                        if (dataInicio && isoStr < dataInicio) matchDate = false;
+                        if (dataFim && isoStr > dataFim) matchDate = false;
+                    }
+                }
+                return matchText && matchDate;
+            });
+        }
 
+        function updateRastreioTable() {
+            const rstrBody = document.getElementById('rastreio_table_body');
+            rstrBody.innerHTML = "";
+            const dadosFiltrados = getFilteredRastreioData();
+            
+            if(dadosFiltrados.length === 0) {
+                rstrBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px;">Nenhum registro encontrado no período selecionado.</td></tr>`;
+                return;
+            }
 
-# Registrar Ocorrência de Tecnovigilância
-@app.route('/api/pharmacy/tecnovigilancia', methods=['POST'])
-def add_tecnovigilancia():
-    data = request.json or {}
-    cnpj = data.get("empresa_cnpj")
-    lote_texto = data.get("lote_texto")
-    tipo_ocorrencia = data.get("tipo_ocorrencia")
-    gravidade = data.get("gravidade")
-    descricao = data.get("descricao")
-    conduta = data.get("conduta")
-    data_registro = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            dadosFiltrados.forEach(m => {
+                rstrBody.innerHTML += `
+                    <tr>
+                        <td><span class="badge-comum">${m.tipo}</span></td>
+                        <td>${m.paciente_nome} / ${m.setor_destino}</td>
+                        <td><strong>${m.item_nome}</strong></td>
+                        <td>${m.quantidade}</td>
+                        <td>${m.data_movimentacao} (${m.responsavel})</td>
+                    </tr>
+                `;
+            });
+        }
 
-    conn = conectar_bd()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    try:
-        cursor.execute('''
-            INSERT INTO tecnovigilancia (empresa_cnpj, lote_texto, tipo_ocorrencia, gravidade, descricao, conduta, data_registro)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        ''', (cnpj, lote_texto, tipo_ocorrencia, gravidade, descricao, conduta, data_registro))
-        conn.commit()
-        return jsonify({"success": True}), 201
-    except Exception as e:
-        conn.rollback()
-        return jsonify({"success": False, "message": str(e)}), 500
-    finally:
-        cursor.close()
-        conn.close()
+        // =========================================
+        // 4. WEBCAM E AUTENTICAÇÃO
+        // =========================================
+        function startWebcam() {
+            html5QrCode = new Html5Qrcode("webcam-reader");
+            
+            const qrCodeSuccessCallback = (decodedText) => {
+                document.getElementById('scannerMsg').innerText = "✓ Crachá Identificado!";
+                document.getElementById('scannerMsg').style.color = "#10b981";
+                document.getElementById('cpfInput').value = decodedText.replace(/[^0-9]/g, '');
+                
+                if (html5QrCode.isScanning) {
+                    html5QrCode.stop()
+                        .then(() => attemptManualLogin())
+                        .catch(() => attemptManualLogin());
+                } else {
+                    attemptManualLogin();
+                }
+            };
+            
+            const config = { fps: 15, qrbox: { width: 180, height: 180 }, aspectRatio: 1.0 };
+            
+            html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
+                .catch(() => {
+                    html5QrCode.start({ facingMode: "user" }, config, qrCodeSuccessCallback).catch(() => {
+                        document.getElementById('scannerMsg').innerText = "Câmera indisponível. Digite o CPF.";
+                    });
+                });
+        }
 
+        function handleKeyPress(e) { 
+            if (e.key === 'Enter') {
+                attemptManualLogin();
+            } 
+        }
 
-@app.route('/')
-def home():
-    return jsonify({"status": "sisFarma API on Neon PostgreSQL is online", "version": "1.0.0"}), 200
+        async function attemptManualLogin() {
+            const cpfInput = document.getElementById('cpfInput');
+            const btn = document.getElementById('btnLoginSubmit');
+            const msg = document.getElementById('scannerMsg');
+            const cpf = cpfInput.value.replace(/\D/g, ''); 
+            
+            if (cpf.length !== 11) { 
+                alert("Insira um CPF válido de 11 dígitos."); 
+                return; 
+            }
+
+            btn.innerText = "Verificando..."; 
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/pharmacy/login', {
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ cpf: cpf })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    currentUser = data.colaborador;
+                    document.getElementById('headerUserName').innerText = currentUser.nome;
+                    document.getElementById('headerUserRole').innerText = currentUser.cargo;
+                    document.getElementById('headerAvatar').innerText = currentUser.nome.charAt(0).toUpperCase();
+
+                    if (html5QrCode && html5QrCode.isScanning) {
+                        await html5QrCode.stop().catch(e => console.log(e));
+                    }
+
+                    setTimeout(() => {
+                        document.getElementById('loginScreen').style.display = 'none';
+                        document.getElementById('appContainer').style.display = 'flex';
+                        syncDatabase();
+                        setTimeout(() => document.getElementById('disp_scan_barcode').focus(), 500);
+                    }, 600);
+                } else {
+                    alert("Acesso Negado: " + data.message);
+                    cpfInput.value = ""; 
+                    cpfInput.focus();
+                    if (html5QrCode && !html5QrCode.isScanning) {
+                        startWebcam();
+                    }
+                }
+            } catch (error) { 
+                alert("Falha de comunicação com o servidor."); 
+                if (html5QrCode && !html5QrCode.isScanning) {
+                    startWebcam();
+                }
+            } finally { 
+                btn.innerText = "Autenticar Operador"; 
+                btn.disabled = false; 
+            }
+        }
+
+        function logout() { 
+            location.reload(); 
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.page-section, .menu-link').forEach(el => el.classList.remove('active'));
+            document.getElementById('sec-' + tabId).classList.add('active');
+            document.getElementById('nav-' + tabId).classList.add('active');
+            
+            const titles = { 
+                'dispensar': 'Dispensação e Saídas', 
+                'catalogo': 'Catálogo Base', 
+                'lotes': 'Entrada de Lotes', 
+                'insumos': 'Cadastro de Insumos', 
+                'etiquetas': 'Etiquetas de Fracionamento', 
+                'rastreio': 'Auditoria de Rastreabilidade', 
+                'alertas': 'Alertas Clínicos Ativos', 
+                'tecno': 'Tecnovigilância'
+            };
+            document.getElementById('page-current-title').innerText = titles[tabId];
+            
+            if(tabId === 'dispensar') {
+                setTimeout(() => document.getElementById('disp_scan_barcode').focus(), 100);
+            }
+        }
+
+        function scanMedicationBarcode(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const barcodeInput = document.getElementById('disp_scan_barcode');
+                const barcode = barcodeInput.value.trim();
+                
+                if(!barcode) return;
+                
+                const medicamento = database.medicamentos.find(m => m.codigo_barras === barcode);
+                if (medicamento) {
+                    const loteDisponivel = database.lotes.find(l => (l.medicamento_id === medicamento.id || l.med_id === medicamento.id) && l.quantidade > 0);
+                    if (loteDisponivel) {
+                        document.querySelector('input[name="tipo_material"][value="MED"]').checked = true;
+                        syncDispensarDropdown();
+                        document.getElementById('disp_lote_id').value = loteDisponivel.id;
+                        document.getElementById('disp_paciente').focus();
+                        barcodeInput.style.backgroundColor = "#d1fae5";
+                        setTimeout(() => { barcodeInput.style.backgroundColor = "#ecfdf5"; }, 500);
+                    } else {
+                        alert(`❌ Fármaco reconhecido, mas NÃO HÁ LOTES em estoque.`);
+                    }
+                } else {
+                    alert(`⚠️ Código de barras [${barcode}] não encontrado no Catálogo!`);
+                }
+                barcodeInput.value = "";
+            }
+        }
+
+        // =========================================
+        // 5. SUBMISSÕES DE FORMULÁRIOS
+        // =========================================
+        async function handleDispensa(e) {
+            e.preventDefault();
+            const tipo_mat = document.querySelector('input[name="tipo_material"]:checked').value;
+            const id_item = parseInt(document.getElementById('disp_lote_id').value);
+            const paciente = document.getElementById('disp_paciente').value;
+            const setor = document.getElementById('disp_setor').value;
+            const qtd = parseInt(document.getElementById('disp_qtd').value);
+            
+            let itemNomeLog = "";
+            let loteNumeroLog = "N/A";
+
+            if (tipo_mat === "MED") {
+                const lote = database.lotes.find(l => l.id === id_item);
+                if (qtd > lote.quantidade) { 
+                    alert("Atenção: O estoque do lote selecionado é insuficiente."); 
+                    return; 
+                }
+                const med = database.medicamentos.find(m => m.id === lote.medicamento_id || m.id === lote.med_id);
+                if (med && med.controlado == 1) {
+                    const confirmacao = confirm("⚠️ ATENÇÃO: Medicamento Controlado (Port. 344/98).\nVocê confirma que reteve a receita médica física e preencheu os dados corretamente?");
+                    if (!confirmacao) return;
+                }
+                itemNomeLog = med.nome; 
+                loteNumeroLog = lote.numero_lote || lote.numero;
+            } else {
+                const insumo = database.insumos.find(i => i.id === id_item);
+                if (qtd > insumo.quantidade) { 
+                    alert("Atenção: O estoque do insumo selecionado é insuficiente."); 
+                    return; 
+                }
+                itemNomeLog = insumo.nome;
+            }
+
+            try {
+                const res = await fetch('/api/pharmacy/dispensar', {
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        empresa_cnpj: currentUser.empresa_cnpj, 
+                        tipo: tipo_mat, 
+                        id_item: id_item, 
+                        paciente: paciente, 
+                        setor: setor, 
+                        qtd: qtd, 
+                        responsavel: currentUser.nome 
+                    })
+                });
+                const result = await res.json();
+                
+                if(result.success) {
+                    document.getElementById('dispensaForm').reset();
+                    lastDispensaData = { 
+                        tipo: tipo_mat === "MED" ? "MEDICAMENTO" : "INSUMO", 
+                        item: itemNomeLog, 
+                        lote: loteNumeroLog, 
+                        qtd: qtd, 
+                        paciente: paciente, 
+                        setor: setor, 
+                        responsavel: currentUser.nome, 
+                        data: new Date().toLocaleString('pt-BR') 
+                    };
+                    await syncDatabase();
+                    showReceipt(lastDispensaData); 
+                } else {
+                    alert("Falha ao registrar saída: " + result.message);
+                }
+            } catch(error) { 
+                alert("Erro de rede ao tentar processar a dispensação."); 
+            }
+        }
+
+        async function handleMedSubmit(e) {
+            e.preventDefault();
+            const payload = { 
+                empresa_cnpj: currentUser.empresa_cnpj, 
+                codigo_barras: document.getElementById('med_codigo_barras').value.trim(), 
+                nome: document.getElementById('med_nome').value, 
+                principio_ativo: document.getElementById('med_principio').value, 
+                categoria: document.getElementById('med_categoria').value, 
+                controlado: document.getElementById('med_controlado').checked ? 1 : 0 
+            };
+            try {
+                const res = await fetch('/api/pharmacy/medicamentos', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(payload) 
+                });
+                const result = await res.json();
+                if(result.success) { 
+                    document.getElementById('medForm').reset(); 
+                    syncDatabase(); 
+                    alert("Fármaco guardado com sucesso na base de dados!");
+                } else {
+                    alert("Erro ao cadastrar fármaco: " + result.message);
+                }
+            } catch(e) { 
+                alert("Erro de rede ao salvar o medicamento."); 
+            }
+        }
+
+        async function handleLoteSubmit(e) {
+            e.preventDefault();
+            const payload = { 
+                medicamento_id: parseInt(document.getElementById('lote_med_id').value), 
+                numero_lote: document.getElementById('lote_numero').value, 
+                fabricante: document.getElementById('lote_fabricante').value, 
+                validade: document.getElementById('lote_validade').value, 
+                quantidade: parseInt(document.getElementById('lote_quantidade').value) 
+            };
+            try {
+                const res = await fetch('/api/pharmacy/lotes', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(payload) 
+                });
+                const result = await res.json();
+                if(result.success) { 
+                    document.getElementById('loteForm').reset(); 
+                    syncDatabase(); 
+                    alert("Lote inserido com sucesso no inventário!");
+                } else {
+                    alert("Erro ao cadastrar lote: " + result.message);
+                }
+            } catch(e) {
+                alert("Erro de comunicação ao salvar o lote.");
+            }
+        }
+
+        async function handleInsumoSubmit(e) {
+            e.preventDefault();
+            const payload = { 
+                empresa_cnpj: currentUser.empresa_cnpj, 
+                nome: document.getElementById('ins_nome').value, 
+                especificacao: document.getElementById('ins_especificacao').value, 
+                unidade_medida: document.getElementById('ins_unidade').value, 
+                quantidade: parseInt(document.getElementById('ins_qtd').value) 
+            };
+            try {
+                const res = await fetch('/api/pharmacy/insumos', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(payload) 
+                });
+                const result = await res.json();
+                if(result.success) { 
+                    document.getElementById('insForm').reset(); 
+                    syncDatabase(); 
+                    alert("Entrada de insumo registrada com sucesso!");
+                } else {
+                    alert("Erro ao registrar insumo: " + result.message);
+                }
+            } catch(e) {
+                alert("Falha de rede ao tentar processar o insumo.");
+            }
+        }
+
+        async function handleTecnoSubmit(e) {
+            e.preventDefault();
+            const payload = { 
+                empresa_cnpj: currentUser.empresa_cnpj, 
+                lote_texto: document.getElementById('tecno_lote').value, 
+                tipo_ocorrencia: document.getElementById('tecno_tipo').value, 
+                gravidade: document.getElementById('tecno_gravidade').value, 
+                descricao: document.getElementById('tecno_descricao').value, 
+                conduta: document.getElementById('tecno_conduta').value 
+            };
+            try {
+                const res = await fetch('/api/pharmacy/tecnovigilancia', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(payload) 
+                });
+                const result = await res.json();
+                if(result.success) { 
+                    document.getElementById('tecnoForm').reset(); 
+                    syncDatabase(); 
+                    alert("Registro de Tecnovigilância submetido formalmente com sucesso!"); 
+                } else {
+                    alert("Falha ao submeter alerta: " + result.message);
+                }
+            } catch(e) {
+                alert("Erro de conexão ao enviar dados da tecnovigilância.");
+            }
+        }
+
+        // =========================================
+        // 6. ATUALIZAÇÃO DA INTERFACE (TABELAS)
+        // =========================================
+        function syncDispensarDropdown() {
+            const tipo = document.querySelector('input[name="tipo_material"]:checked').value;
+            const sel = document.getElementById('disp_lote_id');
+            sel.innerHTML = "";
+            
+            if (tipo === "MED") {
+                database.lotes.filter(l => l.quantidade > 0).forEach(l => { 
+                    const m = database.medicamentos.find(x => x.id === l.medicamento_id || x.id === l.med_id); 
+                    if(m) {
+                        sel.innerHTML += `<option value="${l.id}">${m.nome} | Lote: ${l.numero_lote || l.numero} (Saldo: ${l.quantidade})</option>`; 
+                    }
+                });
+            } else {
+                database.insumos.filter(i => i.quantidade > 0).forEach(i => { 
+                    sel.innerHTML += `<option value="${i.id}">${i.nome} | Espec: ${i.especificacao} (Saldo: ${i.quantidade})</option>`; 
+                });
+            }
+        }
+
+        function previewEtiqueta() {
+            const select = document.getElementById('etiqueta_lote_id');
+            const vias = parseInt(document.getElementById('etiqueta_vias').value) || 1;
+            const container = document.getElementById('etiquetasContainer');
+            
+            container.innerHTML = "";
+            if (!select.value) return;
+            
+            const [type, id] = select.value.split('-');
+            let nomeItem = "", loteItem = "", validadeItem = "";
+            
+            if (type === "MED") { 
+                const lote = database.lotes.find(l => l.id == id); 
+                const med = database.medicamentos.find(m => m.id == lote.medicamento_id || m.id == lote.med_id); 
+                nomeItem = med.nome; 
+                loteItem = lote.numero_lote || lote.numero; 
+                validadeItem = lote.validade; 
+            } else { 
+                const ins = database.insumos.find(i => i.id == id); 
+                nomeItem = ins.nome; 
+                loteItem = "INS-C"; 
+                validadeItem = "Não aplicável"; 
+            }
+            
+            for (let i = 0; i < vias; i++) {
+                container.innerHTML += `
+                    <div class="label-card-p">
+                        <div style="font-weight:700; font-size:11px; margin-bottom:4px; text-transform:uppercase;">${nomeItem}</div>
+                        <div><strong>Lote:</strong> ${loteItem}</div>
+                        <div><strong>Validade:</strong> ${validadeItem}</div>
+                        <div style="margin-top:6px; font-size:9px; color:#555;">sisFarma | RDC 430</div>
+                        <div style="position:absolute; right:8px; bottom:8px; width:40px; height:40px; background:#ddd; display:flex; align-items:center; justify-content:center; font-size:7px;">BARCODE</div>
+                    </div>`;
+            }
+        }
+
+        function updateAllTables() {
+            // Catálogo
+            const medBody = document.getElementById('med_table_body'); 
+            medBody.innerHTML = "";
+            database.medicamentos.forEach(m => { 
+                const tagControlado = m.controlado == 1 ? "<span class='badge-ctrl'>Port. 344</span>" : "<span class='badge-comum'>Comum</span>";
+                medBody.innerHTML += `<tr><td style="font-family:monospace;">${m.codigo_barras || 'N/A'}</td><td><strong>${m.nome}</strong></td><td>${m.principio_ativo || m.principio}</td><td>${tagControlado}</td></tr>`; 
+            });
+
+            // Lotes
+            const loteBody = document.getElementById('lote_table_body'); 
+            loteBody.innerHTML = "";
+            database.lotes.forEach(l => { 
+                const m = database.medicamentos.find(x => x.id === l.medicamento_id || x.id === l.med_id); 
+                if(m) {
+                    loteBody.innerHTML += `<tr><td>${m.nome}</td><td><strong>${l.numero_lote || l.numero}</strong></td><td>${l.validade}</td><td>${l.quantidade}</td></tr>`; 
+                }
+            });
+
+            // Insumos
+            const insBody = document.getElementById('ins_table_body'); 
+            insBody.innerHTML = "";
+            database.insumos.forEach(i => { 
+                insBody.innerHTML += `<tr><td>${i.nome}</td><td>${i.especificacao}</td><td>${i.quantidade}</td></tr>`; 
+            });
+
+            // Saídas
+            const movsBody = document.getElementById('disp_movs_body'); 
+            movsBody.innerHTML = "";
+            database.movimentacoes.forEach(m => { 
+                movsBody.innerHTML += `<tr><td><strong>${m.tipo}</strong></td><td>${m.item_nome}</td><td>${m.quantidade}</td><td>${m.paciente_nome} (${m.setor_destino})</td><td>${m.data_movimentacao}</td></tr>`; 
+            });
+
+            // Rastreio (Usando a inteligência de Filtro de Datas)
+            updateRastreioTable();
+
+            // Tecnovigilância
+            const tcBody = document.getElementById('tecno_table_body'); 
+            tcBody.innerHTML = "";
+            database.tecnovigilancia.forEach(t => { 
+                tcBody.innerHTML += `<tr><td><strong>${t.lote_texto}</strong></td><td>${t.tipo_ocorrencia}</td><td><span class="badge-ctrl">${t.gravidade}</span></td><td>${t.data_registro}</td></tr>`; 
+            });
+
+            // Alertas Inteligentes
+            const vencidosBody = document.getElementById('alerta_vencidos_body'); 
+            vencidosBody.innerHTML = "";
+            
+            const estoqueBody = document.getElementById('alerta_estoque_body'); 
+            estoqueBody.innerHTML = "";
+            
+            let hasUrgentAlert = false;
+            
+            database.lotes.forEach(l => {
+                const m = database.medicamentos.find(x => x.id === l.medicamento_id || x.id === l.med_id);
+                if(m && l.validade) {
+                    const diasRestantes = Math.ceil((new Date(l.validade) - new Date()) / (1000 * 60 * 60 * 24));
+                    if (diasRestantes <= 30) { 
+                        hasUrgentAlert = true; 
+                        vencidosBody.innerHTML += `<tr style="background-color: #fef2f2;"><td><strong>${m.nome}</strong></td><td>${l.numero_lote || l.numero}</td><td>${l.fabricante}</td><td>${l.validade}</td><td style="color: var(--danger); font-weight:700;">${diasRestantes < 0 ? 'VENCIDO' : diasRestantes + ' dias'}</td></tr>`; 
+                    }
+                    if (l.quantidade <= 150) { 
+                        estoqueBody.innerHTML += `<tr><td>${m.nome}</td><td>Lote: ${l.numero_lote || l.numero}</td><td style="color: var(--warning); font-weight:700;">${l.quantidade} unidades</td><td><span class="badge-ctrl">Estoque Crítico</span></td></tr>`; 
+                    }
+                }
+            });
+            
+            document.getElementById('alertDot').style.display = hasUrgentAlert ? "inline-block" : "none";
+            document.getElementById('dispenseAlertBanner').style.display = hasUrgentAlert ? "flex" : "none";
+
+            // Sincroniza Dropdowns dos formulários
+            const medSelect = document.getElementById('lote_med_id'); 
+            medSelect.innerHTML = "";
+            database.medicamentos.forEach(m => { 
+                medSelect.innerHTML += `<option value="${m.id}">${m.nome}</option>`; 
+            });
+            
+            const etiqSelect = document.getElementById('etiqueta_lote_id'); 
+            etiqSelect.innerHTML = "";
+            database.lotes.forEach(l => { 
+                const m = database.medicamentos.find(x => x.id === l.medicamento_id || x.id === l.med_id); 
+                if(m) {
+                    etiqSelect.innerHTML += `<option value="MED-${l.id}">MED - ${m.nome} (Lote: ${l.numero_lote || l.numero})</option>`; 
+                }
+            });
+            database.insumos.forEach(i => { 
+                etiqSelect.innerHTML += `<option value="INS-${i.id}">INS - ${i.nome} (Espec: ${i.especificacao})</option>`; 
+            });
+
+            syncDispensarDropdown();
+            previewEtiqueta();
+        }
+
+        // ==========================================================
+        // 7. MÓDULO DE COMPROVANTE (RECIBO)
+        // ==========================================================
+        function showReceipt(data) {
+            document.getElementById('printReceiptArea').innerHTML = `
+                <div style="text-align: center; font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">sisFarma Hospitalar</div>
+                <div style="text-align: center; font-size: 0.75rem; margin-bottom: 10px;">COMPROVANTE DE SAÍDA</div>
+                <hr>
+                <div><strong>DATA:</strong> ${data.data}</div>
+                <div><strong>PACIENTE:</strong> ${data.paciente.toUpperCase()}</div>
+                <div><strong>SETOR:</strong> ${data.setor.toUpperCase()}</div>
+                <hr>
+                <div style="font-size: 0.9rem; margin: 8px 0;"><strong>ITEM:</strong> ${data.item.toUpperCase()}</div>
+                <div><strong>TIPO:</strong> ${data.tipo}</div>
+                <div><strong>LOTE:</strong> ${data.lote}</div>
+                <div style="font-size: 0.95rem; margin-top: 5px;"><strong>QTD:</strong> ${data.qtd} UNIDADE(S)</div>
+                <hr>
+                <div style="margin-top: 15px; font-size: 0.7rem; text-align: center;">
+                    Resp: ${data.responsavel.toUpperCase()}<br>
+                    -------------------------<br>
+                    Assinatura do Recebedor no Setor
+                </div>
+            `;
+            document.getElementById('receiptModal').style.display = "flex";
+        }
+        
+        function printSingleReceipt() {
+            document.getElementById('printArea').innerHTML = `
+                <div style="width: 280px; padding: 15px; border: 1px dashed #000; font-family: monospace; font-size: 11px; line-height: 1.4; color: #000; background-color: #fff;">
+                    ${document.getElementById('printReceiptArea').innerHTML}
+                </div>
+            `;
+            setTimeout(() => window.print(), 50);
+        }
+
+        // ==========================================================
+        // 8. IMPRESSÃO DE RELATÓRIOS (RESPEITANDO OS FILTROS)
+        // ==========================================================
+        function getFilteredDataForPrint(tipo) {
+            if (tipo === 'rastreio' || tipo === 'portaria344') {
+                return getFilteredRastreioData(); 
+            }
+            
+            const tbodyMap = {
+                'dispensacoes': 'disp_movs_body',
+                'catalogo': 'med_table_body',
+                'lotes': 'lote_table_body',
+                'insumos': 'ins_table_body',
+                'tecnovigilancia': 'tecno_table_body'
+            };
+            
+            const rows = document.getElementById(tbodyMap[tipo]).getElementsByTagName('tr');
+            let htmlTrs = "";
+            for (let i = 0; i < rows.length; i++) {
+                if (rows[i].style.display !== "none") {
+                    htmlTrs += `<tr>${rows[i].innerHTML}</tr>`;
+                }
+            }
+            return htmlTrs;
+        }
+
+        function printPortaria344Report() {
+            const dadosFiltrados = getFilteredRastreioData();
+            const medsControladosIds = database.medicamentos.filter(m => m.controlado == 1).map(m => m.nome.toLowerCase());
+            const movsControladas = dadosFiltrados.filter(m => medsControladosIds.some(nome => m.item_nome.toLowerCase().includes(nome)));
+
+            let rowsHtml = "";
+            if (movsControladas.length === 0) {
+                rowsHtml = `<tr><td colspan="5" style="text-align: center; padding: 20px;">Sem movimentações de controlados no período filtrado.</td></tr>`;
+            } else {
+                rowsHtml = movsControladas.map(m => `
+                    <tr>
+                        <td style="padding: 10px; border-bottom: 1px solid #ccc;">${m.data_movimentacao}</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #ccc;"><strong>${m.item_nome}</strong></td>
+                        <td style="padding: 10px; border-bottom: 1px solid #ccc;">${m.quantidade} UN</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #ccc;">${m.paciente_nome} (${m.setor_destino})</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #ccc;">${m.responsavel}</td>
+                    </tr>
+                `).join("");
+            }
+
+            document.getElementById('printArea').innerHTML = `
+                <div style="font-family: sans-serif; color: #000; padding: 10px;">
+                    <div style="text-align: center; margin-bottom: 25px;">
+                        <h2 style="font-size: 18px; margin-bottom: 5px;">CONTROLE DE PSICOTRÓPICOS E ENTORPECENTES</h2>
+                        <h3 style="font-size: 14px; margin-bottom: 5px; color: #333;">RELATÓRIO PORTARIA 344/98</h3>
+                        <p style="font-size: 11px; margin-top: 5px;">Emitido em: ${new Date().toLocaleString('pt-BR')}</p>
+                        <hr style="border: 0; border-top: 2px solid #000; margin-top: 15px;">
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; margin-bottom: 40px;">
+                        <thead>
+                            <tr style="background-color: #f1f5f9;">
+                                <th style="padding: 10px; border-bottom: 2px solid #000;">Data/Hora</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #000;">Fármaco</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #000;">Qtd</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #000;">Paciente</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #000;">Dispensador</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+                    <div style="display: flex; justify-content: space-between; margin-top: 80px; font-size: 12px; text-align: center;">
+                        <div style="width: 45%;">___________________________<br>Resp. Técnico (Farmacêutico)</div>
+                        <div style="width: 45%;">___________________________<br>Visto Vigilância Sanitária</div>
+                    </div>
+                </div>
+            `;
+            setTimeout(() => window.print(), 50);
+        }
+
+        function printReport(tipo) {
+            let titulo = "", colunas = [], rowsHtml = "";
+
+            if (tipo === 'rastreio') {
+                titulo = "AUDITORIA DE RASTREABILIDADE (DADOS FILTRADOS)";
+                colunas = ["Operação", "Paciente / Setor", "Item Responsável", "Qtd", "Data/Hora"];
+                const dados = getFilteredRastreioData();
+                rowsHtml = dados.map(m => `
+                    <tr>
+                        <td style="padding: 10px; border-bottom: 1px solid #ccc;">${m.tipo}</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #ccc;">${m.paciente_nome} (${m.setor_destino})</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #ccc;"><strong>${m.item_nome}</strong></td>
+                        <td style="padding: 10px; border-bottom: 1px solid #ccc;">${m.quantidade}</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #ccc;">${m.data_movimentacao}</td>
+                    </tr>
+                `).join("");
+            } else {
+                rowsHtml = getFilteredDataForPrint(tipo);
+                if (tipo === 'dispensacoes') { 
+                    titulo = "HISTÓRICO DE DISPENSAÇÕES"; 
+                    colunas = ["Tipo", "Item", "Qtd", "Destinatário", "Data e Hora"]; 
+                }
+                else if (tipo === 'catalogo') { 
+                    titulo = "CATÁLOGO DE FÁRMACOS"; 
+                    colunas = ["Cód. Barras", "Nome", "Princípio Ativo", "Tipo"]; 
+                }
+                else if (tipo === 'lotes') { 
+                    titulo = "INVENTÁRIO DE LOTES"; 
+                    colunas = ["Fármaco", "Lote", "Validade", "Qtd"]; 
+                }
+                else if (tipo === 'insumos') { 
+                    titulo = "BALANÇO DE INSUMOS"; 
+                    colunas = ["Insumo", "Especificação", "Saldo"]; 
+                }
+                else if (tipo === 'tecnovigilancia') { 
+                    titulo = "RELATÓRIO DE TECNOVIGILÂNCIA"; 
+                    colunas = ["Lote", "Ocorrência", "Gravidade", "Data"]; 
+                }
+            }
+
+            const headerHtml = colunas.map(col => `<th style="padding: 10px; border-bottom: 2px solid #000;">${col}</th>`).join("");
+            
+            document.getElementById('printArea').innerHTML = `
+                <div style="font-family: sans-serif; color: #000; padding: 10px;">
+                    <div style="text-align: center; margin-bottom: 25px;">
+                        <h2 style="font-size: 18px; margin-bottom: 5px;">SÍSFARMA HOSPITALAR</h2>
+                        <h3 style="font-size: 14px; margin-bottom: 5px; color: #333;">${titulo}</h3>
+                        <p style="font-size: 11px; margin-top: 5px;">Emitido em: ${new Date().toLocaleString('pt-BR')}</p>
+                        <hr style="border: 0; border-top: 2px solid #000; margin-top: 15px;">
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px;">
+                        <thead><tr style="background-color: #f1f5f9;">${headerHtml}</tr></thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+                </div>
+            `;
+            setTimeout(() => window.print(), 50);
+        }
+
+        window.onload = function() { 
+            startWebcam(); 
+            document.getElementById('cpfInput').focus(); 
+        };
+    </script>
+</body>
+</html>
