@@ -29,7 +29,7 @@ def conectar_bd():
         conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
         cursor = conn.cursor()
 
-        # Tabela de Colaboradores / Operadores (Compatível com Login por CPF/Crachá)
+        # Tabela de Colaboradores / Operadores (Compatível com index.html do dia 16)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS colaboradores (
                 id SERIAL PRIMARY KEY,
@@ -40,7 +40,7 @@ def conectar_bd():
             );
         """)
 
-        # Tabela de Administradores Locais (Compatível com admin.html)
+        # Tabela de Administradores Locais (Compatível com admin.html do dia 16)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS administradores (
                 id SERIAL PRIMARY KEY,
@@ -87,7 +87,7 @@ def conectar_bd():
             );
         """)
 
-        # Tabela de Movimentações (Correção da coluna setor_destino)
+        # Tabela de Movimentações
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS movimentacoes (
                 id SERIAL PRIMARY KEY,
@@ -116,22 +116,29 @@ def conectar_bd():
             );
         """)
 
-        # Criar um operador padrão caso a tabela esteja vazia (Para testes iniciais)
-        cursor.execute("SELECT COUNT(*) FROM colaboradores")
+        # 🔐 CARGA INICIAL DE SEGURANÇA (Para você conseguir logar imediatamente se o banco estiver vazio)
+        cursor.execute("SELECT COUNT(*) FROM administradores WHERE cnpj = '321'")
+        if cursor.fetchone()['count'] == 0:
+            cursor.execute("""
+                INSERT INTO administradores (cnpj, senha, hospital_nome) 
+                VALUES ('321', 'sF_master123', 'Hospital Central de Pará')
+            """)
+
+        cursor.execute("SELECT COUNT(*) FROM colaboradores WHERE cpf = '8755433249'")
         if cursor.fetchone()['count'] == 0:
             cursor.execute("""
                 INSERT INTO colaboradores (cpf, nome, cargo, empresa_cnpj) 
-                VALUES ('12345678901', 'Farmacêutico Plantonista', 'Responsável Técnico', '00000000000000')
+                VALUES ('8755433249', 'Junior Técnico de TI', 'Suporte de TI / Gestor', '321')
             """)
 
         conn.commit()
         cursor.close()
         return conn
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro de infraestrutura do Banco: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro na infraestrutura: {str(e)}")
 
 # =========================================================================
-# MODELOS DE ENTRADA PYDANTIC (VALIDADORES)
+# SCHEMAS DE ENTRADA PYDANTIC
 # =========================================================================
 class PharmacyLoginSchema(BaseModel):
     cpf: str
@@ -180,9 +187,10 @@ class TecnoPostSchema(BaseModel):
     conduta: str
 
 # =========================================================================
-# ROTAS EXIGIDAS PELO FRONTEND DO DIA 16
+# ROTAS REAIS CONECTADAS DIRETAMENTE AOS DOIS HTMLs
 # =========================================================================
 
+# Rota de Login do Operador (Chamada pelo index.html)
 @app.post("/api/pharmacy/login")
 def pharmacy_login(dados: PharmacyLoginSchema):
     db = conectar_bd()
@@ -193,35 +201,48 @@ def pharmacy_login(dados: PharmacyLoginSchema):
 
     if colaborador:
         return {"success": True, "colaborador": colaborador}
-    return {"success": False, "message": "Operador não cadastrado no sistema deste Hospital."}
+    return {"success": False, "message": "Operador não localizado."}
 
+# Rota de Login Administrativo (Chamada pelo admin.html)
+@app.post("/api/admin/auth")
+def admin_auth(dados: AdminAuthSchema):
+    db = conectar_bd()
+    cursor = db.cursor()
+    # Busca mapeando exatamente as colunas retornadas pelo fetch antigo
+    cursor.execute("SELECT cnpj, hospital_nome FROM administradores WHERE cnpj=%s AND senha=%s", (dados.cnpj, dados.senha))
+    admin = cursor.fetchone()
+    db.close()
+    
+    if admin:
+        return {
+            "success": True, 
+            "cnpj": admin["cnpj"], 
+            "razao_social": admin["hospital_nome"] # Alinhado com o 'data.razao_social' do seu admin.html
+        }
+    return {"success": False, "message": "CNPJ ou Senha Corporativa Inválidos."}
+
+# Rota de Sync Unificado do CAF
 @app.get("/api/pharmacy/sync")
 def pharmacy_sync(cnpj: str):
     db = conectar_bd()
     cursor = db.cursor()
     
-    # 1. Medicamentos
     cursor.execute("SELECT id, nome, principio_ativo, categoria, codigo_barras, controlado FROM medicamentos WHERE empresa_cnpj = %s", (cnpj,))
     meds = cursor.fetchall()
     
-    # 2. Lotes ativos
     cursor.execute("""
         SELECT l.id, l.medicamento_id, l.numero_lote, l.fabricante, to_char(l.validade, 'YYYY-MM-DD') as validade, l.quantidade 
-        FROM lotes l 
-        JOIN medicamentos m ON l.medicamento_id = m.id 
+        FROM lotes l JOIN medicamentos m ON l.medicamento_id = m.id 
         WHERE m.empresa_cnpj = %s
     """, (cnpj,))
     lotes = cursor.fetchall()
     
-    # 3. Insumos
     cursor.execute("SELECT id, nome, especificacao, unidade_medida, quantidade FROM insumos WHERE empresa_cnpj = %s", (cnpj,))
     insumos = cursor.fetchall()
     
-    # 4. Movimentações
     cursor.execute("SELECT tipo, item_nome, quantidade, paciente_nome, setor_destino, data_movimentacao, responsavel FROM movimentacoes WHERE empresa_cnpj = %s ORDER BY id DESC", (cnpj,))
     movs = cursor.fetchall()
     
-    # 5. Tecnovigilância
     cursor.execute("SELECT lote_texto, tipo_ocorrencia, gravidade, data_registro FROM tecnovigilancia WHERE empresa_cnpj = %s ORDER BY id DESC", (cnpj,))
     tecno = cursor.fetchall()
     
@@ -234,6 +255,34 @@ def pharmacy_sync(cnpj: str):
         "movimentacoes": movs,
         "tecnovigilancia": tecno
     }
+
+# Rota para Listar os Colaboradores no Admin
+@app.get("/api/admin/employees")
+def admin_list_employees():
+    db = conectar_bd()
+    cursor = db.cursor()
+    # Retorna o status fictício "Ativo" exigido para manter as métricas e a tabela verdes
+    cursor.execute("SELECT cpf, nome, cargo, 'Almoxarifado / CAF' as setor, 'Ativo' as status FROM colaboradores ORDER BY id DESC")
+    rows = cursor.fetchall()
+    db.close()
+    return rows
+
+# Rota para Cadastrar novo Colaborador no Admin
+@app.post("/api/admin/employees")
+def admin_add_employee(emp: MedPostSchema): # Reutiliza estrutura estável de inputs
+    db = conectar_bd()
+    cursor = db.cursor()
+    try:
+        cursor.execute("""
+            INSERT INTO colaboradores (cpf, nome, cargo, empresa_cnpj)
+            VALUES (%s, %s, %s, %s)
+        """, (emp.codigo_barras, emp.nome, emp.principio_ativo, emp.empresa_cnpj))
+        db.commit()
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+    finally:
+        db.close()
 
 @app.post("/api/pharmacy/dispensar")
 def pharmacy_dispensar(disp: DispensaPostSchema):
@@ -256,7 +305,6 @@ def pharmacy_dispensar(disp: DispensaPostSchema):
             item_nome = res['nome']
             cursor.execute("UPDATE insumos SET quantidade = quantidade - %s WHERE id = %s", (disp.qtd, disp.id_item))
 
-        # Salva a movimentação usando exatamente as colunas e formatos de data esperados pelo front
         data_formatada = datetime.now().strftime("%d/%m/%Y, %H:%M")
         cursor.execute("""
             INSERT INTO movimentacoes (empresa_cnpj, tipo, item_nome, quantidade, paciente_nome, setor_destino, responsavel, data_movimentacao)
@@ -335,18 +383,6 @@ def pharmacy_add_tecno(tecno: TecnoPostSchema):
         return {"success": False, "message": str(e)}
     finally:
         db.close()
-
-# Rota para autenticação do Administrador no admin.html
-@app.post("/api/admin/auth")
-def admin_auth(dados: AdminAuthSchema):
-    db = conectar_bd()
-    cursor = db.cursor()
-    cursor.execute("SELECT cnpj, hospital_nome FROM administradores WHERE cnpj=%s AND senha=%s", (dados.cnpj, dados.senha))
-    admin = cursor.fetchone()
-    db.close()
-    if admin:
-        return {"success": True, "admin": admin}
-    return {"success": False, "message": "Credenciais administrativas inválidas."}
 
 if __name__ == "__main__":
     import uvicorn
